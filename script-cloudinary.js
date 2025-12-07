@@ -8,41 +8,76 @@ document.addEventListener('DOMContentLoaded', () => {
     const favoritesButton = document.getElementById('favorites-button');
     const cartCount = document.querySelector('.cart-count');
     const favoritesCount = document.querySelector('.favorites-count');
-    // --- MOBİL MENÜ KONTROLÜ (DÜZELTİLMİŞ HALİ) ---
+    
+    // --- MOBİL MENÜ KONTROLÜ ---
     const menuToggle = document.getElementById('menu-toggle');
     const menuClose = document.getElementById('menu-close');
     const storeMenu = document.getElementById('store-menu');
     const menuOverlay = document.getElementById('menu-overlay');
 
-    // Menüyü aç
-    menuToggle.addEventListener('click', () => {
-        storeMenu.classList.add('active');
-        menuOverlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    });
-
-    // Menüyü kapat (X butonu)
-    menuClose.addEventListener('click', () => {
-        storeMenu.classList.remove('active');
-        menuOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-    });
-
-    // Menüyü kapat (Overlay tıklayınca)
-    menuOverlay.addEventListener('click', () => {
-        storeMenu.classList.remove('active');
-        menuOverlay.classList.remove('active');
-        document.body.style.overflow = '';
-    });
-
+    // --- 404 SAYFASI ELEMENTLERİ ---
+    const notFoundSection = document.getElementById('not-found');
+    const backHomeLink = document.getElementById('back-home-link');
+    
     let cart = [];
     let favorites = [];
     let currentStoreId = null;
     
+    // --- YÖNLENDİRME (ROUTING) FONKSİYONLARI ---
+
+    // URL'deki slug'a göre sayfayı yönlendiren ana fonksiyon
+    const router = () => {
+        const path = window.location.pathname.replace('/', ''); // URL'den slug'ı al (örn: "aga-brend")
+        const heroSection = document.querySelector('.hero-section');
+        const infoSection = document.querySelector('.info-section');
+        const storeBanner = document.getElementById('store-banner');
+        const categoryFilters = document.getElementById('category-filters');
+        const productsGrid = document.getElementById('products-grid');
+        const pageTitle = document.title; // Sayfa başlığını al
+
+        // Eğer URL boşsa (ana sayfadaysak)
+        if (!path) {
+            // Ana sayfa elemanlarını göster
+            if (heroSection) heroSection.style.display = 'block';
+            if (infoSection) infoSection.style.display = 'grid';
+            storeBanner.style.display = 'none';
+            categoryFilters.style.display = 'none';
+            productsGrid.style.display = 'none';
+            if (notFoundSection) notFoundSection.style.display = 'none';
+            document.title = 'Showly - Online Katalog Platformasy';
+            return;
+        }
+
+        // Ana sayfa elemanlarını gizle
+        if (heroSection) heroSection.style.display = 'none';
+        if (infoSection) infoSection.style.display = 'none';
+        if (notFoundSection) notFoundSection.style.display = 'none';
+
+        // Slug'a göre mağazayı bul
+        const store = window.showlyDB.getStores().find(s => s.slug === path);
+
+        if (store) {
+            // Mağaza bulundu, ürünleri render et
+            renderProducts(store.id);
+            document.title = `${store.name} - Showly`;
+        } else {
+            // Mağaza bulunamadı, 404 sayfasını göster
+            storeBanner.style.display = 'none';
+            categoryFilters.style.display = 'none';
+            productsGrid.style.display = 'none';
+            if (notFoundSection) notFoundSection.style.display = 'block';
+            document.title = 'Sayfa Bulunamadı - Showly';
+        }
+    };
+
+    // Tarayıcının geri/ileri butonları için olay dinleyici
+    window.addEventListener('popstate', router);
+    
+    // --- MAĞAZALAR ---
     const renderStores = () => {
         const stores = window.showlyDB.getStores();
-        const storeList = document.getElementById('store-list');
         
+        // Mevcut listeyi temizle
         storeList.innerHTML = '';
         
         if (!stores || stores.length === 0) {
@@ -69,35 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     
-    storeList.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (e.target.tagName === 'A') {
-            const storeId = e.target.getAttribute('data-store-id');
-            
-            document.querySelectorAll('#store-list a').forEach(link => 
-                link.classList.remove('active')
-            );
-            e.target.classList.add('active');
-            
-            renderProducts(storeId);
-        }
-    });
-
     // --- ÜRÜNLER ---
     const renderProducts = (storeId, categoryFilter = null) => {
         currentStoreId = storeId;
         const allProducts = window.showlyDB.getProductsByStoreId(storeId);
-        console.log('--- Ürün Kategori Kontrolü Başlıyor ---');
-        allProducts.forEach(product => {
-            console.log(`Ürün: "${product.title}" | Kategorisi: "${product.category}" | Kategori Türü: ${typeof product.category}`);
-        });
-        console.log('--- Ürün Kategori Kontrolü Bitti ---');
-        // --- HATA AYIKLAMA LOGU SONU ---
         const store = window.showlyDB.getStores().find(s => s.id === storeId);
-        
-        // --- HATA AYIKLAMA LOGU 1 ---
-        console.log('Mağazadaki TÜM ÜRÜNLER:', allProducts);
-        // --- HATA AYIKLAMA LOGU SONU ---
         
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
@@ -105,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const categoryFilters = document.getElementById('category-filters');
         const productsGrid = document.getElementById('products-grid');
         
+        // Ana sayfa elemanlarını gizle, mağaza başlığını göster
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
         
@@ -116,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- KATEGORİ FİLTRELERİNİ OLUŞTUR VE GÖSTER ---
         const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-            
+        
         categoryFilters.innerHTML = '';
         categoryFilters.style.display = 'flex';
 
@@ -136,8 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.onclick = () => renderProducts(storeId, category);
             categoryFilters.appendChild(btn);
         });
-                
-        // ... (geri kalan kod aynı kalacak) ...
+        // --- KATEGORİ FİLTRELERİ SONU ---
+
+        // --- ÜRÜNLERİ FİLTRELE VE GÖSTER ---
         productsGrid.style.display = 'grid';
         productsGrid.innerHTML = '';
         
@@ -150,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Filtrelenmiş ürünleri kart olarak oluştur
         productsToRender.forEach(product => {
             // Resim URL'si varsa resim alanını oluştur, yoksa boş bırak
             let imageHtml = '';
@@ -207,9 +219,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const storeBanner = document.getElementById('store-banner');
+        const categoryFilters = document.getElementById('category-filters');
         
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
+        if (categoryFilters) categoryFilters.style.display = 'none';
         
         storeBanner.style.display = 'block';
         storeBanner.innerHTML = `<h2>Arama Sonuçları: "${query}"</h2><p>${filteredProducts.length} ürün</p>`;
@@ -331,8 +345,28 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'block';
     };
     
-    // --- ÜRÜN GRID OLAYLARI ---
+    // --- OLAY DİNLEYİCİLER ---
     
+    // Mobil menü kontrolü
+    menuToggle.addEventListener('click', () => {
+        storeMenu.classList.add('active');
+        menuOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+
+    menuClose.addEventListener('click', () => {
+        storeMenu.classList.remove('active');
+        menuOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    });
+
+    menuOverlay.addEventListener('click', () => {
+        storeMenu.classList.remove('active');
+        menuOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    });
+
+    // Ürün gridi üzerindeki olaylar (favori, sepete ekle, modal aç)
     productsGrid.addEventListener('click', (e) => {
         if (e.target.closest('.btn-favorite')) {
             const btn = e.target.closest('.btn-favorite');
@@ -354,8 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // --- MODAL OLAYLARI ---
-    
+    // Modal kontrolleri
     document.getElementById('modal-add-cart').addEventListener('click', () => {
         const title = document.getElementById('modal-title').textContent;
         const product = window.showlyDB.getAllProducts().find(p => p.title === title);
@@ -376,9 +409,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.style.display = 'none';
         }
     });
-    
-    // --- SEPET MODAL ---
-    
+
+    // Sepet modalı
     cartButton.addEventListener('click', () => {
         const cartModal = document.getElementById('cart-modal');
         const cartItems = document.getElementById('cart-items');
@@ -427,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (action === 'increase') item.quantity++;
                 else if (action === 'decrease' && item.quantity > 1) item.quantity--;
                 updateCartCount();
-                cartButton.click();
+                cartButton.click(); // Sepeti yenile
             }
         }
         
@@ -435,12 +467,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const productId = e.target.getAttribute('data-id');
             cart = cart.filter(i => i.id !== productId);
             updateCartCount();
-            cartButton.click();
+            cartButton.click(); // Sepeti yenile
         }
     });
     
-    // --- FAVORILER MODAL ---
-    
+    // Favoriler modalı
     favoritesButton.addEventListener('click', () => {
         const favoritesModal = document.getElementById('favorites-modal');
         const favoritesItems = document.getElementById('favorites-items');
@@ -475,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const productId = e.target.getAttribute('data-id');
             favorites = favorites.filter(f => f.id !== productId);
             updateFavoritesCount();
-            favoritesButton.click();
+            favoritesButton.click(); // Favorileri yenile
         }
         
         if (e.target.classList.contains('btn-add-cart-from-fav')) {
@@ -483,32 +514,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = favorites.find(f => f.id === productId);
             if (product) {
                 addToCart(product);
-                favoritesButton.click();
+                favoritesButton.click(); // Favorileri yenile
             }
         }
     });
-
-
-    // --- LOGOya tıklandığında ana sayfa ---
+    
+    // Logo tıklandığında ana sayfa
     document.getElementById('logo-link').addEventListener('click', (e) => {
         e.preventDefault();
-        currentStoreId = null;
-        document.querySelectorAll('#store-list a').forEach(link => 
-            link.classList.remove('active')
-        );
-        
-        const heroSection = document.querySelector('.hero-section');
-        const infoSection = document.querySelector('.info-section');
-        const storeBanner = document.getElementById('store-banner');
-        const productsGrid = document.getElementById('products-grid');
-        
-        if (heroSection) heroSection.style.display = 'block';
-        if (infoSection) infoSection.style.display = 'grid';
-        storeBanner.style.display = 'none';
-        productsGrid.style.display = 'none';
-        
-        searchInput.value = '';
+        history.pushState(null, null, '/'); // URL'yi anasayfa yap
+        router(); // Yönlendirmeyi çalıştır
     });
+    
+    // Mağaza linklerine tıklandığında yönlendirmeyi çalıştır
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.store-link')) {
+            e.preventDefault(); // Sayfanın yenilenmesini engelle
+            const href = e.target.closest('.store-link').getAttribute('href');
+            history.pushState(null, null, href); // Browser geçmişine yeni URL'yi ekle
+            router(); // Yeni URL için yönlendirmeyi çalıştır
+        }
+    });
+
+    // 404 sayfasındaki "Ana Sayfaya Dön" butonu
+    backHomeLink?.addEventListener('click', (e) => {
+        e.preventDefault();
+        history.pushState(null, null, '/');
+        router();
+    });
+    
+    // --- BİLDİRİM ---
     
     const showNotification = (message) => {
         const notification = document.createElement('div');
@@ -529,56 +564,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- İLK YÜKLEME ---
-    renderStores();
+    router(); // Sayfa ilk yüklendiğinde yönlendirmeyi çalıştır
+    renderStores(); // Mağaza listesini doldur
 });
-
-// --- YÖNLENDİRME (ROUTING) FONKSİYONLARI ---
-
-// URL'deki slug'a göre sayfayı yönlendiren ana fonksiyon
-const router = () => {
-    const path = window.location.pathname.replace('/', ''); // URL'den slug'ı al (örn: "aga-brend")
-    const heroSection = document.querySelector('.hero-section');
-    const infoSection = document.querySelector('.info-section');
-    const storeBanner = document.getElementById('store-banner');
-    const categoryFilters = document.getElementById('category-filters');
-    const productsGrid = document.getElementById('products-grid');
-    const notFoundSection = document.getElementById('not-found');
-    const pageTitle = document.getElementById('page-title'); // Admin panelindeki başlık değil, ana sayfadaki <title> etiketi
-
-    // Eğer URL boşsa (ana sayfadaysak)
-    if (!path) {
-        // Ana sayfa elemanlarını göster
-        if (heroSection) heroSection.style.display = 'block';
-        if (infoSection) infoSection.style.display = 'grid';
-        storeBanner.style.display = 'none';
-        categoryFilters.style.display = 'none';
-        productsGrid.style.display = 'none';
-        notFoundSection.style.display = 'none';
-        document.title = 'Showly - Online Katalog Platformasy';
-        return;
-    }
-
-    // Ana sayfa elemanlarını gizle
-    if (heroSection) heroSection.style.display = 'none';
-    if (infoSection) infoSection.style.display = 'none';
-    notFoundSection.style.display = 'none';
-
-    // Slug'a göre mağazayı bul
-    const store = window.showlyDB.getStores().find(s => s.slug === path);
-
-    if (store) {
-        // Mağaza bulundu, ürünleri render et
-        renderProducts(store.id);
-        document.title = `${store.name} - Showly`;
-    } else {
-        // Mağaza bulunamadı, 404 sayfasını göster
-        storeBanner.style.display = 'none';
-        categoryFilters.style.display = 'none';
-        productsGrid.style.display = 'none';
-        notFoundSection.style.display = 'block';
-        document.title = 'Sayfa Bulunamadı - Showly';
-    }
-};
-
-// Tarayıcının geri/ileri butonları için olay dinleyici
-window.addEventListener('popstate', router);
