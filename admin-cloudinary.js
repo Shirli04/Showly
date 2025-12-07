@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- YENİ EKLENEN FİLTRELEME ELEMANLARI ---
     const filterStoreSelect = document.getElementById('filter-store-select');
     const filterCategorySelect = document.getElementById('filter-category-select');
+
+    const productIsOnSale = document.getElementById('product-is-on-sale');
+    const productOriginalPrice = document.getElementById('product-original-price');
+    const originalPriceGroup = document.getElementById('original-price-group');
     
     let editingStoreId = null;
     let editingProductId = null;
@@ -58,6 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result.stores.success && result.products.success) {
             showNotification('Veriler Cloudinary\'ye yedeklendi!');
         }
+    });
+
+    // İndirim checkbox'ı değiştiğinde eski fiyat alanını göster/gizle
+    productIsOnSale.addEventListener('change', (e) => {
+        originalPriceGroup.style.display = e.target.checked ? 'block' : 'none';
     });
     
     // Ürün resmi önizleme
@@ -301,7 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('product-price').value = product.price;
         document.getElementById('product-description').value = product.description || '';
         document.getElementById('product-material').value = product.material || '';
-        document.getElementById('product-category').value = product.category || ''; // <-- YENİ EKLENDİ
+        document.getElementById('product-category').value = product.category || '';
+        productIsOnSale.checked = product.isOnSale || false;
+        originalPriceGroup.style.display = product.isOnSale ? 'block' : 'none';
+        document.getElementById('product-original-price').value = product.originalPrice || '';
         
         if (product.imageUrl) {
             productImagePreview.src = product.imageUrl;
@@ -353,7 +365,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const productPrice = document.getElementById('product-price').value.trim();
             const productDescription = document.getElementById('product-description').value.trim();
             const productMaterial = document.getElementById('product-material').value.trim();
-            const productCategory = document.getElementById('product-category').value.trim(); // <-- YENİ EKLENDİ
+            const productCategory = document.getElementById('product-category').value.trim();
+            const isOnSale = productIsOnSale.checked;
+            const originalPrice = productOriginalPrice.value.trim();
             const imageFile = productImage.files[0];
             
             if (!productName || !productStore || !productPrice) {
@@ -387,7 +401,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     price: productPrice,
                     description: productDescription,
                     material: productMaterial,
-                    category: productCategory, // <-- YENİ EKLENDİ
+                    category: productCategory,
+                    isOnSale: isOnSale, // <-- YENİ
+                    originalPrice: originalPrice, // <-- YENİ EKLENDİ
                     imageUrl: imageUrl
                 });
                 showNotification('Ürün başarıyla güncellendi!');
@@ -399,7 +415,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     price: productPrice,
                     description: productDescription,
                     material: productMaterial,
-                    category: productCategory, // <-- YENİ EKLENDİ
+                    category: productCategory,
+                    isOnSale: isOnSale, // <-- YENİ
+                    originalPrice: originalPrice, // <-- YENİ EKLENDİ
                     imageUrl: imageUrl
                 });
                 showNotification('Ürün başarıyla eklendi!');

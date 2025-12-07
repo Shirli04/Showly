@@ -1414,3 +1414,36 @@ header {
     background-color: rgba(255, 255, 255, 0.3); /* Aktif butondaki rozet rengi */
     color: var(--white-color);
 }
+
+/* ================================ İNDİRİM ROZETİ VE FİYAT GÖSTERİMİ ================================ */
+.product-card .discount-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: var(--favorite-color);
+    color: white;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.product-card .price-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.product-card .original-price {
+    font-size: 14px;
+    color: #999;
+    text-decoration: line-through;
+}
+
+.product-card .current-price {
+    font-weight: bold;
+    color: var(--favorite-color);
+}

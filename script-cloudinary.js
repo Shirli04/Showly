@@ -116,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const categoryFilters = document.getElementById('category-filters');
         const productsGrid = document.getElementById('products-grid');
         
-        // Ana sayfa elemanlarını gizle, mağaza başlığını göster
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
         
@@ -148,15 +147,27 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.onclick = () => renderProducts(storeId, category);
             categoryFilters.appendChild(btn);
         });
-        // --- KATEGORİ FİLTRELERİ SONU ---
 
-        // --- ÜRÜNLERİ FİLTRELE VE GÖSTER ---
+        // --- YENİ: ARZANLADYŞ (İNDİRİM) FİLTRESİ BUTONU ---
+        const discountedProducts = allProducts.filter(p => p.isOnSale);
+        const discountBtn = document.createElement('button');
+        discountBtn.className = 'category-btn ' + (categoryFilter === 'DISCOUNT' ? 'active' : '');
+        discountBtn.innerHTML = `Arzanladyş <span class="category-count">${discountedProducts.length}</span>`;
+        discountBtn.onclick = () => renderProducts(storeId, 'DISCOUNT');
+        categoryFilters.appendChild(discountBtn);
+        // --- FİLTRELEME SONU ---
+
         productsGrid.style.display = 'grid';
         productsGrid.innerHTML = '';
         
-        const productsToRender = categoryFilter
-            ? allProducts.filter(p => p.category === categoryFilter)
-            : allProducts;
+        // --- ÜRÜNLERİ FİLTRELE VE GÖSTER ---
+        let productsToRender = allProducts;
+
+        if (categoryFilter === 'DISCOUNT') {
+            productsToRender = discountedProducts;
+        } else if (categoryFilter) {
+            productsToRender = allProducts.filter(p => p.category === categoryFilter);
+        }
 
         if (productsToRender.length === 0) {
             productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu kategoride ürün bulunamadı.</h3></div>`;
@@ -164,26 +175,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         productsToRender.forEach(product => {
-            // Resim URL'si varsa resim alanını oluştur, yoksa boş bırak
-            let imageHtml = '';
-            if (product.imageUrl) {
-                imageHtml = `
-                    <div class="product-image-container">
-                        <img src="${product.imageUrl}" alt="${product.title}">
-                        <button class="btn-favorite" data-id="${product.id}">
-                            <i class="far fa-heart"></i>
-                        </button>
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+
+            // İndirimli ürünler için fiyat gösterimi
+            let priceDisplay = `<p class="product-price">${product.price}</p>`;
+            if (product.isOnSale && product.originalPrice) {
+                priceDisplay = `
+                    <div class="price-container">
+                        <span class="original-price">${product.originalPrice}</span>
+                        <span class="current-price">${product.price}</span>
                     </div>
                 `;
             }
 
-            const productCard = document.createElement('div');
-            productCard.className = 'product-card';
             productCard.innerHTML = `
-                ${imageHtml} <!-- Sadece resim varsa HTML'e ekle -->
+                <div class="product-image-container">
+                    ${product.isOnSale ? '<span class="discount-badge">İndirim</span>' : ''}
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
+                    <button class="btn-favorite" data-id="${product.id}">
+                        <i class="far fa-heart"></i>
+                    </button>
+                </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
-                    <p class="product-price">${product.price}</p>
+                    ${priceDisplay}
                     <div class="product-actions">
                         <button class="btn-cart" data-id="${product.id}">Sebede goş</button>
                     </div>
