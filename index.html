@@ -40,53 +40,15 @@
     <div class="container">
         <!-- SIDEBAR MENU (Mobil ve Desktop) -->
         <aside class="store-menu" id="store-menu">
-            <!-- Mobil menü kapatma butonu -->
             <div class="store-menu-header">
+                <h2>Kataloglar</h2>
                 <button class="menu-close" id="menu-close">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-
-            <!-- Mağaza listesi (Ana sayfada görünecek) -->
-            <div id="store-list-container">
-                <h2>Kataloglar</h2>
-                <ul id="store-list">
-                    <!-- Mağaza listesi JavaScript ile buraya doldurulacak -->
-                </ul>
-            </div>
-
-            <!-- Filtreleme paneli (Mağaza sayfasında görünecek) -->
-            <div id="filter-panel-container" style="display: none;">
-                <a href="#" class="back-to-stores-link"><i class="fas fa-arrow-left"></i> Tüm Mağazalar</a>
-                <h2 id="filter-panel-store-name">Mağaza Adı</h2>
-                
-                <!-- Kategoriler -->
-                <div class="filter-section">
-                    <h3>Kategoriýalar</h3>
-                    <ul id="category-filter-list">
-                        <!-- Kategoriler JavaScript ile buraya doldurulacak -->
-                    </ul>
-                </div>
-
-                <!-- İndirim -->
-                <div class="filter-section">
-                    <label>
-                        <input type="checkbox" id="filter-on-sale">
-                        <span class="checkmark"></span>
-                        Arzanladyş
-                    </label>
-                </div>
-
-                <!-- Fiyat Aralığı -->
-                <div class="filter-section">
-                    <h3>Fiyat Aralığı</h3>
-                    <div class="price-range-inputs">
-                        <input type="number" id="filter-min-price" placeholder="Min">
-                        <span>-</span>
-                        <input type="number" id="filter-max-price" placeholder="Max">
-                    </div>
-                </div>
-            </div>
+            <ul id="store-list">
+                <!-- Mağaza listesi JavaScript ile buraya doldurulacak -->
+            </ul>
         </aside>
 
         <!-- Overlay (Mobil menü açıkken arka plan karartma) -->
