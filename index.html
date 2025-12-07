@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Showly - Online Katalog Platformasy</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <button class="menu-toggle" id="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="logo">
+                <a href="#" id="logo-link"><h1>Showly</h1></a>
+            </div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Kataloglarda gözle...">
+            <button type="button" id="search-button"><i class="fas fa-search"></i></button>
+        </div>
+
+        <div class="user-actions">
+            <a href="admin.html" class="admin-btn"><i class="fas fa-user-shield"></i></a>
+            <button id="cart-button">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count">0</span>
+            </button>
+            <button id="favorites-button">
+                <i class="fas fa-heart"></i>
+                <span class="favorites-count">0</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- SIDEBAR MENU (Mobil ve Desktop) -->
+        <aside class="store-menu" id="store-menu">
+            <div class="store-menu-header">
+                <h2>Kataloglar</h2>
+                <button class="menu-close" id="menu-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <ul id="store-list">
+                <!-- Mağaza listesi JavaScript ile buraya doldurulacak -->
+            </ul>
+        </aside>
+
+        <!-- Overlay (Mobil menü açıkken arka plan karartma) -->
+        <div class="menu-overlay" id="menu-overlay"></div>
+
+        <main class="content" id="main-content">
+            <!-- ANA SAYFA İÇERİĞİ BAŞLANGICI -->
+            <section class="hero-section">
+                <h1>Ähli görnüşli satyjylar üçin online kataloglar</h1>
+                <p>Bir sahypada ähli önümleriniz – müşderiler üçin taýýar görnüşde.</p>
+                <button class="cta-button"><i class="fas fa-store"></i> Satyjy Bol</button>
+            </section>
+
+            <section class="info-section">
+                <div class="info-block">
+                    <h2>Biz barada</h2>
+                    <p>Şowly – Türkmenistanda döredilen onlaýn katalog platformasy.</p>
+                    <p>Biz satyjylaryň önümlerini müşderilere ýakynlaşdyrýarys.</p>
+                    <p>Maksadymyz – her bir satyjynyň online çykmagyny ýeňilleşdirmek.</p>
+                </div>
+                <div class="info-block">
+                    <h2>Näme üçin Şowly ?</h2>
+                    <div class="features">
+                        <div class="feature-item">
+                            <i class="fas fa-user-check"></i>
+                            <h3>Ýönekeý ulanyş</h3>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-rocket"></i>
+                            <h3>Çalt wagtda satyjy bolmak hyzmaty</h3>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- ANA SAYFA İÇERİĞİ SONU -->
+
+            <!-- Store Banner -->
+            <div class="store-banner" id="store-banner" style="display: none;">
+                <h2></h2>
+                <p></p>
+            </div>
+            <!-- KATEGORİ FİLTRELEME ALANI -->
+            <div class="category-filters" id="category-filters" style="display: none;"></div>
+            <!-- Kategori butonları JavaScript ile buraya doldurulacak -->
+            <!-- Ürünler buraya dinamik olarak yüklenecek -->
+            <div class="products-grid" id="products-grid" style="display: none;"></div>
+        </main>
+    </div>
+    <!-- 404 Sayfa Bulunamadı Bölümü -->
+    <div id="not-found" style="display: none; text-align: center; padding: 60px 20px;">
+        <h1 style="font-size: 48px; color: var(--primary-color);">404</h1>
+        <h2 style="font-size: 24px; margin-bottom: 10px;">Sayfa Bulunamadı</h2>
+        <p style="color: #666; margin-bottom: 20px;">Aradığınız mağaza mevcut değil.</p>
+        <a href="#" id="back-home-link" class="cta-button">Ana Sayfaya Dön</a>
+    </div>
+    <!-- Ürün Detay Modalı -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="product-detail-image">
+                <img id="modal-image" src="" alt="">
+            </div>
+            <div class="product-detail-info">
+                <h2 id="modal-title"></h2>
+                <p class="product-detail-price" id="modal-price"></p>
+                <p id="modal-description"></p>
+                <p><strong>Malzeme:</strong> <span id="modal-material"></span></p>
+                <div class="product-variants" id="modal-variants"></div>
+                <div class="product-detail-actions">
+                    <button class="btn-add-cart" id="modal-add-cart">Sebede goş</button>
+                    <button class="btn-share-detail" id="modal-share">Paylaş</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sepet Modalı -->
+    <div id="cart-modal" class="modal">
+        <div class="modal-content cart-content">
+            <span class="close-modal" id="close-cart-modal">&times;</span>
+            <div class="cart-header">
+                <h2>Sepetim</h2>
+            </div>
+            <div class="cart-items" id="cart-items">
+                <!-- Sepetteki ürünler JavaScript ile buraya doldurulacak -->
+                <p class="empty-cart-message">Sepetiniz şu an boş.</p>
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <h3>Toplam: <span id="cart-total-price">0 TMT</span></h3>
+                </div>
+                <button class="checkout-button">Siparişi Tamamla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Halanlarım Modalı -->
+    <div id="favorites-modal" class="modal">
+        <div class="modal-content favorites-content">
+            <span class="close-modal" id="close-favorites-modal">&times;</span>
+            <div class="favorites-header">
+                <h2>Halanlarim</h2>
+            </div>
+            <div class="favorites-items" id="favorites-items">
+                <!-- Favori ürünler JavaScript ile buraya doldurulacak -->
+                <p class="empty-favorites-message">Henüz favori ürününüz yok.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="cloudinary-config.js"></script>
+    <script src="script-cloudinary.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="excel-manager.js"></script>
+</body>
+</html>
