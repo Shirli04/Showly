@@ -1732,3 +1732,14 @@ header {
     border-radius: 6px;
     font-size: 14px;
 }
+
+/* ================================ ÜRÜN KATEGORİ ETİKETİ ================================ */
+.product-category-label {
+    display: block;
+    font-size: 13px; /* Ürün adından (16px) küçük */
+    color: #888; /* Gri renk */
+    margin-bottom: 8px; /* Fiyatla arasına boşluk */
+    text-transform: uppercase; /* Harfleri büyüt */
+    letter-spacing: 0.5px; /* Harfler arası boşluk */
+    font-weight: 500;
+}
