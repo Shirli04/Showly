@@ -1447,3 +1447,38 @@ header {
     font-weight: bold;
     color: var(--favorite-color);
 }
+
+/* ================================ FİYATA GÖRE FİLTRELEME ================================ */
+.price-filters {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.price-filters-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.price-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.price-range-inputs input {
+    width: 100px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.price-range-inputs span {
+    color: #666;
+    font-size: 14px;
+}

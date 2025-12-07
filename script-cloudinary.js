@@ -104,8 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     
-    // --- ÜRÜNLER ---
-    const renderProducts = (storeId, categoryFilter = null) => {
+    const renderProducts = (storeId, activeFilter = null) => {
         currentStoreId = storeId;
         const allProducts = window.showlyDB.getProductsByStoreId(storeId);
         const store = window.showlyDB.getStores().find(s => s.id === storeId);
@@ -125,52 +124,136 @@ document.addEventListener('DOMContentLoaded', () => {
             <p>${allProducts.length} ürün</p>
         `;
 
-        // --- KATEGORİ FİLTRELERİNİ OLUŞTUR VE GÖSTER ---
-        const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-        
         categoryFilters.innerHTML = '';
         categoryFilters.style.display = 'flex';
 
-        // "Ähli ürünler" butonunu TOPLAM ÜRÜN SAYISI ile oluştur
+        // --- KATEGORİ FİLTRELERİNİ OLUŞTUR ---
+        const categories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+        
         const allBtn = document.createElement('button');
-        allBtn.className = 'category-btn ' + (categoryFilter === null ? 'active' : '');
+        allBtn.className = 'category-btn ' + (!activeFilter ? 'active' : '');
         allBtn.innerHTML = `Ähli ürünler <span class="category-count">${allProducts.length}</span>`;
         allBtn.onclick = () => renderProducts(storeId, null);
         categoryFilters.appendChild(allBtn);
 
-        // Diğer kategori butonlarını KATEGORİYE GÖRE ÜRÜN SAYISI ile oluştur
         categories.forEach(category => {
             const count = allProducts.filter(p => p.category === category).length;
             const btn = document.createElement('button');
-            btn.className = 'category-btn ' + (categoryFilter === category ? 'active' : '');
+            btn.className = 'category-btn ' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === category ? 'active' : '');
             btn.innerHTML = `${category} <span class="category-count">${count}</span>`;
-            btn.onclick = () => renderProducts(storeId, category);
+            btn.onclick = () => renderProducts(storeId, { type: 'CATEGORY', value: category });
             categoryFilters.appendChild(btn);
         });
+        // --- KATEGORİ FİLTRELERİ SONU ---
 
-        // --- YENİ: ARZANLADYŞ (İNDİRİM) FİLTRESİ BUTONU ---
+        // --- FİYATA GÖRE HIZLI FİLTRELER ---
+        const priceFiltersContainer = document.createElement('div');
+        priceFiltersContainer.className = 'price-filters';
+
+        const title = document.createElement('div');
+        title.className = 'price-filters-title';
+        title.textContent = 'Fiyata göre';
+        priceFiltersContainer.appendChild(title);
+
         const discountedProducts = allProducts.filter(p => p.isOnSale);
         const discountBtn = document.createElement('button');
-        discountBtn.className = 'category-btn ' + (categoryFilter === 'DISCOUNT' ? 'active' : '');
+        discountBtn.className = 'category-btn ' + (activeFilter?.type === 'DISCOUNT' ? 'active' : '');
         discountBtn.innerHTML = `Arzanladyş <span class="category-count">${discountedProducts.length}</span>`;
-        discountBtn.onclick = () => renderProducts(storeId, 'DISCOUNT');
-        categoryFilters.appendChild(discountBtn);
-        // --- FİLTRELEME SONU ---
+        discountBtn.onclick = () => renderProducts(storeId, { type: 'DISCOUNT' });
+        priceFiltersContainer.appendChild(discountBtn);
+        
+        const freeProducts = allProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) === 0);
+        const freeBtn = document.createElement('button');
+        freeBtn.className = 'category-btn ' + (activeFilter?.type === 'FREE' ? 'active' : '');
+        freeBtn.innerHTML = `Bedava <span class="category-count">${freeProducts.length}</span>`;
+        freeBtn.onclick = () => renderProducts(storeId, { type: 'FREE' });
+        priceFiltersContainer.appendChild(freeBtn);
 
+        const expensiveProducts = allProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500); // 500 TMT'den pahalı
+        const expensiveBtn = document.createElement('button');
+        expensiveBtn.className = 'category-btn ' + (activeFilter?.type === 'EXPENSIVE' ? 'active' : '');
+        expensiveBtn.innerHTML = `Pahaly (>500 TMT) <span class="category-count">${expensiveProducts.length}</span>`;
+        expensiveBtn.onclick = () => renderProducts(storeId, { type: 'EXPENSIVE' });
+        priceFiltersContainer.appendChild(expensiveBtn);
+
+        categoryFilters.appendChild(priceFiltersContainer);
+        // --- HIZLI FİLTRELER SONU ---
+
+        // --- FİYAT ARALIĞI FİLTRESİ ---
+        const rangeContainer = document.createElement('div');
+        rangeContainer.className = 'price-filters';
+
+        const rangeTitle = document.createElement('div');
+        rangeTitle.className = 'price-filters-title';
+        rangeTitle.textContent = 'Fiyat aralığı';
+        rangeContainer.appendChild(rangeTitle);
+        
+        const rangeInputs = document.createElement('div');
+        rangeInputs.className = 'price-range-inputs';
+        rangeInputs.innerHTML = `
+            <input type="number" id="min-price" placeholder="Min TMT" min="0">
+            <span>-</span>
+            <input type="number" id="max-price" placeholder="Max TMT" min="0">
+        `;
+        rangeContainer.appendChild(rangeInputs);
+        categoryFilters.appendChild(rangeContainer);
+
+        // Fiyat aralığı girdiğinde filtrelemeyi tetikle
+        const minPriceInput = document.getElementById('min-price');
+        const maxPriceInput = document.getElementById('max-price');
+        const applyPriceRange = () => {
+            const min = parseFloat(minPriceInput.value) || 0;
+            const max = parseFloat(maxPriceInput.value) || Infinity;
+            if (min > 0 || max < Infinity) {
+                renderProducts(storeId, { type: 'PRICE_RANGE', min, max });
+            } else {
+                renderProducts(storeId, null); // Aralık boşsa tüm ürünleri göster
+            }
+        };
+        minPriceInput.addEventListener('keyup', applyPriceRange);
+        maxPriceInput.addEventListener('keyup', applyPriceRange);
+
+        // Aktif filtreleyici input'lara yaz
+        if (activeFilter?.type === 'PRICE_RANGE') {
+            minPriceInput.value = activeFilter.min > 0 ? activeFilter.min : '';
+            maxPriceInput.value = activeFilter.max < Infinity ? activeFilter.max : '';
+        }
+        // --- FİYAT ARALIĞI SONU ---
+
+
+        // --- ÜRÜNLERİ FİLTRELE VE GÖSTER ---
         productsGrid.style.display = 'grid';
         productsGrid.innerHTML = '';
         
-        // --- ÜRÜNLERİ FİLTRELE VE GÖSTER ---
         let productsToRender = allProducts;
 
-        if (categoryFilter === 'DISCOUNT') {
-            productsToRender = discountedProducts;
-        } else if (categoryFilter) {
-            productsToRender = allProducts.filter(p => p.category === categoryFilter);
+        if (activeFilter) {
+            switch (activeFilter.type) {
+                case 'CATEGORY':
+                    productsToRender = allProducts.filter(p => p.category === activeFilter.value);
+                    break;
+                case 'DISCOUNT':
+                    productsToRender = discountedProducts;
+                    break;
+                case 'FREE':
+                    productsToRender = freeProducts;
+                    break;
+                case 'EXPENSIVE':
+                    productsToRender = expensiveProducts;
+                    break;
+                case 'PRICE_RANGE':
+                    const min = activeFilter.min || 0;
+                    const max = activeFilter.max || Infinity;
+                    productsToRender = allProducts.filter(p => {
+                        const price = parseFloat(p.price.replace(' TMT', ''));
+                        return price >= min && price <= max;
+                    });
+                    break;
+            }
         }
 
         if (productsToRender.length === 0) {
-            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu kategoride ürün bulunamadı.</h3></div>`;
+            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrede ürün bulunamadı.</h3></div>`;
             return;
         }
         
@@ -178,7 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
 
-            // İndirimli ürünler için fiyat gösterimi
             let priceDisplay = `<p class="product-price">${product.price}</p>`;
             if (product.isOnSale && product.originalPrice) {
                 priceDisplay = `
