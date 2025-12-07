@@ -1591,11 +1591,18 @@ header {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
+.product-card .price-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px; /* Eski ve yeni fiyat arasına küçük bir boşluk */
+}
+
 .product-card .price-container {
     display: flex;
+    justify-content: space-between; /* Fiyatı ve rozeti iki uca yasla */
     align-items: center;
+    margin-bottom: 15px;
     gap: 10px;
-    flex-wrap: wrap;
 }
 
 .product-card .original-price {
@@ -1606,7 +1613,15 @@ header {
 
 .product-card .current-price {
     font-weight: bold;
-    color: var(--favorite-color);
+    color: var(--favorite-color); /* İndirimli fiyatı vurgula */
+    font-size: 18px;
+}
+
+.product-card .product-price {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 18px;
+    margin-bottom: 15px;
 }
 
 /* ================================ FİYATA GÖRE FİLTRELEME ================================ */
@@ -1637,6 +1652,18 @@ header {
     border: 1px solid var(--border-color);
     border-radius: 6px;
     font-size: 14px;
+}
+
+.discount-percentage-badge {
+    background-color: #28a745; /* Yeşil bir renk, tasarrufu simge eder */
+    color: white;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 5px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap; /* Metnin alt satıra inmesini engelle */
 }
 
 .price-range-inputs span {

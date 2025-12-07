@@ -211,9 +211,26 @@ document.addEventListener('DOMContentLoaded', () => {
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
-            let priceDisplay = `<p class="product-price">${product.price}</p>`;
+            // İndirimli ürünler için fiyat gösterimi
+            let priceDisplay = `<p class="product-price">${product.price} TMT</p>`; // Varsayılan fiyat
+
             if (product.isOnSale && product.originalPrice) {
-                priceDisplay = `<div class="price-container"><span class="original-price">${product.originalPrice}</span><span class="current-price">${product.price}</span></div>`;
+                const originalPrice = parseFloat(product.originalPrice.replace(' TMT', ''));
+                const currentPrice = parseFloat(product.price.replace(' TMT', ''));
+                
+                if (!isNaN(originalPrice) && !isNaN(currentPrice) && originalPrice > 0) {
+                    const discountPercentage = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+                    
+                    priceDisplay = `
+                        <div class="price-container">
+                            <div class="price-info">
+                                <span class="original-price">${product.originalPrice} TMT</span>
+                                <span class="current-price">${product.price} TMT</span>
+                            </div>
+                            <span class="discount-percentage-badge">-${discountPercentage}%</span>
+                        </div>
+                    `;
+                }
             }
             productCard.innerHTML = `
                 <div class="product-image-container">
@@ -264,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container"><img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}"><button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button></div>
-                <div class="product-info"><h3 class="product-title">${product.title}</h3><p class="product-price">${product.price}</p><div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div></div>
+                <div class="product-info"><h3 class="product-title">${product.title}</h3><p class="product-price">${product.price} TMT</p><div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div></div>
             `;
             productsGrid.appendChild(productCard);
             updateFavoriteButton(product.id);
@@ -386,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
                     <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=' + product.id}" alt="${product.title}">
-                    <div class="favorite-item-info"><div class="favorite-item-title">${product.title}</div><div class="favorite-item-price">${product.price}</div>
+                    <div class="favorite-item-info"><div class="favorite-item-title">${product.title}</div><div class="favorite-item-price">${product.price} TMT</div>
                     <div class="favorite-item-actions"><button class="btn-remove-favorite" data-id="${product.id}">Kaldır</button><button class="btn-add-cart-from-fav" data-id="${product.id}">Sepete Ekle</button></div></div>
                 `;
                 favoritesItems.appendChild(favItem);
