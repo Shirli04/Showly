@@ -1361,22 +1361,25 @@ header {
     border-color: var(--primary-color);
 }
 
-/* ================================ KATEGORİ FİLTRELEME (MODERN GÖRÜNÜM) ================================ */
-.category-filters {
-    display: inline-flex; /* İçeriği saran bir yapı */
+/* ================================ KATEGORİ FİLTRELEME (AYRILMIŞ HALİ) ================================ */
+.category-filters-section {
+    margin-bottom: 15px; /* Kategoriler ile diğer filtreler arasına boşluk */
+}
+
+.category-buttons-container {
+    display: inline-flex;
     flex-wrap: wrap;
-    background-color: #f0f0f0; /* Tüm grubun açık gri arka planı */
-    padding: 4px; /* İç boşluk */
-    border-radius: 25px; /* Grubun tamamını yuvarlak yap */
-    gap: 0; /* Butonlar arasındaki boşluğu kaldır */
-    margin-bottom: 25px;
+    background-color: #f0f0f0;
+    padding: 4px;
+    border-radius: 25px;
+    gap: 0;
     border: 1px solid var(--border-color);
 }
 
 .category-btn {
     padding: 10px 20px;
-    border: none; /* Butonların kendi kenarlıklarını kaldır */
-    background-color: transparent; /* Arka planı şeffaf yap */
+    border: none;
+    background-color: transparent;
     color: #555;
     border-radius: 20px;
     cursor: pointer;
@@ -1387,32 +1390,94 @@ header {
 }
 
 .category-btn:hover {
-    color: #000; /* Üzerine gelince metni siyah yap */
-    background-color: #e0e0e0; /* Hafif bir arka plan rengi ekle */
+    color: #000;
+    background-color: #e0e0e0;
 }
 
 .category-btn.active {
-    background-color: var(--primary-color); /* Aktif buton ana renk olsun */
+    background-color: var(--primary-color);
     color: var(--white-color);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Aktif butona hafif gölge ekle */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* --- Kategori Sayısı Rozeti (Badge) --- */
 .category-count {
     background-color: rgba(0, 0, 0, 0.1);
-    color: inherit; /* Butonun rengini devral */
+    color: inherit;
     font-size: 12px;
     font-weight: 600;
     padding: 2px 6px;
     border-radius: 10px;
     min-width: 20px;
     text-align: center;
-    margin-left: 8px; /* Metin ile arasına boşluk ekle */
+    margin-left: 8px;
 }
 
 .category-btn.active .category-count {
-    background-color: rgba(255, 255, 255, 0.3); /* Aktif butondaki rozet rengi */
+    background-color: rgba(255, 255, 255, 0.3);
     color: var(--white-color);
+}
+
+/* ================================ GENEL FİLTRELEME (YENİ) ================================ */
+.main-filters-section {
+    margin-bottom: 25px;
+}
+
+.filter-toggle-btn {
+    padding: 12px 20px;
+    border: 1px solid var(--border-color);
+    background-color: var(--white-color);
+    color: var(--text-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.filter-toggle-btn:hover {
+    background-color: var(--light-gray);
+    border-color: var(--primary-color);
+}
+
+.main-filters-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.price-filter-group {
+    margin-bottom: 20px;
+}
+
+.price-filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.price-filter-group-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 15px;
+}
+
+.price-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.price-range-inputs input {
+    width: 120px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
 }
 
 /* ================================ İNDİRİM ROZETİ VE FİYAT GÖSTERİMİ ================================ */

@@ -20,10 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const notFoundSection = document.getElementById('not-found');
     const backHomeLink = document.getElementById('back-home-link');
 
-    // Filtreleme elemanları
-    const categoryFilters = document.getElementById('category-filters');
-    const priceFilterToggleBtn = document.getElementById('price-filter-toggle-btn');
-    const priceFiltersContainer = document.getElementById('price-filters-container');
+    // Ayrılmış filtreleme elemanları
+    const categoryFiltersSection = document.getElementById('category-filters-section');
+    const mainFiltersSection = document.getElementById('main-filters-section');
+    const mainFilterToggleBtn = document.getElementById('main-filter-toggle-btn');
+    const mainFiltersContainer = document.getElementById('main-filters-container');
     
     // --- DURUM DEĞİŞKENLERİ (STATE) ---
     let cart = [];
@@ -36,13 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const storeBanner = document.getElementById('store-banner');
-        const productsGrid = document.getElementById('products-grid');
         
         if (!path) { // Ana sayfaysak
             if (heroSection) heroSection.style.display = 'block';
             if (infoSection) infoSection.style.display = 'grid';
             if (storeBanner) storeBanner.style.display = 'none';
-            if (categoryFilters) categoryFilters.style.display = 'none';
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
             if (productsGrid) productsGrid.style.display = 'none';
             if (notFoundSection) notFoundSection.style.display = 'none';
             document.title = 'Showly - Online Katalog Platformasy';
@@ -61,7 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.title = `${store.name} - Showly`;
         } else {
             if (storeBanner) storeBanner.style.display = 'none';
-            if (categoryFilters) categoryFilters.style.display = 'none';
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
             if (productsGrid) productsGrid.style.display = 'none';
             if (notFoundSection) notFoundSection.style.display = 'block';
             document.title = 'Sayfa Bulunamadı - Showly';
@@ -96,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const allBtn = document.createElement('button');
         allBtn.className = 'category-btn ' + (!activeFilter ? 'active' : '');
         allBtn.innerHTML = `Ähli ürünler <span class="category-count">${allProducts.length}</span>`;
-        allBtn.onclick = () => renderStorePage(storeId, null);
+        allBtn.addEventListener('click', () => renderStorePage(storeId, null));
         container.appendChild(allBtn);
 
         categories.forEach(category => {
@@ -104,29 +106,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.createElement('button');
             btn.className = 'category-btn ' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === category ? 'active' : '');
             btn.innerHTML = `${category} <span class="category-count">${count}</span>`;
-            btn.onclick = () => renderStorePage(storeId, { type: 'CATEGORY', value: category });
+            btn.addEventListener('click', () => renderStorePage(storeId, { type: 'CATEGORY', value: category }));
             container.appendChild(btn);
         });
     };
 
-    // --- FİYAT FİLTRELERİNİ OLUŞTURAN FONKSİYON ---
-    const renderPriceFilters = (storeId, activeFilter) => {
+    // --- GENEL FİLTRELERİ OLUŞTURAN FONKSİYON ---
+    const renderMainFilters = (storeId, activeFilter) => {
         const allProducts = window.showlyDB.getProductsByStoreId(storeId);
         const discountedProducts = allProducts.filter(p => p.isOnSale);
         const freeProducts = allProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) === 0);
         const expensiveProducts = allProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500);
 
-        priceFiltersContainer.innerHTML = `
+        mainFiltersContainer.innerHTML = `
             <div class="price-filter-group">
                 <div class="price-filter-group-title">Hızlı Filtreler</div>
                 <div class="category-buttons-container">
-                    <button class="category-btn ${activeFilter?.type === 'DISCOUNT' ? 'active' : ''}" onclick="renderStorePage('${storeId}', { type: 'DISCOUNT' })">
+                    <button class="filter-option-btn ${activeFilter?.type === 'DISCOUNT' ? 'active' : ''}" data-filter-type="DISCOUNT">
                         Arzanladyş <span class="category-count">${discountedProducts.length}</span>
                     </button>
-                    <button class="category-btn ${activeFilter?.type === 'FREE' ? 'active' : ''}" onclick="renderStorePage('${storeId}', { type: 'FREE' })">
+                    <button class="filter-option-btn ${activeFilter?.type === 'FREE' ? 'active' : ''}" data-filter-type="FREE">
                         Bedava <span class="category-count">${freeProducts.length}</span>
                     </button>
-                    <button class="category-btn ${activeFilter?.type === 'EXPENSIVE' ? 'active' : ''}" onclick="renderStorePage('${storeId}', { type: 'EXPENSIVE' })">
+                    <button class="filter-option-btn ${activeFilter?.type === 'EXPENSIVE' ? 'active' : ''}" data-filter-type="EXPENSIVE">
                         Pahaly (>500 TMT) <span class="category-count">${expensiveProducts.length}</span>
                     </button>
                 </div>
@@ -141,6 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
+        // Hızlı filtre butonlarına olay dinleyicileri ata
+        mainFiltersContainer.querySelectorAll('.filter-option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filterType = btn.getAttribute('data-filter-type');
+                renderStorePage(storeId, { type: filterType });
+            });
+        });
+
+        // Fiyat aralığı girdiğinde filtrelemeyi tetikle
         const minPriceInput = document.getElementById('min-price');
         const maxPriceInput = document.getElementById('max-price');
         const applyPriceRange = () => {
@@ -152,8 +163,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderStorePage(storeId, null);
             }
         };
-        minPriceInput.onkeyup = applyPriceRange;
-        maxPriceInput.onkeyup = applyPriceRange;
+        minPriceInput.addEventListener('input', applyPriceRange);
+        maxPriceInput.addEventListener('input', applyPriceRange);
     };
     
     // --- ÜRÜNLERİ FİLTRELEYİP GÖSTEREN ANA FONKSİYON ---
@@ -166,12 +177,13 @@ document.addEventListener('DOMContentLoaded', () => {
         storeBanner.style.display = 'block';
         storeBanner.innerHTML = `<h2>${store.name}</h2><p>${allProducts.length} ürün</p>`;
         
-        categoryFilters.style.display = 'flex';
+        categoryFiltersSection.style.display = 'block';
+        mainFiltersSection.style.display = 'block';
         productsGrid.style.display = 'grid';
         productsGrid.innerHTML = '';
 
         renderCategories(storeId, activeFilter);
-        renderPriceFilters(storeId, activeFilter);
+        renderMainFilters(storeId, activeFilter);
 
         let productsToRender = allProducts;
         if (activeFilter) {
@@ -236,7 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
-        if (categoryFilters) categoryFilters.style.display = 'none';
+        if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+        if (mainFiltersSection) mainFiltersSection.style.display = 'none';
         
         storeBanner.style.display = 'block';
         storeBanner.innerHTML = `<h2>Arama Sonuçları: "${query}"</h2><p>${filteredProducts.length} ürün</p>`;
@@ -302,8 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 
     // Filtreler butonu
-    priceFilterToggleBtn.addEventListener('click', () => {
-        priceFiltersContainer.style.display = priceFiltersContainer.style.display === 'none' ? 'block' : 'none';
+    mainFilterToggleBtn.addEventListener('click', () => {
+        const isHidden = mainFiltersContainer.style.display === 'none';
+        mainFiltersContainer.style.display = isHidden ? 'block' : 'none';
     });
 
     // Ürün gridi olayları (favori, sepete ekle, modal aç)
