@@ -152,15 +152,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Filtrelenmiş ürünleri kart olarak oluştur
         productsToRender.forEach(product => {
+            // Resim URL'si varsa resim alanını oluştur, yoksa boş bırak
+            let imageHtml = '';
+            if (product.imageUrl) {
+                imageHtml = `
+                    <div class="product-image-container">
+                        <img src="${product.imageUrl}" alt="${product.title}">
+                        <button class="btn-favorite" data-id="${product.id}">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                `;
+            }
+
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
             productCard.innerHTML = `
-                <div class="product-image-container">
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
-                    <button class="btn-favorite" data-id="${product.id}">
-                        <i class="far fa-heart"></i>
-                    </button>
-                </div>
+                ${imageHtml} <!-- Sadece resim varsa HTML'e ekle -->
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
                     <p class="product-price">${product.price}</p>
