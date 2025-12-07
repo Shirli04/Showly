@@ -91,9 +91,19 @@
                 <p></p>
             </div>
             <!-- KATEGORİ FİLTRELEME ALANI -->
-            <div class="category-filters" id="category-filters" style="display: none;"></div>
+            <div class="category-filters" id="category-filters" style="display: none;">
+                <!-- Kategoriler buraya gelecek -->
+                <div id="category-buttons-container"></div>
+
+                <!-- FİYAT FİLTRELERİ BUTONU VE ALANI -->
+                <button id="price-filter-toggle-btn" class="filter-toggle-btn">
+                    <i class="fas fa-filter"></i> Filtreler
+                </button>
+                <div id="price-filters-container" class="price-filters-container" style="display: none;">
+                    <!-- Fiyat filtreleri buraya gelecek -->
+                </div>
+            </div>
             <!-- Kategori butonları JavaScript ile buraya doldurulacak -->
-            <!-- Ürünler buraya dinamik olarak yüklenecek -->
             <div class="products-grid" id="products-grid" style="display: none;"></div>
         </main>
     </div>
