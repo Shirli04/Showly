@@ -123,13 +123,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="price-filter-group-title">Hızlı Filtreler</div>
                 <div class="category-buttons-container">
                     <button class="filter-option-btn ${activeFilter?.type === 'DISCOUNT' ? 'active' : ''}" data-filter-type="DISCOUNT">
-                        Arzanladyş <span class="category-count">${discountedProducts.length}</span>
+                        <i class="fas fa-percentage"></i> Arzanladyş <span class="category-count">${discountedProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'FREE' ? 'active' : ''}" data-filter-type="FREE">
-                        Bedava <span class="category-count">${freeProducts.length}</span>
+                        <i class="fas fa-gift"></i> Bedava <span class="category-count">${freeProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'EXPENSIVE' ? 'active' : ''}" data-filter-type="EXPENSIVE">
-                        Pahaly (>500 TMT) <span class="category-count">${expensiveProducts.length}</span>
+                        <i class="fas fa-crown"></i> Pahaly (>500 TMT) <span class="category-count">${expensiveProducts.length}</span>
                     </button>
                 </div>
             </div>

@@ -1417,7 +1417,7 @@ header {
     color: var(--white-color);
 }
 
-/* ================================ GENEL FİLTRELEME (YENİ) ================================ */
+/* ================================ GENEL FİLTRELEME ALANI (MODERN) ================================ */
 .main-filters-section {
     margin-bottom: 25px;
 }
@@ -1444,14 +1444,15 @@ header {
 }
 
 .main-filters-container {
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    padding: 25px;
+    background-color: var(--white-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--border-color);
 }
 
 .price-filter-group {
-    margin-bottom: 20px;
+    margin-bottom: 25px; /* Gruplar arası boşluğu artırdık */
 }
 
 .price-filter-group:last-child {
@@ -1463,23 +1464,77 @@ header {
     font-weight: 600;
     color: var(--text-color);
     margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--light-gray);
 }
 
+/* --- HIZLI FİLTRE BUTONLARI (YENİ) --- */
+.main-filters-container .category-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Butonlar arası boşluk */
+}
+
+.filter-option-btn {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    background-color: var(--white-color);
+    color: var(--text-color);
+    border-radius: 25px; /* Daha yuvarlak */
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* İkon ile metin arası boşluk */
+}
+
+.filter-option-btn:hover {
+    background-color: var(--light-gray);
+    border-color: var(--primary-color);
+    transform: translateY(-2px); /* Üzerine gelince hafifçe yukarı kalksın */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.filter-option-btn.active {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+}
+
+.filter-option-btn i {
+    font-size: 16px;
+}
+
+/* --- FİYAT ARALIĞI GİRDİLERİ (YENİ) --- */
 .price-range-inputs {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
 .price-range-inputs input {
-    width: 120px;
-    padding: 10px;
+    width: 130px;
+    padding: 12px 15px;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 14px;
+    transition: all 0.3s ease;
 }
 
+.price-range-inputs input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.price-range-inputs span {
+    color: #888;
+    font-weight: 500;
+}
 /* ================================ İNDİRİM ROZETİ VE FİYAT GÖSTERİMİ ================================ */
 .product-card .discount-badge {
     position: absolute;
