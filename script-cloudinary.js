@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="product-image-container"><img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}"><button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button></div>
                 <div class="product-info"><h3 class="product-title">${product.title}</h3><span class="product-category-label">${product.category}</span><p class="product-price">${product.price} TMT</p><div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div></div>
             `;
-            productsGrid.appendChild(productCard);
+            ductsGrid.appendChild(productCard);
             updateFavoriteButton(product.id);
         });
     };
