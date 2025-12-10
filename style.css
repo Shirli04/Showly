@@ -1744,14 +1744,52 @@ header {
     font-weight: 500;
 }
 
-/* ================================ LOGO STİLLERİ ================================ */
-.header-logo {
-    height: 40px; /* Logonun yüksekliğini ayarlar */
-    vertical-align: middle; /* Dikey olarak ortalar */
+/* ================================ LOGO VE MARKA ADI (GÜNCELLENMİŞ) ================================ */
+
+/* Ana Sayfa Başlığı */
+.logo {
+    display: flex; /* Elemanları yan yana dizer */
+    align-items: center; /* Dikey olarak ortalar */
+    gap: 10px; /* Logo ve metin arasına boşluk */
+}
+
+.logo a {
+    display: flex;
+    align-items: center;
+    text-decoration: none; /* Linkin alt çizgisini kaldır */
+}
+
+.logo-text {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0; /* h1 etiketinin varsayılan margin'ini sıfırla */
+}
+
+/* Admin Paneli Başlığı */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Yatay olarak ortalar */
+    gap: 12px; /* Logo ve metin arasına boşluk */
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-sidebar-text {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* Logoların ortak boyutları (isteğe bağlı) */
+.header-logo, .admin-header-logo {
+    height: 40px; /* Ana sayfa için */
+    vertical-align: middle;
 }
 
 .admin-header-logo {
-    height: 35px; /* Admin panelindeki logo için yükseklik */
-    display: block; /* Blok element yapıp ortalamayı kolaylaştırır */
-    margin: 0 auto; /* Yatay olarak ortalar */
+    height: 35px; /* Admin paneli için biraz daha küçük */
+    display: block; /* Blok elementi yap */
+    margin: 0 auto; /* Tek başına ortalaması için (eğer flex kullanılmasaydı) */
 }
