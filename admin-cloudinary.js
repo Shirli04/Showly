@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Yeni resim varsa yükle
             if (imageFile) {
                 showUploadStatus(productImageStatus, 'Resim yükleniyor...', true);
-                const uploadResult = await uploadToCloudinary(imageFile, 'showly/products');
+                const uploadResult = await uploadToImageKit(imageFile, 'showly/products');
                 
                 if (uploadResult.success) {
                     imageUrl = uploadResult.url;
