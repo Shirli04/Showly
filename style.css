@@ -262,7 +262,7 @@ header {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 49;
+    z-index: 1009;
 }
 
 .menu-overlay.active {
@@ -1095,7 +1095,7 @@ header {
         width: 75vw;
         max-width: 280px;
         height: 100vh;
-        z-index: 50;
+        z-index: 1010;
         margin: 0;
         padding-top: 0;
         transform: translateX(-100%);
