@@ -1,4 +1,7 @@
 // Cloudinary Yapılandırması
+// Firebase'den dışa aktarılan veritabanı örneğini al
+import { db } from './firebase-config.js';
+
 const CLOUDINARY_CONFIG = {
     cloud_name: 'domv6ullp',
     upload_preset: 'my_product_uploads',
