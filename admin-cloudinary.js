@@ -34,20 +34,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const productImagePreview = document.getElementById('product-image-preview');
     const productImageStatus = document.getElementById('product-image-status');
     
-    // --- YENİ EKLENEN FİLTRELEME ELEMANLARI ---
-    const filterStoreSelect = document.getElementById('filter-store-select');
-    const filterCategorySelect = document.getElementById('filter-category-select');
-
-    const productIsOnSale = document.getElementById('product-is-on-sale');
-    const productOriginalPrice = document.getElementById('product-original-price');
-    const originalPriceGroup = document.getElementById('original-price-group');
-    
     let editingStoreId = null;
     let editingProductId = null;
     let uploadedProductImageUrl = null;
     
     // Form gönderme kontrolü
     let isSubmitting = false;
+
+    // --- YENİ: BEKLEYEN SİPARİŞLERİ İŞLEME FONKSİYONU ---
+    const processPendingOrders = () => {
+        const pendingOrders = JSON.parse(localStorage.getItem('showlyPendingOrders')) || [];
+
+        if (pendingOrders.length > 0) {
+            console.log(`${pendingOrders.length} adet bekleyen sipariş bulundu.`);
+            pendingOrders.forEach(order => {
+                // Siparişi ana veritabanına ekle
+                window.showlyDB.addOrder(order);
+            });
+
+            // İşlenen siparişleri localStorage'dan temizle
+            localStorage.removeItem('showlyPendingOrders');
+            
+            // Siparişler tablosunu güncelle
+            renderOrdersTable();
+            updateDashboard();
+            showNotification(`${pendingOrders.length} adet yeni sipariş işlendi.`);
+        }
+    };
+
+    // --- YENİ: SİPARİŞ NUMARASI ATAMA FONKSİYONU ---
+    window.assignOrderNumber = (orderId) => {
+        const inputElement = document.getElementById(`number-input-${orderId}`);
+        const orderNumber = inputElement.value.trim();
+
+        if (!orderNumber) {
+            alert('Lütfen bir sipariş numarası girin.');
+            return;
+        }
+
+        // Siparişi güncelle
+        const order = window.showlyDB.getOrders().find(o => o.id === orderId);
+        if (order) {
+            order.orderNumber = orderNumber;
+            order.status = 'confirmed'; // Durumu 'onaylandı' olarak güncelle
+            window.showlyDB.saveToLocalStorage(); // Değişikliği kaydet
+
+            // --- ÖNEMLİ: BURASI SMS GÖNDERMEK İÇİN ARKA YÜZ ÇAĞRISI YAPILACAK ---
+            console.log(`Sipariş ${orderId} için numara atandı: ${orderNumber}. Müşteriye SMS gönderilecek.`);
+            console.log('Müşteri Bilgileri:', order.customer);
+            
+            // Burada bir backend API'sine istek atılacak.
+            // sendSmsToCustomer(order.customer.phone, `Siparişiniz onaylandı. Sipariş No: ${orderNumber}`);
+            
+            showNotification(`Sipariş ${orderId} için numara başarıyla atandı: ${orderNumber}`);
+            renderOrdersTable(); // Tabloyu yenile
+        }
+    };
     
     // --- YÜKLEME FONKSİYONLARI ---
 
@@ -62,11 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result.stores.success && result.products.success) {
             showNotification('Veriler Cloudinary\'ye yedeklendi!');
         }
-    });
-
-    // İndirim checkbox'ı değiştiğinde eski fiyat alanını göster/gizle
-    productIsOnSale.addEventListener('change', (e) => {
-        originalPriceGroup.style.display = e.target.checked ? 'block' : 'none';
     });
     
     // Ürün resmi önizleme
@@ -86,38 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const showUploadStatus = (element, message, isSuccess = true) => {
         element.textContent = message;
         element.className = `upload-status show ${isSuccess ? 'success' : 'error'}`;
-    };
-    
-    // --- FİLTRELEME FONKSİYONLARI ---
-
-    // Mağaza filtresini doldur
-    const populateStoreFilter = () => {
-        const stores = window.showlyDB.getStores();
-        filterStoreSelect.innerHTML = '<option value="">Tüm Mağazalar</option>';
-        stores.forEach(store => {
-            const option = document.createElement('option');
-            option.value = store.id;
-            option.textContent = store.name;
-            filterStoreSelect.appendChild(option);
-        });
-    };
-
-    // Kategori filtresini doldur
-    const populateCategoryFilter = (storeId) => {
-        filterCategorySelect.innerHTML = '<option value="">Ähli Kategoriyalar</option>'; // "Tüm Kategoriler"
-        filterCategorySelect.disabled = !storeId;
-
-        if (!storeId) return;
-
-        const products = window.showlyDB.getProductsByStoreId(storeId);
-        const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            filterCategorySelect.appendChild(option);
-        });
     };
     
     // --- MAĞAZA FONKSİYONLARI ---
@@ -220,17 +225,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('Mağaza başarıyla güncellendi!');
             } else {
-                    const newStore = window.showlyDB.addStore({
+                const newStore = window.showlyDB.addStore({
                     name: storeName,
                     description: storeDescription
-                    });
-                        
-                    // Yeni mağaza için slug'a göre link oluştur
-                    const storeUrl = `/${newStore.slug}`;
-                    console.log('Mağaza Linki:', storeUrl);
-                        
-                    showNotification('Mağaza başarıyla eklendi! Link: ' + storeUrl);
-                }
+                });
+                
+                // Yeni mağaza için link oluştur
+                const storeUrl = `/${newStore.slug}`;
+                console.log('Mağaza Linki:', storeUrl);
+                
+                showNotification('Mağaza başarıyla eklendi! Link: ' + storeUrl);
+            }
             
             renderStoresTable();
             populateStoreSelect();
@@ -246,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- ÜRÜN FONKSİYONLARI ---
     
-    // Ürün tablosunu güncelle (FİLTRELEME İLE GÜNCELLENMİŞ HALİ)
+    // Ürün tablosunu güncelle
     const renderProductsTable = (storeId = null, categoryFilter = null) => {
         let products = window.showlyDB.getAllProducts();
         const stores = window.showlyDB.getStores();
@@ -300,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     
-    // Ürün düzenle (KATEGORİ İLE GÜNCELLENMİŞ HALİ)
+    // Ürün düzenle
     const editProduct = (productId) => {
         const product = window.showlyDB.getProductById(productId);
         if (!product) return;
@@ -329,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteProduct = (productId) => {
         if (confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
             window.showlyDB.deleteProduct(productId);
-            renderProductsTable(filterStoreSelect.value, filterCategorySelect.value);
+            renderProductsTable();
             updateDashboard();
             showNotification('Ürün başarıyla silindi!');
         }
@@ -347,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
         productModal.style.display = 'block';
     };
     
-    // Ürün formu gönder (KATEGORİ İLE GÜNCELLENMİŞ HALİ)
+    // Ürün formu gönder
     const handleProductSubmit = async (e) => {
         e.preventDefault();
         
@@ -381,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Yeni resim varsa yükle
             if (imageFile) {
                 showUploadStatus(productImageStatus, 'Resim yükleniyor...', true);
+                // ImageKit'e yükle
                 const uploadResult = await uploadToImageKit(imageFile, 'showly/products');
                 
                 if (uploadResult.success) {
@@ -402,8 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     description: productDescription,
                     material: productMaterial,
                     category: productCategory,
-                    isOnSale: isOnSale, // <-- YENİ
-                    originalPrice: originalPrice, // <-- YENİ EKLENDİ
+                    isOnSale: isOnSale,
+                    originalPrice: originalPrice,
                     imageUrl: imageUrl
                 });
                 showNotification('Ürün başarıyla güncellendi!');
@@ -416,14 +422,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     description: productDescription,
                     material: productMaterial,
                     category: productCategory,
-                    isOnSale: isOnSale, // <-- YENİ
-                    originalPrice: originalPrice, // <-- YENİ EKLENDİ
+                    isOnSale: isOnSale,
+                    originalPrice: originalPrice,
                     imageUrl: imageUrl
                 });
                 showNotification('Ürün başarıyla eklendi!');
             }
             
-            renderProductsTable(filterStoreSelect.value, filterCategorySelect.value);
+            renderProductsTable();
             updateDashboard();
             closeAllModals();
         } catch (error) {
@@ -432,6 +438,51 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             isSubmitting = false;
         }
+    };
+    
+    // --- YENİ: SİPARİŞ TABLOSUNU GÜNCELLEYEN FONKSİYON ---
+    const renderOrdersTable = () => {
+        const orders = window.showlyDB.getOrders();
+        ordersTableBody.innerHTML = '';
+        
+        if (orders.length === 0) {
+            ordersTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
+            return;
+        }
+        
+        orders.sort((a, b) => new Date(b.date) - new Date(a.date)); // En yeni siparişler üstte
+        
+        orders.forEach(order => {
+            const row = document.createElement('tr');
+            
+            if (order.status === 'pending') {
+                // --- BEKLEYEN SİPARİŞLER İÇİN GÖRÜNÜM ---
+                row.innerHTML = `
+                    <td><strong style="color: #fdcb6e;">${order.id}</strong></td>
+                    <td>${order.customer.name}</td>
+                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
+                    <td>${order.total}</td>
+                    <td><span class="status pending">Beklemede</span></td>
+                    <td>
+                        <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
+                        <button class="btn-icon" onclick="assignOrderNumber('${order.id}')" title="Numara Ata ve SMS Gönder">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </td>
+                `;
+            } else {
+                // --- ONAYLANMIŞ SİPARİŞLER İÇİN GÖRÜNÜM ---
+                row.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.customer.name}</td>
+                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
+                    <td>${order.total}</td>
+                    <td><span class="status completed">Onaylandı</span></td>
+                    <td><strong>${order.orderNumber}</strong></td>
+                `;
+            }
+            ordersTableBody.appendChild(row);
+        });
     };
     
     // --- EXCEL FONKSİYONLARI ---
@@ -631,25 +682,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- FİLTRELEME OLAY DİNLEYİCİLERİ ---
-    
-    // Mağaza filtresi değiştiğinde
-    filterStoreSelect.addEventListener('change', (e) => {
-        const selectedStoreId = e.target.value;
-        populateCategoryFilter(selectedStoreId);
-        renderProductsTable(selectedStoreId, null); // Seçilen mağazanın tüm ürünlerini göster
-    });
-
-    // Kategori filtresi değiştiğinde
-    filterCategorySelect.addEventListener('change', (e) => {
-        const selectedStoreId = filterStoreSelect.value;
-        const selectedCategory = e.target.value;
-        renderProductsTable(selectedStoreId, selectedCategory);
-    });
-    
     // --- İLK YÜKLEME ---
+    // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
+    processPendingOrders();
+    
     updateDashboard();
     renderStoresTable();
-    populateStoreFilter(); // Mağaza filtresini doldur
-    renderProductsTable(); // Başlangıçta tüm ürünleri göster
+    renderProductsTable();
+    renderOrdersTable(); // Sipariş tablosunu da göster
 });
