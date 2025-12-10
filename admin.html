@@ -386,20 +386,21 @@
         </div>
     </div>
 
-    <script type="module" src="firebase-config.js"></script>
-    <!-- SheetJS kütüphanesi -->
+    <!-- Gerekli Kütüphaneler -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <!-- Cloudinary ve veritabanı kütüphaneleri -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></script>
+
+    <!-- Firebase Modüler SDK'sı -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <!-- Firebase Yapılandırma Dosyası (type="module" olarak) -->
+    <script type="module" src="firebase-config.js"></script>
     <script src="cloudinary-config.js"></script>
     <script src="excel-manager.js"></script>
+    <!-- Diğer Scriptleriniz -->
     <script src="admin-cloudinary.js"></script>
     <script src="cloudinary-backup.js"></script>
     
-    <script>
-        console.log('Tüm scriptler yüklendi');
-        console.log('window.showlyDB:', window.showlyDB);
-        console.log('CLOUDINARY_CONFIG:', CLOUDINARY_CONFIG);
-    </script>
 </body>
 </html>
