@@ -1793,3 +1793,32 @@ header {
     display: block; /* Blok elementi yap */
     margin: 0 auto; /* Tek başına ortalaması için (eğer flex kullanılmasaydı) */
 }
+
+/* ================================ ANA SAYFA CTA RESİMİ ================================ */
+.hero-cta-link {
+    display: block; /* Linkin blok element olmasını sağlar */
+    max-width: 500px; /* Resmin maksimum genişliği */
+    margin: 30px auto 0; /* Üstten 30px boşluk ve yatayda ortala */
+    text-align: center; /* İçeriği ortalar */
+    border-radius: 12px; /* Köşeleri yuvarlat */
+    overflow: hidden; /* Resmin köşelerin dışa taşmasını engeller */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease; /* Hover efekti için yumuşak geçiş */
+}
+
+.hero-cta-image {
+    width: 100%; /* Resmin genişliği linkin genişliğine uyumlu olsun */
+    height: auto; /* En-boy oranını koru */
+    display: block; /* Altta oluşabilecek boşluğu engeller */
+    transition: transform 0.3s ease; /* Hover'da zoom efekti için geçiş */
+}
+
+/* Üzerine gelince resmi hafifçe büyüt */
+.hero-cta-link:hover {
+    transform: translateY(-5px); /* Üzerine gelince hafifçe yukarı kalksın */
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2); /* Gölgesini güçlendir */
+}
+
+.hero-cta-link:hover .hero-cta-image {
+    transform: scale(1.03); /* Resmin kendisini çok az büyüt */
+}
