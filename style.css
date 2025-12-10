@@ -1797,7 +1797,7 @@ header {
 /* ================================ ANA SAYFA CTA RESİMİ ================================ */
 .hero-cta-link {
     display: block; /* Linkin blok element olmasını sağlar */
-    max-width: 500px; /* Resmin maksimum genişliği */
+    max-width: 800px; /* Resmin maksimum genişliği */
     margin: 30px auto 0; /* Üstten 30px boşluk ve yatayda ortala */
     text-align: center; /* İçeriği ortalar */
     border-radius: 12px; /* Köşeleri yuvarlat */
