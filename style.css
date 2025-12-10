@@ -180,7 +180,7 @@ header {
     position: relative;
 }
 
-/* ================================ SIDEBAR MENU ================================ */
+/* ================================ SIDEBAR MENU (GÜNCELLENMİŞ VE DAHA ŞIK) ================================ */
 .store-menu {
     width: 250px;
     background-color: var(--secondary-color);
@@ -224,49 +224,54 @@ header {
 
 #store-list {
     list-style: none;
-    padding-top: 10px;
+    padding-top: 15px; /* Üstte biraz daha boşluk */
 }
 
 #store-list li {
     margin: 0;
+    margin-bottom: 6px; /* Mağaza isimleri arasına daha fazla boşluk */
 }
 
 #store-list a {
-    display: block;
-    padding: 12px 25px;
+    display: flex; /* İkon ve metni yan yana dizmek için */
+    align-items: center;
+    padding: 10px 25px; /* Dikey padding'i azaltarak daha sıkı görünüm */
     text-decoration: none;
-    color: #cccccc;
-    transition: all 0.3s ease;
+    color: #b0b0b0; /* Daha açık ve yumuşak bir gri */
+    font-size: 13px; /* --- DAHA KÜÇÜK FONT BOYUTU --- */
     font-weight: 500;
-    border-left: 4px solid transparent;
+    border-radius: 8px; /* Kenarları yuvarlatarak daha modern görünüm */
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent; /* Sol kenarlık daha ince */
+    text-transform: uppercase; /* --- HARFLERİ BÜYÜT --- */
+    letter-spacing: 0.6px; /* --- HARFLER ARASI BOŞLUK --- */
+}
+
+#store-list a i {
+    margin-right: 12px; /* İkon ile metin arasına net boşluk */
+    font-size: 14px;
+    color: #888888; /* İkonu daha soluk yaparak metni öne çıkar */
 }
 
 #store-list a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.08); /* Üzerine gelince daha hafif bir arka plan */
     color: #ffffff;
-    padding-left: 28px;
+    border-left-color: var(--primary-color); /* Sol kenarlık renk değiştirsin */
+}
+
+#store-list a:hover i {
+    color: #ffffff; /* Üzerine gelince ikon da beyaz olsun */
 }
 
 #store-list a.active {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: var(--primary-color);
     color: #ffffff;
     border-left-color: #ffffff;
+    font-weight: 600; /* Aktif olan mağazanın fontunu biraz daha kalın yap */
 }
 
-/* Menu Overlay (Mobil) */
-.menu-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1009;
-}
-
-.menu-overlay.active {
-    display: block;
+#store-list a.active i {
+    color: #ffffff;
 }
 
 /* ================================ İÇERİK ALANI ================================ */
