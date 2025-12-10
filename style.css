@@ -1743,3 +1743,15 @@ header {
     letter-spacing: 0.5px; /* Harfler arası boşluk */
     font-weight: 500;
 }
+
+/* ================================ LOGO STİLLERİ ================================ */
+.header-logo {
+    height: 40px; /* Logonun yüksekliğini ayarlar */
+    vertical-align: middle; /* Dikey olarak ortalar */
+}
+
+.admin-header-logo {
+    height: 35px; /* Admin panelindeki logo için yükseklik */
+    display: block; /* Blok element yapıp ortalamayı kolaylaştırır */
+    margin: 0 auto; /* Yatay olarak ortalar */
+}
