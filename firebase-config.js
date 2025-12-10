@@ -2,7 +2,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Diğer ihtiyaç duyacağınız SDK'ları buraya ekleyebilirsiniz
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics.js";
 
 // Sizin web uygulamanızın Firebase yapılandırması
 const firebaseConfig = {
