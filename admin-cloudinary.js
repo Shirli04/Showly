@@ -20,12 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ordersTableBody = document.getElementById('orders-table-body');
     const menuToggle = document.querySelector('.menu-toggle');
     const adminSidebar = document.querySelector('.admin-sidebar');
-
-    const loginScreen = document.getElementById('login-screen');
-    const adminContainer = document.getElementById('admin-container');
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
-    const logoutBtn = document.querySelector('.btn-logout');
     
     // Excel export/import
     const exportStoresBtn = document.getElementById('export-stores-btn');
@@ -87,55 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsDataURL(file);
         }
     });
-
-    const ADMIN_CREDENTIALS = {
-        username: 'admin', // Kullanıcı adınız
-        password: '582491673'  // Şifreniz (Güçlü bir şifre seçin!)
-    };
-
-    const checkLoginStatus = () => {
-        const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
-        if (isLoggedIn) {
-            showAdminPanel();
-        } else {
-            showLoginScreen();
-        }
-    };
-
-    // Giriş ekranını göster
-    const showLoginScreen = () => {
-        loginScreen.style.display = 'flex';
-        adminContainer.style.display = 'none';
-    };
-
-    // Admin panelini göster
-    const showAdminPanel = () => {
-        loginScreen.style.display = 'none';
-        adminContainer.style.display = 'flex';
-    };
-
-    // Giriş formu gönderildiğinde
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('login-username').value;
-        const password = document.getElementById('login-password').value;
-
-        if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-            localStorage.setItem('isAdminLoggedIn', 'true');
-            showAdminPanel();
-            showNotification('Giriş başarılı!');
-        } else {
-            loginError.style.display = 'block';
-        }
-    });
-
-    // Çıkış yap butonuna tıklandığında
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('isAdminLoggedIn');
-            showLoginScreen();
-        });
-    }
     
     // Dosya yükleme durumunu göster
     const showUploadStatus = (element, message, isSuccess = true) => {
@@ -703,7 +648,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // --- İLK YÜKLEME ---
-    checkLoginStatus();
     updateDashboard();
     renderStoresTable();
     populateStoreFilter(); // Mağaza filtresini doldur
