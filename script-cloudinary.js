@@ -71,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- MAĞAZA LİSTELEME FONKSİYONU ---
-    const renderStores = () => {
-        const stores = window.showlyDB.getStores();
+    async function renderStores() {
+        const stores = await window.getStoresFromFirebase(); // Firebase’den
         storeList.innerHTML = '';
         
         if (!stores || stores.length === 0) {
@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => notification.classList.add('show'), 10);
         setTimeout(() => { notification.classList.remove('show'); setTimeout(() => notification.remove(), 300); }, 3000);
     };
-    
+
     // --- İLK YÜKLEME ---
     router(); // Sayfa ilk yüklendiğinde yönlendirmeyi çalıştır
     renderStores(); // Mağaza listesini doldur
