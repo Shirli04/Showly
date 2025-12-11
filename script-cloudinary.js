@@ -32,8 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStoreId = null;
     
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
-    const router = () => {
+    const router = async () => {
         const path = window.location.pathname.replace('/', '');
+        const stores = await window.getStoresFromFirebase(); // Firebase’den çek
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const storeBanner = document.getElementById('store-banner');
@@ -336,6 +337,22 @@ document.addEventListener('DOMContentLoaded', () => {
         mainFiltersContainer.style.display = isHidden ? 'block' : 'none';
     });
 
+    function renderProducts(products) {
+        const grid = document.getElementById('products-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        for (const p of products) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <img src="${p.imageUrl || 'https://picsum.photos/300/400?random=' + p.id}" alt="${p.title}">
+                <h3>${p.title}</h3>
+                <p>${p.price}</p>
+            `;
+            grid.appendChild(card);
+        }
+    }
+
     // Ürün gridi olayları (favori, sepete ekle, modal aç)
     productsGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-favorite');
@@ -465,7 +482,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     };
 
-    // Belirli bir mağazaya ait ürünleri çek
     window.getProductsByStoreFromFirebase = async function(storeId) {
         const snap = await window.db.collection('products').where('storeId', '==', storeId).get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
