@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- YENİ: SİPARİŞ TABLOSUNU GÜNCELLEYEN FONKSİYON ---
-    const renderOrdersTable = () => {
+    const renderOrdersTable = async () => {
         const orders = window.showlyDB.getOrders();
         ordersTableBody.innerHTML = '';
         
@@ -532,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- YARDIMCI FONKSİYONLAR ---
     
     // Mağaza seçimini doldur
-    const populateStoreSelect = () => {
+    const populateStoreSelect = async () => {
         const stores = window.showlyDB.getStores();
         productStoreSelect.innerHTML = '<option value="">Mağaza Seçin</option>';
         
@@ -723,5 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDashboard();
     renderStoresTable();
     renderProductsTable();
-    renderOrdersTable(); // Sipariş tablosunu da göster
+    (async () => {
+        await renderOrdersTable();
+        await populateStoreSelect();
+    })();// Sipariş tablosunu da göster
 });
