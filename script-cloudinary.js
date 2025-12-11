@@ -451,8 +451,28 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => notification.classList.add('show'), 10);
         setTimeout(() => { notification.classList.remove('show'); setTimeout(() => notification.remove(), 300); }, 3000);
     };
-
+    
     // --- İLK YÜKLEME ---
     router(); // Sayfa ilk yüklendiğinde yönlendirmeyi çalıştır
     renderStores(); // Mağaza listesini doldur
+
+    // ========== FIREBASE’DEN OKUMA (Ana Sayfa) ==========
+    window.getStoresFromFirebase = async function() {
+        const snap = await window.db.collection('stores').get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    };
+
+    window.getProductsFromFirebase = async function() {
+        const snap = await window.db.collection('products').get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    };
+
+    // Ana sayfa açılırken Firebase’den çek
+    (async () => {
+        const stores = await window.getStoresFromFirebase();
+        renderStores(stores);        // sidebar’ı doldur
+
+        const products = await window.getProductsFromFirebase();
+        renderProducts(products);    // istersen ana sayfada ürün göster
+    })();
 });
