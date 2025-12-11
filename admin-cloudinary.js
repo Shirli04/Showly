@@ -13,12 +13,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const productForm   = document.getElementById('product-form');
   const storesTableBody = document.getElementById('stores-table-body');
   const productsTableBody = document.getElementById('products-table-body');
+  const ordersTableBody = document.getElementById('orders-table-body');
   const productStoreSelect = document.getElementById('product-store');
   const productImage = document.getElementById('product-image');
   const productImagePreview = document.getElementById('product-image-preview');
   const productIsOnSale = document.getElementById('product-is-on-sale');
   const originalPriceGroup = document.getElementById('original-price-group');
   const productOriginalPrice = document.getElementById('product-original-price');
+  const storeModal = document.getElementById('store-modal');
+  const productModal = document.getElementById('product-modal');
+  const closeModals = document.querySelectorAll('.close-modal');
+  const cancelStore = document.getElementById('cancel-store');
+  const cancelProduct = document.getElementById('cancel-product');
+  const menuToggle = document.querySelector('.menu-toggle');
+  const adminSidebar = document.querySelector('.admin-sidebar');
 
   let isSubmitting = false;
 
@@ -45,10 +53,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return data.secure_url;
   }
 
+  // Modal kontrolleri
+  function closeAllModals() {
+    storeModal.style.display = productModal.style.display = 'none';
+    storeForm.reset(); productForm.reset(); productImage.value = '';
+    productImagePreview.classList.remove('show');
+  }
+  closeModals.forEach(btn => btn.addEventListener('click', closeAllModals));
+  cancelStore.addEventListener('click', closeAllModals);
+  cancelProduct.addEventListener('click', closeAllModals);
+  window.addEventListener('click', e => { if (e.target === storeModal || e.target === productModal) closeAllModals(); });
+
   // Mağaza ekleme
-  addStoreBtn.addEventListener('click', () => {
-    storeForm.reset(); storeForm.style.display = 'block';
-  });
+  addStoreBtn.addEventListener('click', () => { storeForm.reset(); storeModal.style.display = 'block'; });
   storeForm.addEventListener('submit', async e => {
     e.preventDefault(); if (isSubmitting) return; isSubmitting = true;
     const name = document.getElementById('store-name').value.trim();
@@ -58,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await window.showlyDB.addStore({ name, description: desc });
       showNotification('Mağaza eklendi!');
       renderStoresTable(); populateStoreSelect(); updateDashboard();
-      storeForm.style.display = 'none';
+      closeAllModals();
     } catch (err) {
       console.error(err);
       showNotification('Mağaza eklenemedi!', false);
@@ -90,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       showNotification('Ürün eklendi!');
       renderProductsTable(); updateDashboard();
-      productModal.style.display = 'none';
+      closeAllModals();
     } catch (err) {
       console.error(err);
       showNotification('Ürün eklenemedi!', false);
@@ -102,10 +119,21 @@ document.addEventListener('DOMContentLoaded', () => {
     originalPriceGroup.style.display = productIsOnSale.checked ? 'block' : 'none';
   });
 
-  // Modal kapatma
-  document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-  }));
+  // Fotoğraf önizleme
+  productImage.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        productImagePreview.src = ev.target.result;
+        productImagePreview.classList.add('show');
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Mobil menü
+  if (menuToggle) menuToggle.addEventListener('click', () => adminSidebar.classList.toggle('active'));
 
   // Tabloları doldur
   async function renderStoresTable() {
@@ -115,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td><button class="btn-icon danger delete-store" data-id="${s.id}"><i class="fas fa-trash"></i></button></td>
     </tr>`).join('');
     storesTableBody.querySelectorAll('.delete-store').forEach(btn => btn.addEventListener('click', async e => {
-      if (confirm('Silinsin mi?')) {
+      if (confirm('Mağaza silinsin mi?')) {
         await window.showlyDB.deleteStore(btn.dataset.id);
         renderStoresTable(); populateStoreSelect(); updateDashboard();
         showNotification('Mağaza silindi.');
@@ -134,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>`;
     }).join('');
     productsTableBody.querySelectorAll('.delete-product').forEach(btn => btn.addEventListener('click', async e => {
-      if (confirm('Silinsin mi?')) {
+      if (confirm('Ürün silinsin mi?')) {
         await window.showlyDB.deleteProduct(btn.dataset.id);
         renderProductsTable(); updateDashboard();
         showNotification('Ürün silindi.');
