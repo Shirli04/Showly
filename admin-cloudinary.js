@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const productForm   = document.getElementById('product-form');
   const storesTableBody = document.getElementById('stores-table-body');
   const productsTableBody = document.getElementById('products-table-body');
-  const ordersTableBody = document.getElementById('orders-table-body');
   const productStoreSelect = document.getElementById('product-store');
   const productImage = document.getElementById('product-image');
   const productImagePreview = document.getElementById('product-image-preview');
@@ -64,8 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
   cancelProduct.addEventListener('click', closeAllModals);
   window.addEventListener('click', e => { if (e.target === storeModal || e.target === productModal) closeAllModals(); });
 
-  // Mağaza ekleme
-  addStoreBtn.addEventListener('click', () => { storeForm.reset(); storeModal.style.display = 'block'; });
+  // Mağaza ekleme – MODAL AÇMA
+  addStoreBtn.addEventListener('click', () => {
+    storeForm.reset();
+    storeModal.style.display = 'block';
+  });
+
+  // Mağaza form submit
   storeForm.addEventListener('submit', async e => {
     e.preventDefault(); if (isSubmitting) return; isSubmitting = true;
     const name = document.getElementById('store-name').value.trim();
@@ -82,10 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally { isSubmitting = false; }
   });
 
-  // Ürün ekleme
+  // Ürün ekleme – MODAL AÇMA
   addProductBtn.addEventListener('click', () => {
     productForm.reset(); productImagePreview.classList.remove('show'); populateStoreSelect(); productModal.style.display = 'block';
   });
+
+  // Ürün form submit
   productForm.addEventListener('submit', async e => {
     e.preventDefault(); if (isSubmitting) return; isSubmitting = true;
     try {
