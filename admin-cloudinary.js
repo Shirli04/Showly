@@ -389,22 +389,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- YENİ: SİPARİŞ TABLOSUNU GÜNCELLEYEN FONKSİYON ---
-    const renderOrdersTable = async () => {
-        const orders = window.showlyDB.getOrders();
+    async function renderOrdersTable() {
+        const orders = await window.showlyDB.getOrders();
         ordersTableBody.innerHTML = '';
-        
         if (orders.length === 0) {
             ordersTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
             return;
         }
-        
-        orders.sort((a, b) => new Date(b.date) - new Date(a.date)); // En yeni siparişler üstte
-        
+        orders.sort((a, b) => new Date(b.date) - new Date(a.date));
         orders.forEach(order => {
             const row = document.createElement('tr');
-            
             if (order.status === 'pending') {
-                // --- BEKLEYEN SİPARİŞLER İÇİN GÖRÜNÜM ---
                 row.innerHTML = `
                     <td><strong style="color: #fdcb6e;">${order.id}</strong></td>
                     <td>${order.customer.name}</td>
@@ -419,7 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                 `;
             } else {
-                // --- ONAYLANMIŞ SİPARİŞLER İÇİN GÖRÜNÜM ---
                 row.innerHTML = `
                     <td>${order.id}</td>
                     <td>${order.customer.name}</td>
@@ -431,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             ordersTableBody.appendChild(row);
         });
-    };
+    }
     
     // --- EXCEL FONKSİYONLARI ---
     
@@ -500,17 +494,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- YARDIMCI FONKSİYONLAR ---
     
     // Mağaza seçimini doldur
-    const populateStoreSelect = async () => {
-        const stores = window.showlyDB.getStores();
+    async function populateStoreSelect() {
+        const stores = await window.getStoresFromFirebase(); // Firebase’den
         productStoreSelect.innerHTML = '<option value="">Mağaza Seçin</option>';
-        
-        stores.forEach(store => {
+        for (const store of stores) {
             const option = document.createElement('option');
             option.value = store.id;
             option.textContent = store.name;
             productStoreSelect.appendChild(option);
-        });
-    };
+        }
+    }
     
     // Dashboard güncelle
     const updateDashboard = () => {
