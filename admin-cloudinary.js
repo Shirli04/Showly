@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function uploadToCloudinary(file) {
         const fd = new FormData();
         fd.append('file', file);
-        fd.append('upload_preset', 'showly_upload');
+        fd.append('upload_preset', 'my_product_uploads');
         const res = await fetch(`https://api.cloudinary.com/v1_1/domv6ullp/image/upload`, { method: 'POST', body: fd });
         if (!res.ok) throw new Error('Cloudinary yükleme hatası');
         const data = await res.json();
