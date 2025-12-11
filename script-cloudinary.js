@@ -72,20 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- MAĞAZA LİSTELEME FONKSİYONU ---
     async function renderStores() {
-        const stores = await window.getStoresFromFirebase(); // Firebase’den
+        const stores = await window.getStoresFromFirebase(); // Firebase’den mağazalar
         storeList.innerHTML = '';
-        
-        if (!stores || stores.length === 0) {
-            storeList.innerHTML = `<li class="no-stores"><div style="padding: 20px; text-align: center; color: #666;"><i class="fas fa-store" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>Henüz mağaza bulunmuyor</div></li>`;
-            return;
-        }
-        
-        stores.forEach(store => {
+
+        for (const store of stores) {
+            // Bu mağazaya ait ürünleri Firebase’den çek
+            const products = await window.getProductsByStoreFromFirebase(store.id);
+
             const li = document.createElement('li');
-            li.innerHTML = `<a href="/${store.slug}" class="store-link" data-store-id="${store.id}"><i class="fas fa-store"></i> ${store.name}</a>`;
+            li.innerHTML = `<a href="/${store.slug}" class="store-link" data-store-id="${store.id}"><i class="fas fa-store"></i> ${store.name} <span>(${products.length})</span></a>`;
             storeList.appendChild(li);
-        });
-    };
+        }
+    }
 
     // --- KATEGORİ FİLTRELERİNİ OLUŞTURAN FONKSİYON ---
     const renderCategories = (storeId, activeFilter) => {
@@ -467,11 +465,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     };
 
+    // Belirli bir mağazaya ait ürünleri çek
+    window.getProductsByStoreFromFirebase = async function(storeId) {
+        const snap = await window.db.collection('products').where('storeId', '==', storeId).get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    };
+
     // Ana sayfa açılırken Firebase’den çek
     (async () => {
         const stores = await window.getStoresFromFirebase();
         renderStores(stores);        // sidebar’ı doldur
-
+        await renderStores();
         const products = await window.getProductsFromFirebase();
         renderProducts(products);    // istersen ana sayfada ürün göster
     })();
