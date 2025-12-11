@@ -1,156 +1,111 @@
-// Cloudinary Yapılandırması
-// Firebase'den dışa aktarılan veritabanı örneğini al
-import { db } from './firebase-config.js';
+// Google Drive ve Excel Yönetimi
+// Bu dosya artık localStorage yerine Google Drive'ı kullanır.
 
-const CLOUDINARY_CONFIG = {
-    cloud_name: 'domv6ullp',
-    upload_preset: 'my_product_uploads',
-    api_key: '134496279398553'
-};
-
-// Cloudinary'ye dosya yükleme fonksiyonu
-async function uploadToCloudinary(file, folder = 'showly') {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_CONFIG.upload_preset);
-    formData.append('folder', folder);
-    
-    try {
-        const response = await fetch(
-            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloud_name}/auto/upload`,
-            {
-                method: 'POST',
-                body: formData
-            }
-        );
-        
-        if (!response.ok) {
-            throw new Error('Cloudinary yükleme başarısız');
-        }
-        
-        const data = await response.json();
-        
-        return {
-            success: true,
-            url: data.secure_url,
-            publicId: data.public_id,
-            filename: data.original_filename
-        };
-    } catch (error) {
-        console.error('Yükleme hatası:', error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-// Cloudinary'den dosya silme fonksiyonu
-async function deleteFromCloudinary(publicId) {
-    // NOT: Client-side'da silme işlemi güvenlik nedeniyle sınırlıdır
-    // Gerçek uygulamada backend'de yapılmalıdır
-    console.log('Silme işlemi backend tarafından yapılmalıdır:', publicId);
-    return true;
-}
-
-// localStorage ve Cloudinary senkronizasyonu
 class ShowlyDB {
     constructor() {
         this.stores = [];
         this.products = [];
         this.orders = [];
-        this.loadFromLocalStorage();
+        // Sayfa ilk yüklendiğinde verileri Google Drive'dan çekecek
+        this.loadDataFromDrive();
     }
     
-    // localStorage'dan yükle
-    loadFromLocalStorage() {
-        const loadItem = (key) => {
-            try {
-                const item = localStorage.getItem(key);
-                return item ? JSON.parse(item) : [];
-            } catch (error) {
-                console.error(`localStorage'dan ${key} yüklenirken hata oluştu. Bozuk veri temizleniyor.`, error);
-                // Eğer veri bozuksa, o veriyi localStorage'dan silerek gelecekteki hataları önle.
-                localStorage.removeItem(key);
-                return [];
-            }
-        };
-
-        this.stores = loadItem('showlyStores');
-        this.products = loadItem('showlyProducts');
-        this.orders = loadItem('showlyOrders');
-    }
-    
-    // localStorage'a kaydet
-    saveToLocalStorage() {
-        try {
-            localStorage.setItem('showlyStores', JSON.stringify(this.stores));
-            localStorage.setItem('showlyProducts', JSON.stringify(this.products));
-            localStorage.setItem('showlyOrders', JSON.stringify(this.orders));
-        } catch (error) {
-            console.error('localStorage kaydetme hatası:', error);
+    // Google Drive'dan verileri çekme
+    async loadDataFromDrive() {
+        if (window.storesData && window.productsData) {
+            this.stores = window.storesData;
+            this.products = window.productsData;
+            console.log('Veriler Google Drive\'dan başarıyla yüklendi.');
+        } else {
+            console.log('Google Drive verileri henüz hazır değil. Lütfen giriş yapın.');
+            // Veriler yüklenmediyse, boş başlat
+            this.stores = [];
+            this.products = [];
         }
     }
     
-    // Tüm mağazaları getir
+    // Google Drive'a verileri kaydetme
+    async saveDataToDrive() {
+        if (window.saveAsExcel) {
+            // Mağaza verilerini kaydet
+            const storesFileId = 'root'; // Kök klasörün ID'si
+            window.saveAsExcel(storesFileId, 'stores.xlsx', this.stores, (success) => {
+                if (success) {
+                    console.log('Mağaza verileri Google Drive\'a kaydedildi.');
+                } else {
+                    console.error('Mağaza verileri kaydedilemedi.');
+                }
+            });
+
+            // Ürün verilerini kaydet
+            const productsFileId = 'root'; // Kök klasörün ID'si
+            window.saveAsExcel(productsFileId, 'products.xlsx', this.products, (success) => {
+                if (success) {
+                    console.log('Ürün verileri Google Drive\'a kaydedildi.');
+                } else {
+                    console.error('Ürün verileri kaydedilemedi.');
+                }
+            });
+        } else {
+            console.error('Google Drive kaydetme fonksiyonu bulunamadı.');
+        }
+    }
+    
+    // --- MAĞAZA FONKSİYONLARI ---
     getStores() {
+        // Veriler her zaman Drive'dan en güncel halde tutulmalı
+        this.loadDataFromDrive();
         return this.stores;
     }
     
-    // Yeni mağaza ekle
-    addStore(store) {
-    const slug = store.name
-        .toLowerCase()
-        .replace(/[^a-z0-9çğıöşü]+/g, '-') // Türkçe karakterlere izin ver
-        .replace(/^-+|-+$/g, '');           // baştaki/sondaki tireleri sil
-
-    const newStore = {
-        id: Date.now().toString(),
-        name: store.name,
-        slug: slug,               // ← yeni alan
-        description: store.description,
-        createdAt: new Date().toISOString()
-    };
-    this.stores.push(newStore);
-    this.saveToLocalStorage();
-    return newStore;
+    async addStore(store) {
+        const slug = store.name.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
+        const newStore = {
+            id: Date.now().toString(),
+            name: store.name,
+            slug: slug,
+            description: store.description,
+            createdAt: new Date().toISOString()
+        };
+        this.stores.push(newStore);
+        this.saveDataToDrive();
+        return newStore;
     }
     
-    // Mağazayı güncelle
-    updateStore(storeId, updates) {
+    async updateStore(storeId, updates) {
         const storeIndex = this.stores.findIndex(s => s.id === storeId);
         if (storeIndex !== -1) {
             this.stores[storeIndex] = { ...this.stores[storeIndex], ...updates };
-            this.saveToLocalStorage();
+            this.saveDataToDrive();
             return this.stores[storeIndex];
         }
         return null;
     }
     
-    // Mağazayı sil
-    deleteStore(storeId) {
+    async deleteStore(storeId) {
         this.stores = this.stores.filter(s => s.id !== storeId);
         this.products = this.products.filter(p => p.storeId !== storeId);
-        this.saveToLocalStorage();
+        this.saveDataToDrive();
     }
     
-    // Mağazaya göre ürünleri getir
+    // --- ÜRÜN FONKSİYONLARI ---
     getProductsByStoreId(storeId) {
+        // Veriler her zaman Drive'dan en güncel halde tutulmalı
+        this.loadDataFromDrive();
         return this.products.filter(p => p.storeId === storeId);
     }
     
-    // Tüm ürünleri getir
     getAllProducts() {
+        this.loadDataFromDrive();
         return this.products;
     }
     
-    // ID'ye göre ürünü getir
     getProductById(productId) {
+        this.loadDataFromDrive();
         return this.products.find(p => p.id === productId);
     }
     
-    // YENİ VE DOĞRU HALİ
-    addProduct(product) {
+    async addProduct(product) {
         const newProduct = {
             id: Date.now().toString(),
             storeId: product.storeId,
@@ -158,41 +113,49 @@ class ShowlyDB {
             price: product.price,
             description: product.description,
             material: product.material,
-            category: product.category, // <-- BU SATIRI EKLEYİN
+            category: product.category,
+            isOnSale: product.isOnSale || false,
+            originalPrice: product.originalPrice || '',
             imageUrl: product.imageUrl,
             imagePublicId: product.imagePublicId,
             variants: product.variants || [],
             createdAt: new Date().toISOString()
         };
         this.products.push(newProduct);
-        this.saveToLocalStorage();
+        this.saveDataToDrive();
         return newProduct;
     }
     
-    // Ürünü güncelle
-    updateProduct(productId, updates) {
+    async updateProduct(productId, updates) {
         const productIndex = this.products.findIndex(p => p.id === productId);
         if (productIndex !== -1) {
             this.products[productIndex] = { ...this.products[productIndex], ...updates };
-            this.saveToLocalStorage();
+            this.saveDataToDrive();
             return this.products[productIndex];
         }
         return null;
     }
     
-    // Ürünü sil
-    deleteProduct(productId) {
+    async deleteProduct(productId) {
         this.products = this.products.filter(p => p.id !== productId);
-        this.saveToLocalStorage();
+        this.saveDataToDrive();
     }
     
-    // Siparişleri getir
+    // --- SİPARİŞ FONKSİYONLARI ---
     getOrders() {
-        return this.orders;
+        // Siparişler localStorage'de kalabilir çünkü bunların Drive'da senkronizasyonu kritik değil
+        try {
+            const orders = localStorage.getItem('showlyOrders');
+            return orders ? JSON.parse(orders) : [];
+        } catch (error) {
+            console.error('Siparişler yüklenirken hata:', error);
+            return [];
+        }
     }
     
-    // Sipariş ekle
     addOrder(order) {
+        // Siparişler localStorage'de kalabilir
+        let orders = this.getOrders();
         const newOrder = {
             id: '#' + Date.now(),
             customer: order.customer,
@@ -201,8 +164,12 @@ class ShowlyDB {
             status: 'pending',
             items: order.items
         };
-        this.orders.push(newOrder);
-        this.saveToLocalStorage();
+        orders.push(newOrder);
+        try {
+            localStorage.setItem('showlyOrders', JSON.stringify(orders));
+        } catch (error) {
+            console.error('Sipariş kaydedilirken hata:', error);
+        }
         return newOrder;
     }
 }
