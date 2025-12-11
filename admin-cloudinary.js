@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Admin paneli yüklendi...');
     
     // DOM elemanları
+    const productIsOnSale = document.getElementById('product-is-on-sale');
+    const originalPriceGroup = document.getElementById('original-price-group');
+    const productOriginalPrice = document.getElementById('product-original-price');
     const navLinks = document.querySelectorAll('.nav-link');
     const contentSections = document.querySelectorAll('.content-section');
     const pageTitle = document.getElementById('page-title');
@@ -332,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
         productModal.style.display = 'block';
     };
     
-// Ürün form submit (FIREBASE + Cloudinary)
+    // Ürün form submit (FIREBASE + Cloudinary)
     const handleProductSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
