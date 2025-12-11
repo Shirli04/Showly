@@ -471,16 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
     router(); // Sayfa ilk yüklendiğinde yönlendirmeyi çalıştır
     renderStores(); // Mağaza listesini doldur
 
-    // Ana sayfa açılırken Firebase’den çek
-    (async () => {
-        const stores = await window.getStoresFromFirebase();
-        renderStores(stores);        // sidebar’ı doldur
-        await renderStores();
-        const products = await window.getProductsFromFirebase();
-        renderProducts(products);    // istersen ana sayfada ürün göster
-    })();
-
-      // ========== FIREBASE’DEN OKUMA (Ana Sayfa) ==========
+    // ========== FIREBASE’DEN OKUMA (Ana Sayfa) ==========
     window.getStoresFromFirebase = async function() {
         const snap = await window.db.collection('stores').get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -495,4 +486,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const snap = await window.db.collection('products').where('storeId', '==', storeId).get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     };
+
+    // Ana sayfa açılırken Firebase’den çek
+    (async () => {
+        const stores = await window.getStoresFromFirebase();
+        renderStores(stores);        // sidebar’ı doldur
+
+        const products = await window.getProductsFromFirebase();
+        renderProducts(products);    // istersen ana sayfada ürün göster
+    })();
 });
