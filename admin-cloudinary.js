@@ -40,38 +40,68 @@ document.addEventListener('DOMContentLoaded', () => {
   let tokenClient     = null;
 
   // Google ile giriş
-  function initGoogleAuth() {
+    function initGoogleAuth() {
+    // Google hesabı ile giriş
     tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: '1079376479162-stfokpgbsl7181h5scg95j3eiu4se3ii.apps.googleusercontent.com',
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
-      callback: (tokenResponse) => {
-        if (tokenResponse.access_token) {
-          showNotification('Google ile giriş yapıldı!');
+        client_id: '1079376479162-stfokpgbsl7181h5scg95j3eiu4se3ii.apps.googleusercontent.com',
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: (tokenResponse) => {
+        if (tokenResponse && tokenResponse.access_token) {
+            // Token başarılı
+            gapi.auth.setToken({ access_token: tokenResponse.access_token });
+            showNotification('Google ile giriş yapıldı!');
         } else {
-          showNotification('Google girişi başarısız!', false);
+            // Kullanıcı reddetti veya hata
+            console.error('Google giriş hatası:', tokenResponse);
+            showNotification('Google girişi başarısız veya iptal edildi!', false);
         }
-      }
+        },
+        error_callback: (err) => {
+        console.error('Google OAuth hatası:', err);
+        showNotification('Google girişinde hata oluştu!', false);
+        }
     });
-  }
-  window.handleAuthClick = () => tokenClient.requestAccessToken();
+    }
+    // İlk tıklamada çağır
+    window.handleAuthClick = () => {
+    if (!tokenClient) {
+        showNotification('Google SDK henüz yüklenmedi, sayfayı yenileyin!', false);
+        return;
+    }
+    tokenClient.requestAccessToken();
+    };
 
   // Sheets’e satır ekleme
-  async function appendToSheet(sheetId, range, rowArray) {
-    const token = gapi?.auth?.getToken()?.access_token;
-    if (!token) { alert('Google ile giriş yapmalısın!'); return false; }
+    async function appendToSheet(sheetId, range, rowArray) {
+    const token = gapi?.auth?.getToken?.()?.access_token;
+    if (!token) {
+        showNotification('Google ile giriş gerekli! Lütfen tekrar deneyin.', false);
+        return false;
+    }
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:append?valueInputOption=RAW`;
     const body = { values: [rowArray] };
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) { console.error('Sheet yazma hatası:', await res.text()); return false; }
-    return true;
-  }
+    try {
+        const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+        const text = await res.text();
+        console.error('Sheet yazma hatası:', text);
+        showNotification('Sheet’e yazılamadı! (Detay: konsol)', false);
+        return false;
+        }
+        return true;
+    } catch (err) {
+        console.error('Sheet ağ hatası:', err);
+        showNotification('Sheet’e yazılamadı! (Ağ hatası)', false);
+        return false;
+    }
+    }
 
   // Cloudinary’ye yükle
   async function uploadToCloudinary(file) {
