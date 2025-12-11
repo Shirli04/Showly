@@ -332,93 +332,61 @@ document.addEventListener('DOMContentLoaded', () => {
         productModal.style.display = 'block';
     };
     
-    // Ürün formu gönder
+// Ürün form submit (FIREBASE + Cloudinary)
     const handleProductSubmit = async (e) => {
         e.preventDefault();
-        
-        // Çift tıklamayı engelle
-        if (isSubmitting) {
-            console.log('Form zaten gönderiliyor, lütfen bekleyin...');
-            return;
-        }
-        
+        if (isSubmitting) return;
         isSubmitting = true;
-        
         try {
-            const productName = document.getElementById('product-name').value.trim();
-            const productStore = document.getElementById('product-store').value;
-            const productPrice = document.getElementById('product-price').value.trim();
-            const productDescription = document.getElementById('product-description').value.trim();
-            const productMaterial = document.getElementById('product-material').value.trim();
-            const productCategory = document.getElementById('product-category').value.trim();
+            const title    = document.getElementById('product-name').value.trim();
+            const storeId  = document.getElementById('product-store').value;
+            const price    = document.getElementById('product-price').value.trim();
+            const desc     = document.getElementById('product-description').value.trim();
+            const material = document.getElementById('product-material').value.trim();
+            const category = document.getElementById('product-category').value.trim();
             const isOnSale = productIsOnSale.checked;
-            const originalPrice = productOriginalPrice.value.trim();
-            const imageFile = productImage.files[0];
-            
-            if (!productName || !productStore || !productPrice) {
-                showNotification('Gerekli alanları doldurunuz!', false);
+            const origPrice= productOriginalPrice.value.trim();
+            const file     = productImage.files[0];
+
+            if (!title || !storeId || !price) {
+                showNotification('Zorunlu alanları doldurun!', false);
                 isSubmitting = false;
                 return;
             }
-            
-            let imageUrl = uploadedProductImageUrl;
-            
-            // Yeni resim varsa yükle
-            if (imageFile) {
+
+            let imageUrl = '';
+            if (file) {
                 showUploadStatus(productImageStatus, 'Resim yükleniyor...', true);
-                // ImageKit'e yükle
-                const uploadResult = await uploadToImageKit(imageFile, 'showly/products');
-                
-                if (uploadResult.success) {
-                    imageUrl = uploadResult.url;
-                    showUploadStatus(productImageStatus, '✓ Resim başarıyla yüklendi!', true);
-                } else {
-                    showUploadStatus(productImageStatus, '✗ Resim yükleme başarısız: ' + uploadResult.error, false);
-                    isSubmitting = false;
-                    return;
-                }
+                const uploadResult = await uploadToCloudinary(file);
+                imageUrl = uploadResult;
+                showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
             }
-            
-            if (editingProductId) {
-                // Ürünü güncelle
-                window.showlyDB.updateProduct(editingProductId, {
-                    title: productName,
-                    storeId: productStore,
-                    price: productPrice,
-                    description: productDescription,
-                    material: productMaterial,
-                    category: productCategory,
-                    isOnSale: isOnSale,
-                    originalPrice: originalPrice,
-                    imageUrl: imageUrl
-                });
-                showNotification('Ürün başarıyla güncellendi!');
-            } else {
-                // Yeni ürün ekle
-                window.showlyDB.addProduct({
-                    storeId: productStore,
-                    title: productName,
-                    price: productPrice,
-                    description: productDescription,
-                    material: productMaterial,
-                    category: productCategory,
-                    isOnSale: isOnSale,
-                    originalPrice: originalPrice,
-                    imageUrl: imageUrl
-                });
-                showNotification('Ürün başarıyla eklendi!');
-            }
-            
-            renderProductsTable();
-            updateDashboard();
+
+            await window.addProductToFirebase({
+                storeId, title, price, description: desc, material, category,
+                isOnSale, originalPrice: origPrice, imageUrl
+            });
+
+            showNotification('Ürün Firebase’e eklendi!');
+            renderProductsTable(); updateDashboard();
             closeAllModals();
-        } catch (error) {
-            console.error('Hata:', error);
-            showNotification('Bir hata oluştu: ' + error.message, false);
+        } catch (err) {
+            console.error(err);
+            showNotification('Ürün eklenemedi!', false);
         } finally {
             isSubmitting = false;
         }
     };
+
+    async function uploadToCloudinary(file) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', 'showly_upload');
+        const res = await fetch(`https://api.cloudinary.com/v1_1/domv6ullp/image/upload`, { method: 'POST', body: fd });
+        if (!res.ok) throw new Error('Cloudinary yükleme hatası');
+        const data = await res.json();
+        return data.secure_url;
+    }
     
     // --- YENİ: SİPARİŞ TABLOSUNU GÜNCELLEYEN FONKSİYON ---
     const renderOrdersTable = async () => {
