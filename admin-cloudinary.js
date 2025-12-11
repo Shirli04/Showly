@@ -128,12 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MAĞAZA FONKSİYONLARI ---
     
     // Mağaza tablosunu güncelle
-    const renderStoresTable = () => {
-        const stores = window.showlyDB.getStores();
+    const renderStoresTable = async () => {
+        const stores = await window.showlyDB.getStores();
         storesTableBody.innerHTML = '';
-        
-        stores.forEach(store => {
-            const storeProducts = window.showlyDB.getProductsByStoreId(store.id);
+
+        for (const store of stores) {
+            const storeProducts = await window.showlyDB.getProductsByStoreId(store.id);
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${store.id}</td>
@@ -145,8 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
             `;
             storesTableBody.appendChild(row);
-        });
-        
+        }
+
         attachStoreEventListeners();
     };
     
@@ -246,23 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ÜRÜN FONKSİYONLARI ---
     
     // Ürün tablosunu güncelle
-    const renderProductsTable = (storeId = null, categoryFilter = null) => {
-        let products = window.showlyDB.getAllProducts();
-        const stores = window.showlyDB.getStores();
-
-        // Mağazaya göre filtrele
-        if (storeId) {
-            products = products.filter(p => p.storeId === storeId);
-        }
-
-        // Kategoriye göre filtrele
-        if (categoryFilter) {
-            products = products.filter(p => p.category === categoryFilter);
-        }
-        
+    async function renderProductsTable() {
+        const [products, stores] = await Promise.all([window.showlyDB.getAllProducts(), window.showlyDB.getStores()]);
         productsTableBody.innerHTML = '';
-        
-        products.forEach(product => {
+        for (const product of products) {
             const store = stores.find(s => s.id === product.storeId);
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -270,17 +257,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${product.title}</td>
                 <td>${store ? store.name : 'Bilinmiyor'}</td>
                 <td>${product.price}</td>
-                <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">` : 'Resim yok'}</td>
+                <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
                 <td>
                     <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
                     <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
                 </td>
             `;
             productsTableBody.appendChild(row);
-        });
-        
+        }
         attachProductEventListeners();
-    };
+    }
     
     // Ürün olay dinleyicileri
     const attachProductEventListeners = () => {
@@ -675,18 +661,6 @@ document.addEventListener('DOMContentLoaded', () => {
             adminSidebar.classList.toggle('active');
         });
     }
-    
-    // --- İLK YÜKLEME ---
-    // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
-    processPendingOrders();
-    
-    updateDashboard();
-    renderStoresTable();
-    renderProductsTable();
-    renderOrdersTable(); // Sipariş tablosunu da göster
-
-        // ========== FIREBASE COMPAT FONKSİYONLARI ==========
-    // Firestore bağlantısı zaten firebase-config.js ile window.db = firebase.firestore(); olarak geliyor
 
     // Mağaza ekle (Firestore)
     window.addStoreToFirebase = async function(store) {
@@ -698,16 +672,6 @@ document.addEventListener('DOMContentLoaded', () => {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         return { id: doc.id, name: store.name, slug, description: store.description };
-    };
-
-    // Mağaza sil (Firestore)
-    window.deleteStoreFromFirebase = async function(storeId) {
-        // önce ürünlerini sil
-        const prods = await window.db.collection('products').where('storeId', '==', storeId).get();
-        const batch = window.db.batch();
-        prods.docs.forEach(d => batch.delete(d.ref));
-        batch.delete(window.db.collection('stores').doc(storeId));
-        await batch.commit();
     };
 
     // Ürün ekle (Firestore)
@@ -727,6 +691,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return { id: doc.id, ...product };
     };
 
+    // Mağaza sil (Firestore)
+    window.deleteStoreFromFirebase = async function(storeId) {
+        const prods = await window.db.collection('products').where('storeId', '==', storeId).get();
+        const batch = window.db.batch();
+        prods.docs.forEach(d => batch.delete(d.ref));
+        batch.delete(window.db.collection('stores').doc(storeId));
+        await batch.commit();
+    };
+
     // Ürün sil (Firestore)
     window.deleteProductFromFirebase = async function(productId) {
         await window.db.collection('products').doc(productId).delete();
@@ -743,4 +716,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const snap = await window.db.collection('products').get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     };
+
+    // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
+    processPendingOrders();
+    
+    updateDashboard();
+    renderStoresTable();
+    renderProductsTable();
+    renderOrdersTable(); // Sipariş tablosunu da göster
 });
