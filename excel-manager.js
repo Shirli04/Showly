@@ -1,98 +1,174 @@
-// Google Sheets API için sabitler
-const STORES_SHEET_ID   = '1VLmWQD8nXhyq2D0J-kAUK5XL4tQQFnBnG_TOIcyGdPs';
-const PRODUCTS_SHEET_ID = '1hI7dOCS2jt514xkw1SboVChiyDC8K_kAcZGKG8tXIlI';
-const API_KEY           = 'AIzaSyB2X6-27SapjhnChSZ4duH7brQF6na6ueM';
+// Excel dosyası yönetimi
+// SheetJS kütüphanesini HTML'de şu şekilde import edin:
+// <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-// Google Sheets’ten veri çekme
-async function fetchSheetData(sheetId, range) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${API_KEY}`;
-  try {
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (!data.values || data.values.length < 2) return []; // başlık + en az 1 satır
-    const headers = data.values[0];
-    return data.values.slice(1).map(row => {
-      const obj = {};
-      headers.forEach((h, i) => obj[h] = row[i] || '');
-      return obj;
-    });
-  } catch (err) {
-    console.error('Sheet çekme hatası:', err);
-    return [];
-  }
+class ExcelManager {
+    
+    // Mağazaları Excel'e dönüştür ve indir
+    static exportStoresToExcel() {
+        const stores = window.showlyDB.getStores();
+        
+        // Excel verilerine dönüştür
+        const excelData = stores.map(store => ({
+            'Mağaza ID': store.id,
+            'Mağaza Adı': store.name,
+            'Açıklama': store.description || '',
+            'Logo URL': store.logoUrl || '',
+            'Oluşturulma Tarihi': store.createdAt
+        }));
+        
+        // Excel çalışma kitabı oluştur
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Mağazalar');
+        
+        // İndir
+        XLSX.writeFile(workbook, 'showly_magazines.xlsx');
+    }
+    
+    // Ürünleri Excel'e dönüştür ve indir
+    static exportProductsToExcel() {
+        const products = window.showlyDB.getAllProducts();
+        const stores = window.showlyDB.getStores();
+        
+        // Excel verilerine dönüştür
+        const excelData = products.map(product => {
+            const store = stores.find(s => s.id === product.storeId);
+            return {
+                'Ürün ID': product.id,
+                'Ürün Adı': product.title,
+                'Mağaza Adı': store ? store.name : 'Bilinmiyor',
+                'Fiyat': product.price,
+                'Malzeme': product.material || '',
+                'Açıklama': product.description || '',
+                'Resim URL': product.imageUrl || '',
+                'Oluşturulma Tarihi': product.createdAt
+            };
+        });
+        
+        // Excel çalışma kitabı oluştur
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Ürünler');
+        
+        // İndir
+        XLSX.writeFile(workbook, 'showly_products.xlsx');
+    }
+    
+    // Mağazaları Excel'den içe aktar
+    static importStoresFromExcel(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    // Mağazaları ekle
+                    jsonData.forEach(row => {
+                        window.showlyDB.addStore({
+                            name: row['Mağaza Adı'],
+                            description: row['Açıklama'] || '',
+                            logoUrl: row['Logo URL'] || ''
+                        });
+                    });
+                    
+                    resolve({
+                        success: true,
+                        count: jsonData.length,
+                        message: `${jsonData.length} mağaza başarıyla içe aktarıldı`
+                    });
+                } catch (error) {
+                    reject({
+                        success: false,
+                        error: error.message
+                    });
+                }
+            };
+            
+            reader.onerror = () => {
+                reject({
+                    success: false,
+                    error: 'Dosya okunamadı'
+                });
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+    }
+    
+    // Ürünleri Excel'den içe aktar
+    static importProductsFromExcel(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    const stores = window.showlyDB.getStores();
+                    
+                    // Ürünleri ekle
+                    jsonData.forEach(row => {
+                        const store = stores.find(s => s.name === row['Mağaza Adı']);
+                        if (store) {
+                            window.showlyDB.addProduct({
+                                storeId: store.id,
+                                title: row['Ürün Adı'],
+                                price: row['Fiyat'],
+                                description: row['Açıklama'] || '',
+                                material: row['Malzeme'] || '',
+                                imageUrl: row['Resim URL'] || ''
+                            });
+                        }
+                    });
+                    
+                    resolve({
+                        success: true,
+                        count: jsonData.length,
+                        message: `${jsonData.length} ürün başarıyla içe aktarıldı`
+                    });
+                } catch (error) {
+                    reject({
+                        success: false,
+                        error: error.message
+                    });
+                }
+            };
+            
+            reader.onerror = () => {
+                reject({
+                    success: false,
+                    error: 'Dosya okunamadı'
+                });
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+    }
 }
 
-// Ana yükleme fonksiyonu (artık Google Sheets üzerinden)
-async function loadInitialFiles() {
-  showLoadingIndicator(true, 'Google Sheets’ten veriler çekiliyor...');
+// Kullanım örnekleri:
+/*
+// Mağazaları indir
+ExcelManager.exportStoresToExcel();
 
-  const [stores, products] = await Promise.all([
-    fetchSheetData(STORES_SHEET_ID, 'Sayfa1!A1:E100'),
-    fetchSheetData(PRODUCTS_SHEET_ID, 'Sayfa1!A1:K100')
-  ]);
+// Ürünleri indir
+ExcelManager.exportProductsToExcel();
 
-  window.storesData   = stores;
-  window.productsData = products;
+// Excel'den mağaza içe aktar
+const fileInput = document.getElementById('import-stores-file');
+ExcelManager.importStoresFromExcel(fileInput.files[0])
+    .then(result => console.log(result))
+    .catch(error => console.error(error));
 
-  console.log('✅ Mağazalar:', stores);
-  console.log('✅ Ürünler:', products);
-
-  // ShowlyDB’yi güncelle
-  if (window.showlyDB) {
-    window.showlyDB.stores   = stores;
-    window.showlyDB.products = products;
-  }
-
-  // UI’ları tetikle
-  if (typeof renderStoresTable   === 'function') renderStoresTable();
-  if (typeof renderProductsTable === 'function') renderProductsTable();
-  if (typeof updateDashboard     === 'function') updateDashboard();
-
-  hideLoadingIndicator();
-  showNotification('Veriler Google Sheets’ten yüklendi.');
-}
-
-// Yüklenme göstergesi
-function showLoadingIndicator(show, message = 'Yükleniyor...') {
-  let indicator = document.getElementById('loading-indicator');
-  if (!indicator) {
-    indicator = document.createElement('div');
-    indicator.id = 'loading-indicator';
-    indicator.style.cssText = `
-      position:fixed; top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,.7); color:#fff; display:flex;
-      flex-direction:column; align-items:center; justify-content:center;
-      z-index:9999; font-size:18px; gap:10px;
-    `;
-    document.body.appendChild(indicator);
-  }
-  if (show) {
-    indicator.innerHTML = `<div>${message}</div><div class="spinner"></div>`;
-    indicator.style.display = 'flex';
-  } else {
-    indicator.style.display = 'none';
-  }
-}
-function hideLoadingIndicator() {
-  const el = document.getElementById('loading-indicator');
-  if (el) el.style.display = 'none';
-}
-
-// Bildirim
-function showNotification(msg, success = true) {
-  const existing = document.querySelector('.notification');
-  if (existing) existing.remove();
-
-  const div = document.createElement('div');
-  div.className = 'notification';
-  div.style.cssText = `
-    position:fixed; bottom:20px; right:20px; background:${success ? '#28a745' : '#dc3545'};
-    color:#fff; padding:12px 18px; border-radius:6px; z-index:10000;
-  `;
-  div.textContent = msg;
-  document.body.appendChild(div);
-  setTimeout(() => div.remove(), 3000);
-}
-
-// Global’e ekle
-window.loadInitialFiles = loadInitialFiles;
+// Excel'den ürün içe aktar
+ExcelManager.importProductsFromExcel(fileInput.files[0])
+    .then(result => console.log(result))
+    .catch(error => console.error(error));
+*/
