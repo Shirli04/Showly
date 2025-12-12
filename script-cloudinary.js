@@ -490,9 +490,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ana sayfa açılırken Firebase’den çek
     (async () => {
         const stores = await window.getStoresFromFirebase();
-        renderStores(stores);        // sidebar’ı doldur
+        renderStores(stores);
 
         const products = await window.getProductsFromFirebase();
-        renderProducts(products);    // istersen ana sayfada ürün göster
+        renderProducts(products);
     })();
 });
