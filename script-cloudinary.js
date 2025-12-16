@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const allBtn = document.createElement('button');
         allBtn.className = 'category-btn ' + (!activeFilter ? 'active' : '');
-        allBtn.innerHTML = `Ähli ürünler <span class="category-count">${storeProducts.length}</span>`;
+        allBtn.innerHTML = `Ähli harytlar <span class="category-count">${storeProducts.length}</span>`;
         allBtn.addEventListener('click', () => renderStorePage(storeId, null));
         container.appendChild(allBtn);
 
@@ -163,10 +163,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <i class="fas fa-percentage"></i> Arzanladyş <span class="category-count">${discountedProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'FREE' ? 'active' : ''}" data-filter-type="FREE">
-                        <i class="fas fa-gift"></i> Bedava <span class="category-count">${freeProducts.length}</span>
+                        <i class="fas fa-gift"></i> Mugt <span class="category-count">${freeProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'EXPENSIVE' ? 'active' : ''}" data-filter-type="EXPENSIVE">
-                        <i class="fas fa-crown"></i> Pahaly (>500 TMT) <span class="category-count">${expensiveProducts.length}</span>
+                        <i class="fas fa-crown"></i> Gymmatdan <span class="category-count">${expensiveProducts.length}</span>
                     </button>
                 </div>
             </div>
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         storeBanner.innerHTML = `
             <h2>${store.name}</h2>
-            <p>${store.customBannerText || 'Bu mağazada sadece en kaliteli ürünler!'}</p>
+            <p>${store.customBannerText || 'Bu magazynda iň gowy harytlar bar'}</p>
     `;
         
         categoryFiltersSection.style.display = 'block';
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (productsToRender.length === 0) {
-            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrede ürün bulunamadı.</h3></div>`;
+            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrde haryt tapylmady.</h3></div>`;
             return;
         }
         
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    ${product.isOnSale ? '<span class="discount-badge">İndirim</span>' : ''} <!-- Burası sadece indirim varsa -->
+                    ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''} <!-- Burası sadece indirim varsa -->
                     <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const performSearch = () => {
         const query = searchInput.value.trim().toLowerCase();
         if (query === '') { 
-            showNotification('Lütfen bir arama terimi girin!'); 
+            showNotification('Gözleýän harydyňyzyň adyny ýazyň!'); 
             return; 
         }
         
@@ -328,13 +328,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (mainFiltersSection) mainFiltersSection.style.display = 'none';
         
         storeBanner.style.display = 'block';
-        storeBanner.innerHTML = `<h2>Arama Sonuçları: "${query}"</h2><p>${filteredProducts.length} ürün</p>`;
+        storeBanner.innerHTML = `<h2>Gözleg: "${query}"</h2><p>${filteredProducts.length} harydy</p>`;
         
         productsGrid.style.display = 'grid';
         productsGrid.innerHTML = '';
         
         if (filteredProducts.length === 0) { 
-            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-search"></i><h3>Sonuç Bulunamadı</h3></div>`; 
+            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-search"></i><h3>Haryt tapylmady</h3></div>`; 
             return; 
         }
         
@@ -372,10 +372,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const index = favorites.findIndex(item => item.id === product.id);
         if (index !== -1) {
             favorites.splice(index, 1);
-            showNotification('Favorilerden kaldırıldı');
+            showNotification('Halanlarymdan aýryldy');
         } else {
             favorites.push(product);
-            showNotification('Favorilere eklendi');
+            showNotification('Halanlaryma goşuldy');
         }
         updateFavoritesCount();
         updateFavoriteButton(product.id);
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             cart.push({ ...product, quantity: 1 }); 
         }
         updateCartCount();
-        showNotification(product.title + ' sepete eklendi!');
+        showNotification(product.title + ' sepebe goşuldy!');
     };
 
     // --- OLAY DİNLEYİCİLER ---
@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartModal = document.getElementById('cart-modal');
         const cartItems = document.getElementById('cart-items');
         if (cart.length === 0) { 
-            cartItems.innerHTML = '<p class="empty-cart-message">Sepetiniz boş</p>'; 
+            cartItems.innerHTML = '<p class="empty-cart-message">Sebediňiz boş</p>'; 
         } else {
             cartItems.innerHTML = ''; 
             let total = 0;
@@ -535,7 +535,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- SİPARİŞ TAMAMLAMA FONKSİYONU ---
     document.querySelector('.checkout-button').addEventListener('click', () => {
         if (cart.length === 0) {
-            showNotification('Sepetiniz boş!', false);
+            showNotification('Sebediňiz boş!', false);
             return;
         }
 
@@ -544,25 +544,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="order-form-overlay">
                 <div class="order-form-modal">
                     <div class="order-form-header">
-                        <h3>Siparişinizi Tamamlayın</h3>
-                        <p>Lütfen aşağıdaki bilgileri eksiksiz doldurun.</p>
+                        <h3>Sargydyňyzy tamamlaň</h3>
+                        <p>Aşakdaky maglumatlary dogry ýazyň.</p>
                     </div>
                     <form id="order-form">
                         <div class="form-group">
-                            <label>Adınız Soyadınız</label>
-                            <input type="text" id="customer-name" placeholder="Adınızı ve soyadınızı girin" required>
+                            <label>Adyňyz Familiýaňyz</label>
+                            <input type="text" id="customer-name" placeholder="Adyňyzy we Familiýaňyzy ýazyň" required>
                         </div>
                         <div class="form-group">
-                            <label>Telefon Numaranız</label>
-                            <input type="tel" id="customer-phone" placeholder="Telefon numaranız (örn: +993...)" required>
+                            <label>Telefon nomeriňiz</label>
+                            <input type="tel" id="customer-phone" placeholder="Telefon nomeriňiz (:+993...)" required>
                         </div>
                         <div class="form-group">
-                            <label>Adresiniz</label>
-                            <textarea id="customer-address" rows="3" placeholder="Tam adresinizi girin" required></textarea>
+                            <label>Adresiňiz</label>
+                            <textarea id="customer-address" rows="3" placeholder="Adresiňizi ýazyň" required></textarea>
                         </div>
                         <div class="form-actions">
                             <button type="button" id="cancel-order" class="btn-secondary">İptal</button>
-                            <button type="submit" class="btn-primary">Siparişi Onayla</button>
+                            <button type="submit" class="btn-primary">Sargyt ediň</button>
                         </div>
                     </form>
                 </div>
@@ -607,8 +607,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Sipariş Firebase\'e eklendi, ID:', docRef.id);
 
                 // Kullanıcıya başarı mesajı
-                const orderedItems = order.items.map(item => `${item.title} (${item.quantity} adet)`).join(', ');
-                const orderSummary = `Siparişiniz başarıyla alındı!\nSipariş Edilen Ürünler: ${orderedItems}\nToplam Tutar: ${order.total}`;
+                const orderedItems = order.items.map(item => `${item.title} (${item.quantity} haryt)`).join(', ');
+                const orderSummary = `Sargydyňyz edildi!\nSargyt edilen haryt: ${orderedItems}\nUmumy baha: ${order.total}`;
                 showNotification(orderSummary, true);
 
                 // Sepeti temizle
@@ -622,8 +622,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('cart-modal').style.display = 'none';
 
             } catch (error) {
-                console.error('Sipariş eklenemedi:', error);
-                showNotification('Sipariş oluşturulamadı!', false);
+                console.error('Sargydyňyz goşulmady:', error);
+                showNotification('Sargydyňyz döredilmedi!', false);
             }
         });
     });
@@ -633,7 +633,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const favoritesModal = document.getElementById('favorites-modal');
         const favoritesItems = document.getElementById('favorites-items');
         if (favorites.length === 0) { 
-            favoritesItems.innerHTML = '<p class="empty-favorites-message">Favorileriniz boş</p>'; 
+            favoritesItems.innerHTML = '<p class="empty-favorites-message">Halanlaryňyz boş</p>'; 
         } else {
             favoritesItems.innerHTML = '';
             favorites.forEach(product => {
@@ -645,8 +645,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="favorite-item-title">${product.title}</div>
                         <div class="favorite-item-price">${product.price}</div>
                         <div class="favorite-item-actions">
-                            <button class="btn-remove-favorite" data-id="${product.id}">Kaldır</button>
-                            <button class="btn-add-cart-from-fav" data-id="${product.id}">Sepete Ekle</button>
+                            <button class="btn-remove-favorite" data-id="${product.id}">Aýyr</button>
+                            <button class="btn-add-cart-from-fav" data-id="${product.id}">Sebede goş</button>
                         </div>
                     </div>
                 `;

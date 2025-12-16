@@ -23,7 +23,7 @@
         </div>
 
         <div class="search-bar">
-            <input type="text" id="search-input" placeholder="Kataloglarda gözle...">
+            <input type="text" id="search-input" placeholder="Gözle...">
             <button type="button" id="search-button"><i class="fas fa-search"></i></button>
         </div>
 
@@ -104,7 +104,7 @@
             <!-- GENEL FİLTRELEME ALANI -->
             <div class="main-filters-section" id="main-filters-section" style="display: none;">
                 <button id="main-filter-toggle-btn" class="filter-toggle-btn">
-                    <i class="fas fa-filter"></i> Filtreler
+                    <i class="fas fa-filter"></i> Filtr
                 </button>
                 <div id="main-filters-container" class="main-filters-container" style="display: none;">
                     <!-- Fiyat filtreleri JavaScript ile buraya doldurulacak -->
@@ -117,9 +117,9 @@
     <!-- 404 Sayfa Bulunamadı Bölümü -->
     <div id="not-found" style="display: none; text-align: center; padding: 60px 20px;">
         <h1 style="font-size: 48px; color: var(--primary-color);">404</h1>
-        <h2 style="font-size: 24px; margin-bottom: 10px;">Sayfa Bulunamadı</h2>
-        <p style="color: #666; margin-bottom: 20px;">Aradığınız mağaza mevcut değil.</p>
-        <a href="#" id="back-home-link" class="cta-button">Ana Sayfaya Dön</a>
+        <h2 style="font-size: 24px; margin-bottom: 10px;">Sahypa Tapylmady</h2>
+        <p style="color: #666; margin-bottom: 20px;">Gözleýän magazynyňyz tapylmady</p>
+        <a href="#" id="back-home-link" class="cta-button">Esasy sahypa git</a>
     </div>
     <!-- Ürün Detay Modalı -->
     <div id="product-modal" class="modal">
@@ -132,7 +132,7 @@
                 <h2 id="modal-title"></h2>
                 <p class="product-detail-price" id="modal-price"></p>
                 <p id="modal-description"></p>
-                <p><strong>Malzeme:</strong> <span id="modal-material"></span></p>
+                <p><strong>Material:</strong> <span id="modal-material"></span></p>
                 <div class="product-variants" id="modal-variants"></div>
                 <div class="product-detail-actions">
                     <button class="btn-add-cart" id="modal-add-cart">Sebede goş</button>
@@ -147,17 +147,17 @@
         <div class="modal-content cart-content">
             <span class="close-modal" id="close-cart-modal">&times;</span>
             <div class="cart-header">
-                <h2>Sepetim</h2>
+                <h2>Sebedim</h2>
             </div>
             <div class="cart-items" id="cart-items">
                 <!-- Sepetteki ürünler JavaScript ile buraya doldurulacak -->
-                <p class="empty-cart-message">Sepetiniz şu an boş.</p>
+                <p class="empty-cart-message">Sebediňiz boş.</p>
             </div>
             <div class="cart-footer">
                 <div class="cart-total">
                     <h3>Toplam: <span id="cart-total-price">0 TMT</span></h3>
                 </div>
-                <button class="checkout-button">Siparişi Tamamla</button>
+                <button class="checkout-button">Sargyt et</button>
             </div>
         </div>
     </div>
@@ -167,11 +167,11 @@
         <div class="modal-content favorites-content">
             <span class="close-modal" id="close-favorites-modal">&times;</span>
             <div class="favorites-header">
-                <h2>Halanlarim</h2>
+                <h2>Halanlarym</h2>
             </div>
             <div class="favorites-items" id="favorites-items">
                 <!-- Favori ürünler JavaScript ile buraya doldurulacak -->
-                <p class="empty-favorites-message">Henüz favori ürününüz yok.</p>
+                <p class="empty-favorites-message">Şu wagtltyk halanlaryňyz ýok</p>
             </div>
         </div>
     </div>
@@ -180,7 +180,7 @@
     <div id="loading-overlay" class="loading-overlay" style="display: none;">
     <div class="loading-content">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Veriler yükleniyor...</div>
+        <div class="loading-text">Biraz garaşyň...</div>
     </div>
     </div>
     
