@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- ÜRÜNLERİ FİLTRELEYİP GÖSTEREN ANA FONKSİYON ---
     const renderStorePage = (storeId, activeFilter = null) => {
-  currentStoreId = storeId;
+        currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
