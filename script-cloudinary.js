@@ -584,7 +584,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Sipariş Firebase\'e eklendi, ID:', docRef.id);
 
                 // Kullanıcıya başarı mesajı
-                showNotification('Siparişiniz başarıyla alındı!', true);
+                const orderedItems = order.items.map(item => `${item.title} (${item.quantity} adet)`).join(', ');
+                const orderSummary = `Siparişiniz başarıyla alındı!\nSipariş Edilen Ürünler: ${orderedItems}\nToplam Tutar: ${order.total}`;
+                showNotification(orderSummary, true);
 
                 // Sepeti temizle
                 cart = [];

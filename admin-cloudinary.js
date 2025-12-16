@@ -405,9 +405,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (order.status === 'pending') {
                 row.innerHTML = `
                     <td><strong style="color: #fdcb6e;">${order.id}</strong></td>
-                    <td>${order.customer.name}</td>
+                    <td>
+                        <div class="customer-info">
+                            <strong>${order.customer.name}</strong><br>
+                            <small>${order.customer.phone}</small><br>
+                            <small>${order.customer.address}</small>
+                        </div>
+                    </td>
                     <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
                     <td>${order.total}</td>
+                    <td>
+                        <ul style="list-style: none; padding: 0;">
+                            ${order.items.map(item => `<li>${item.title} (${item.quantity}x)</li>`).join('')}
+                        </ul>
+                    </td>
                     <td><span class="status pending">Beklemede</span></td>
                     <td>
                         <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
@@ -419,9 +430,20 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 row.innerHTML = `
                     <td>${order.id}</td>
-                    <td>${order.customer.name}</td>
+                    <td>
+                        <div class="customer-info">
+                            <strong>${order.customer.name}</strong><br>
+                            <small>${order.customer.phone}</small><br>
+                            <small>${order.customer.address}</small>
+                        </div>
+                    </td>
                     <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
                     <td>${order.total}</td>
+                    <td>
+                        <ul style="list-style: none; padding: 0;">
+                            ${order.items.map(item => `<li>${item.title} (${item.quantity}x)</li>`).join('')}
+                        </ul>
+                    </td>
                     <td><span class="status completed">Onaylandı</span></td>
                     <td><strong>${order.orderNumber}</strong></td>
                 `;

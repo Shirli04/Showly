@@ -855,3 +855,20 @@ body {
     display: block; /* Blok elementi yap */
     margin: 0 auto; /* Tek başına ortalaması için (eğer flex kullanılmasaydı) */
 }
+
+.customer-info {
+    font-size: 13px;
+}
+
+.customer-info strong {
+    font-size: 14px;
+}
+
+.customer-info small {
+    color: #666;
+    display: block;
+}
+
+ul {
+    padding-left: 10px;
+}
