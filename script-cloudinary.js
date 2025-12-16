@@ -523,19 +523,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const formHTML = `
             <div class="order-form-overlay">
                 <div class="order-form-modal">
-                    <h3>Sipariş Bilgileri</h3>
+                    <div class="order-form-header">
+                        <h3>Siparişinizi Tamamlayın</h3>
+                        <p>Lütfen aşağıdaki bilgileri eksiksiz doldurun.</p>
+                    </div>
                     <form id="order-form">
                         <div class="form-group">
                             <label>Adınız Soyadınız</label>
-                            <input type="text" id="customer-name" required>
+                            <input type="text" id="customer-name" placeholder="Adınızı ve soyadınızı girin" required>
                         </div>
                         <div class="form-group">
                             <label>Telefon Numaranız</label>
-                            <input type="tel" id="customer-phone" required>
+                            <input type="tel" id="customer-phone" placeholder="Telefon numaranız (örn: +993...)" required>
                         </div>
                         <div class="form-group">
                             <label>Adresiniz</label>
-                            <textarea id="customer-address" rows="3" required></textarea>
+                            <textarea id="customer-address" rows="3" placeholder="Tam adresinizi girin" required></textarea>
                         </div>
                         <div class="form-actions">
                             <button type="button" id="cancel-order" class="btn-secondary">İptal</button>

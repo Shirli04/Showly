@@ -1827,14 +1827,13 @@ header {
 .hero-cta-link:hover .hero-cta-image {
     transform: scale(1.03); /* Resmin kendisini çok az büyüt */
 }
-
 .order-form-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1844,15 +1843,38 @@ header {
 .order-form-modal {
     background-color: white;
     padding: 30px;
-    border-radius: 12px;
+    border-radius: 16px;
     width: 90%;
     max-width: 500px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    animation: modalAppear 0.3s ease-out;
 }
 
-.order-form-modal h3 {
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.order-form-header {
     margin-bottom: 20px;
+}
+
+.order-form-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 22px;
     color: var(--dark-color);
+}
+
+.order-form-header p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
 }
 
 .order-form-modal .form-group {
@@ -1863,25 +1885,61 @@ header {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
+    color: var(--dark-color);
 }
 
 .order-form-modal input,
 .order-form-modal textarea {
     width: 100%;
-    padding: 12px 15px;
-    border: 1px solid var(--light-color);
-    border-radius: 8px;
-    font-size: 14px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 15px;
+    transition: border-color 0.3s;
 }
 
 .order-form-modal input:focus,
 .order-form-modal textarea:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
 }
 
 .order-form-modal .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.btn-secondary {
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #b2bec3;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #5f4dd8;
 }
