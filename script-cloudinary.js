@@ -487,12 +487,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     };
 
-    // Ana sayfa açılırken Firebase’den çek
+    // Ana sayfa açılırken Firebase'den çek ve showlyDB'ye kaydet
     (async () => {
-        const stores = await window.getStoresFromFirebase();
-        renderStores(stores);
-
-        const products = await window.getProductsFromFirebase();
-        renderProducts(products);
+        try {
+            // 1. Firebase'den mağazaları çek
+            const stores = await window.getStoresFromFirebase();
+            
+            // 2. showlyDB'ye mağazaları kaydet
+            stores.forEach(store => {
+                if (!window.showlyDB.getStores().find(s => s.id === store.id)) {
+                    window.showlyDB.stores.push(store);
+                }
+            });
+            
+            // 3. Sidebar'ı güncelle
+            renderStores();
+            
+            // 4. Firebase'den ürünleri çek
+            const products = await window.getProductsFromFirebase();
+            
+            // 5. showlyDB'ye ürünleri kaydet
+            products.forEach(product => {
+                if (!window.showlyDB.getAllProducts().find(p => p.id === product.id)) {
+                    window.showlyDB.products.push(product);
+                }
+            });
+            
+            console.log(`✅ ${stores.length} mağaza ve ${products.length} ürün Firebase'den yüklendi`);
+            
+        } catch (error) {
+            console.error('❌ Firebaseden veri çekilemedi:', error);
+        }
     })();
-});
+    });
