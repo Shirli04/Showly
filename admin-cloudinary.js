@@ -197,12 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const editStore = (storeId) => {
         const store = window.showlyDB.getStores().find(s => s.id === storeId);
         if (!store) return;
-        
+
         document.getElementById('store-modal-title').textContent = 'Mağazayı Düzenle';
         document.getElementById('store-id').value = store.id;
         document.getElementById('store-name').value = store.name;
         document.getElementById('store-description').value = store.description || '';
-        
+        document.getElementById('store-custom-banner-text').value = store.customBannerText || ''; // Yeni
+
         storeModal.style.display = 'block';
         editingStoreId = storeId;
     };
@@ -227,16 +228,21 @@ document.addEventListener('DOMContentLoaded', () => {
         storeModal.style.display = 'block';
     };
     
-    // Mağaza form submit (FIREBASE versiyonu)
+    // Mağaza form submit
     const handleStoreSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
         const name = document.getElementById('store-name').value.trim();
         const desc = document.getElementById('store-description').value.trim();
+        const customBannerText = document.getElementById('store-custom-banner-text').value.trim(); // Yeni
         if (!name) { showNotification('Mağaza adı gerekli!', false); isSubmitting = false; return; }
         try {
-            await window.addStoreToFirebase({ name, description: desc });
+            await window.addStoreToFirebase({ 
+                name, 
+                description: desc, 
+                customBannerText: customBannerText || '' // Yeni
+            });
             showNotification('Mağaza Firebase’e eklendi!');
             renderStoresTable(); populateStoreSelect(); updateDashboard();
             closeAllModals();

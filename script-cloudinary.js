@@ -207,10 +207,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
-        
+
         const storeBanner = document.getElementById('store-banner');
         storeBanner.style.display = 'block';
-        storeBanner.innerHTML = `<h2>${store.name}</h2><p>${storeProducts.length} ürün</p>`;
+
+        // ✅ Burada artık "X ürün" yazısı değil, kullanıcı tanımlı metin gösterilir
+        storeBanner.innerHTML = `
+            <h2>${store.name}</h2>
+            <p>${store.customBannerText || 'Bu mağazada sadece en kaliteli ürünler!'}</p>
+        `;
         
         categoryFiltersSection.style.display = 'block';
         mainFiltersSection.style.display = 'block';
