@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const favoritesButton = document.getElementById('favorites-button');
     const cartCount = document.querySelector('.cart-count');
     const favoritesCount = document.querySelector('.favorites-count');
+    const loadingOverlay = document.getElementById('loading-overlay');
     
     // Mobil menü elemanları
     const menuToggle = document.getElementById('menu-toggle');
@@ -32,33 +33,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentStoreId = null;
     let allStores = [];
     let allProducts = [];
+    loadingOverlay.style.display = 'flex'; // Yükleniyor animasyonunu göster
     
     // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
     console.log('🔄 Firebase\'den veriler yükleniyor...');
     
     try {
+        // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
+        console.log('🔄 Firebase\'den veriler yükleniyor...');
+
         // Mağazaları çek
         const storesSnapshot = await window.db.collection('stores').get();
         allStores = storesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+        id: doc.id,
+        ...doc.data()
         }));
-        
+
         // Ürünleri çek
         const productsSnapshot = await window.db.collection('products').get();
         allProducts = productsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+        id: doc.id,
+        ...doc.data()
         }));
-        
+
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
-        
+
         // Sidebar'ı güncelle
         renderStores();
-        
+
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
         showNotification('Veriler yüklenemedi!', false);
+    } finally {
+        loadingOverlay.style.display = 'none'; // Animasyonu gizle
     }
     
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---

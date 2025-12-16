@@ -246,29 +246,37 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally { isSubmitting = false; }
     };
     
-    // --- ÜRÜN FONKSİYONLARI ---
-    
     // Ürün tablosunu güncelle
     async function renderProductsTable() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    loadingOverlay.style.display = 'flex'; // Göster
+
+    try {
         const [products, stores] = await Promise.all([window.showlyDB.getAllProducts(), window.showlyDB.getStores()]);
         productsTableBody.innerHTML = '';
         for (const product of products) {
-            const store = stores.find(s => s.id === product.storeId);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${product.id}</td>
-                <td>${product.title}</td>
-                <td>${store ? store.name : 'Bilinmiyor'}</td>
-                <td>${product.price}</td>
-                <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
-                <td>
-                    <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
-                    <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
-            productsTableBody.appendChild(row);
+        const store = stores.find(s => s.id === product.storeId);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${product.id}</td>
+            <td>${product.title}</td>
+            <td>${store ? store.name : 'Bilinmiyor'}</td>
+            <td>${product.price}</td>
+            <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
+            <td>
+            <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+            <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        productsTableBody.appendChild(row);
         }
         attachProductEventListeners();
+    } catch (error) {
+        console.error('Ürünler yüklenemedi:', error);
+        showNotification('Ürünler yüklenemedi!', false);
+    } finally {
+        loadingOverlay.style.display = 'none'; // Gizle
+    }
     }
     
     // Ürün olay dinleyicileri
