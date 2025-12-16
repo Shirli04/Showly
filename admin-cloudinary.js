@@ -289,28 +289,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // Ürün düzenle
-    const editProduct = (productId) => {
-        const product = window.showlyDB.getProductById(productId);
-        if (!product) return;
-        
-        document.getElementById('product-name').value = product.title;
-        document.getElementById('product-store').value = product.storeId;
-        document.getElementById('product-price').value = product.price;
-        document.getElementById('product-description').value = product.description || '';
-        document.getElementById('product-material').value = product.material || '';
-        document.getElementById('product-category').value = product.category || '';
-        productIsOnSale.checked = product.isOnSale || false;
-        originalPriceGroup.style.display = product.isOnSale ? 'block' : 'none';
-        document.getElementById('product-original-price').value = product.originalPrice || '';
-        
-        if (product.imageUrl) {
-            productImagePreview.src = product.imageUrl;
-            productImagePreview.classList.add('show');
-            uploadedProductImageUrl = product.imageUrl;
+    const editProduct = async (productId) => {
+        try {
+            // Firebase'den ürünü ID ile çek
+            const productDoc = await window.db.collection('products').doc(productId).get();
+            if (!productDoc.exists) {
+                showNotification('Ürün bulunamadı!', false);
+                return;
+            }
+
+            const product = productDoc.data();
+            product.id = productDoc.id;
+
+            // Modal içeriğini doldur
+            document.getElementById('product-name').value = product.title || '';
+            document.getElementById('product-store').value = product.storeId || '';
+            document.getElementById('product-price').value = product.price || '';
+            document.getElementById('product-description').value = product.description || '';
+            document.getElementById('product-material').value = product.material || '';
+            document.getElementById('product-category').value = product.category || '';
+            productIsOnSale.checked = product.isOnSale || false;
+            originalPriceGroup.style.display = product.isOnSale ? 'block' : 'none';
+            document.getElementById('product-original-price').value = product.originalPrice || '';
+
+            // Resim varsa, önizlemeyi göster
+            if (product.imageUrl) {
+                productImagePreview.src = product.imageUrl;
+                productImagePreview.classList.add('show');
+                uploadedProductImageUrl = product.imageUrl;
+            } else {
+                productImagePreview.classList.remove('show');
+                uploadedProductImageUrl = null;
+            }
+
+            // Modalı aç
+            productModal.style.display = 'block';
+            editingProductId = productId;
+
+        } catch (error) {
+            console.error('Ürün düzenlenirken hata oluştu:', error);
+            showNotification('Ürün bilgileri yüklenemedi!', false);
         }
-        
-        productModal.style.display = 'block';
-        editingProductId = productId;
     };
     
     // Ürün sil
@@ -522,17 +541,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- YARDIMCI FONKSİYONLAR ---
-    
     // Mağaza seçimini doldur
     async function populateStoreSelect() {
-        const stores = await window.getStoresFromFirebase(); // Firebase’den
-        productStoreSelect.innerHTML = '<option value="">Mağaza Seçin</option>';
-        for (const store of stores) {
-            const option = document.createElement('option');
-            option.value = store.id;
-            option.textContent = store.name;
-            productStoreSelect.appendChild(option);
+        try {
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            productStoreSelect.innerHTML = '<option value="">Mağaza Seçin</option>';
+            for (const store of stores) {
+                const option = document.createElement('option');
+                option.value = store.id;
+                option.textContent = store.name;
+                productStoreSelect.appendChild(option);
+            }
+        } catch (error) {
+            console.error('Mağazalar yüklenemedi:', error);
+            showNotification('Mağazalar yüklenemedi!', false);
         }
     }
     
