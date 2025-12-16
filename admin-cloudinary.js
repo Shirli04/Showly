@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     };
-    
+
     // Ürün düzenle
     const editProduct = async (productId) => {
         try {
@@ -308,9 +308,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-description').value = product.description || '';
             document.getElementById('product-material').value = product.material || '';
             document.getElementById('product-category').value = product.category || '';
-            productIsOnSale.checked = product.isOnSale || false;
-            originalPriceGroup.style.display = product.isOnSale ? 'block' : 'none';
-            document.getElementById('product-original-price').value = product.originalPrice || '';
+
+            // İndirim yüzdesini hesapla ve yaz
+            if (product.isOnSale && product.originalPrice) {
+                const currentPrice = parseFloat(product.price.replace(' TMT', ''));
+                const originalPrice = parseFloat(product.originalPrice.replace(' TMT', ''));
+                const discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+                document.getElementById('product-discount-percent').value = discountPercent;
+            } else {
+                document.getElementById('product-discount-percent').value = '';
+            }
 
             // Resim varsa, önizlemeyi göster
             if (product.imageUrl) {
@@ -366,8 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const desc     = document.getElementById('product-description').value.trim();
             const material = document.getElementById('product-material').value.trim();
             const category = document.getElementById('product-category').value.trim();
-            const isOnSale = productIsOnSale.checked;
-            const origPrice= productOriginalPrice.value.trim();
+            const discountPercent = document.getElementById('product-discount-percent').value.trim(); // Yeni
             const file     = productImage.files[0];
 
             if (!title || !storeId || !price) {
@@ -384,13 +390,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
             }
 
+            // Fiyat ve orijinal fiyat hesaplaması
+            let originalPrice = '';
+            let isOnSale = false;
+            if (discountPercent && discountPercent > 0) {
+                isOnSale = true;
+                // Orijinal fiyatı hesapla (örneğin %20 indirimle girilen fiyat = %80'ı)
+                const currentPrice = parseFloat(price.replace(' TMT', ''));
+                const original = currentPrice / (1 - (parseFloat(discountPercent) / 100));
+                originalPrice = original.toFixed(2) + ' TMT';
+            }
+
             await window.addProductToFirebase({
                 storeId, title, price, description: desc, material, category,
-                isOnSale, originalPrice: origPrice, imageUrl
+                isOnSale, originalPrice, imageUrl
             });
 
             showNotification('Ürün Firebase’e eklendi!');
-            renderProductsTable(); updateDashboard();
+            renderProductsTable();
+            updateDashboard();
             closeAllModals();
         } catch (err) {
             console.error(err);

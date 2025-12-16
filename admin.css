@@ -675,6 +675,14 @@ body {
     font-weight: 500;
 }
 
+.form-group input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
 .form-group input,
 .form-group select,
 .form-group textarea {

@@ -252,10 +252,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (product.isOnSale && product.originalPrice) {
                 const originalPrice = parseFloat(product.originalPrice.replace(' TMT', ''));
                 const currentPrice = parseFloat(product.price.replace(' TMT', ''));
-                
+
                 if (!isNaN(originalPrice) && !isNaN(currentPrice) && originalPrice > 0) {
                     const discountPercentage = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-                    
+
                     priceDisplay = `
                         <div class="price-container">
                             <div class="price-info">
@@ -267,10 +267,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                 }
             }
-            
+
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    ${product.isOnSale ? '<span class="discount-badge">İndirim</span>' : ''}
+                    ${product.isOnSale ? '<span class="discount-badge">İndirim</span>' : ''} <!-- Burası sadece indirim varsa -->
                     <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
