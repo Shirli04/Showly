@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('store-name').value = store.name;
         document.getElementById('store-description').value = store.description || '';
 
-        // ✅ Kontrol ekle
+        // ✅ Yeni: Mağaza Üstü Metin
         const customBannerInput = document.getElementById('store-custom-banner-text');
         if (customBannerInput) {
             customBannerInput.value = store.customBannerText || '';
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = document.getElementById('store-name').value.trim();
         const desc = document.getElementById('store-description').value.trim();
 
-        // ✅ Kontrol ekle
+        // ✅ Yeni: Mağaza Üstü Metin
         const customBannerInput = document.getElementById('store-custom-banner-text');
         const customBannerText = customBannerInput ? customBannerInput.value.trim() : '';
 

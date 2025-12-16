@@ -204,14 +204,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- ÜRÜNLERİ FİLTRELEYİP GÖSTEREN ANA FONKSİYON ---
     const renderStorePage = (storeId, activeFilter = null) => {
-        currentStoreId = storeId;
+  currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
         const storeBanner = document.getElementById('store-banner');
         storeBanner.style.display = 'block';
 
-        // ✅ Burada artık "X ürün" yazısı değil, kullanıcı tanımlı metin gösterilir
+        // ✅ Yeni: Mağaza Üstü Metin
         storeBanner.innerHTML = `
             <h2>${store.name}</h2>
             <p>${store.customBannerText || 'Bu mağazada sadece en kaliteli ürünler!'}</p>
