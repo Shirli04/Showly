@@ -391,9 +391,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return data.secure_url;
     }
     
-    // --- YENİ: SİPARİŞ TABLOSUNU GÜNCELLEYEN FONKSİYON ---
+    // --- YENİ: SİPARİŞ TABLOSUNU GÜNCELLEYEN FONKSİYON (FIREBASE'DEN VERİ ÇEKEREK) ---
     async function renderOrdersTable() {
         const orders = await window.showlyDB.getOrders();
+
+        // Firebase'den tüm ürünleri ve mağazaları al
+        const productsSnapshot = await window.db.collection('products').get();
+        const allProducts = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const storesSnapshot = await window.db.collection('stores').get();
+        const allStores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
         ordersTableBody.innerHTML = '';
         if (orders.length === 0) {
             ordersTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
