@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Mağaza düzenle
     const editStore = async (storeId) => {
-        const stores = await window.showlyDB.getStores(); // await ile bekle
+        const stores = await window.showlyDB.getStores();
         const store = stores.find(s => s.id === storeId);
         if (!store) return;
 
@@ -203,7 +203,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('store-id').value = store.id;
         document.getElementById('store-name').value = store.name;
         document.getElementById('store-description').value = store.description || '';
-        document.getElementById('store-custom-banner-text').value = store.customBannerText || '';
+
+        // ✅ Kontrol ekle
+        const customBannerInput = document.getElementById('store-custom-banner-text');
+        if (customBannerInput) {
+            customBannerInput.value = store.customBannerText || '';
+        }
 
         storeModal.style.display = 'block';
         editingStoreId = storeId;
@@ -229,20 +234,23 @@ document.addEventListener('DOMContentLoaded', () => {
         storeModal.style.display = 'block';
     };
     
-    // Mağaza form submit
     const handleStoreSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
         const name = document.getElementById('store-name').value.trim();
         const desc = document.getElementById('store-description').value.trim();
-        const customBannerText = document.getElementById('store-custom-banner-text').value.trim(); // Yeni
+
+        // ✅ Kontrol ekle
+        const customBannerInput = document.getElementById('store-custom-banner-text');
+        const customBannerText = customBannerInput ? customBannerInput.value.trim() : '';
+
         if (!name) { showNotification('Mağaza adı gerekli!', false); isSubmitting = false; return; }
         try {
             await window.addStoreToFirebase({ 
                 name, 
                 description: desc, 
-                customBannerText: customBannerText || '' // Yeni
+                customBannerText // ✅ Burada kullan
             });
             showNotification('Mağaza Firebase’e eklendi!');
             renderStoresTable(); populateStoreSelect(); updateDashboard();
