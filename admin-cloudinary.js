@@ -438,71 +438,74 @@ document.addEventListener('DOMContentLoaded', () => {
         return data.secure_url;
     }
     
-    // --- YENİ: SİPARİŞ TABLOSUNU GÜNCELLEYEN FONKSİYON (FIREBASE'DEN VERİ ÇEKEREK) ---
     async function renderOrdersTable() {
-        const orders = await window.showlyDB.getOrders();
+        try {
+            const ordersSnapshot = await window.db.collection('orders').orderBy('date', 'desc').get();
+            const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Firebase'den tüm ürünleri ve mağazaları al
-        const productsSnapshot = await window.db.collection('products').get();
-        const allProducts = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Firebase'den ürün ve mağaza verilerini çek
+            const productsSnapshot = await window.db.collection('products').get();
+            const allProducts = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        const storesSnapshot = await window.db.collection('stores').get();
-        const allStores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const storesSnapshot = await window.db.collection('stores').get();
+            const allStores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        ordersTableBody.innerHTML = '';
-        if (orders.length === 0) {
-            ordersTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
-            return;
-        }
-        orders.sort((a, b) => new Date(b.date) - new Date(a.date));
-        orders.forEach(order => {
-            // Her ürün için mağaza adını bulmak için döngü
-            const storeNames = [...new Set(order.items.map(item => {
-                const product = allProducts.find(p => p.id === item.id);
-                const store = allStores.find(s => s.id === product?.storeId);
-                return store?.name || 'Bilinmiyor';
-            }))].join(', ');
-
-            const row = document.createElement('tr');
-            if (order.status === 'pending') {
-                row.innerHTML = `
-                    <td>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
-                        </ul>
-                    </td>
-                    <td>${order.customer.name}</td>
-                    <td>${order.customer.phone}</td>
-                    <td>${order.customer.address}</td>
-                    <td>${storeNames}</td>
-                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                    <td><span class="status pending">Beklemede</span></td>
-                    <td>
-                        <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
-                        <button class="btn-icon" onclick="assignOrderNumber('${order.id}')" title="Numara Ata ve SMS Gönder">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </td>
-                `;
-            } else {
-                row.innerHTML = `
-                    <td>${order.id}</td>
-                    <td>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
-                        </ul>
-                    </td>
-                    <td>${order.customer.name}</td>
-                    <td>${order.customer.phone}</td>
-                    <td>${order.customer.address}</td>
-                    <td>${storeNames}</td>
-                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                    <td><span class="status completed">Onaylandı</span></td>
-                    <td><strong>${order.orderNumber}</strong></td>
-                `;
+            ordersTableBody.innerHTML = '';
+            if (orders.length === 0) {
+                ordersTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
+                return;
             }
-            ordersTableBody.appendChild(row);
-        });
+
+            orders.forEach(order => {
+                const storeNames = [...new Set(order.items.map(item => {
+                    const product = allProducts.find(p => p.id === item.id);
+                    const store = allStores.find(s => s.id === product?.storeId);
+                    return store?.name || 'Bilinmiyor';
+                }))].join(', ');
+
+                const row = document.createElement('tr');
+                if (order.status === 'pending') {
+                    row.innerHTML = `
+                        <td>
+                            <ul style="list-style: none; padding: 0; margin: 0;">
+                                ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
+                            </ul>
+                        </td>
+                        <td>${order.customer.name}</td>
+                        <td>${order.customer.phone}</td>
+                        <td>${order.customer.address}</td>
+                        <td>${storeNames}</td>
+                        <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
+                        <td><span class="status pending">Beklemede</span></td>
+                        <td>
+                            <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
+                            <button class="btn-icon" onclick="assignOrderNumber('${order.id}')" title="Numara Ata ve SMS Gönder">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </td>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <td>
+                            <ul style="list-style: none; padding: 0; margin: 0;">
+                                ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
+                            </ul>
+                        </td>
+                        <td>${order.customer.name}</td>
+                        <td>${order.customer.phone}</td>
+                        <td>${order.customer.address}</td>
+                        <td>${storeNames}</td>
+                        <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
+                        <td><span class="status completed">Onaylandı</span></td>
+                        <td><strong>${order.orderNumber}</strong></td>
+                    `;
+                }
+                ordersTableBody.appendChild(row);
+            });
+        } catch (error) {
+            console.error('Siparişler yüklenemedi:', error);
+            showNotification('Siparişler yüklenemedi!', false);
+        }
     }
     
     // --- EXCEL FONKSİYONLARI ---
@@ -771,4 +774,28 @@ document.addEventListener('DOMContentLoaded', () => {
         await renderOrdersTable();
         await populateStoreSelect();
     })();// Sipariş tablosunu da göster
+});
+
+// --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---
+function startAutoRefresh() {
+    const refreshInterval = 5 * 60 * 1000; // 5 dakika = 300.000 milisaniye
+
+    setInterval(async () => {
+        console.log('🔄 Veriler 5 dakikada bir otomatik olarak yenileniyor...');
+        try {
+            // Tabloları yenile
+            await renderStoresTable();
+            await renderProductsTable();
+            await renderOrdersTable();
+            updateDashboard(); // İstatistikleri güncelle
+        } catch (error) {
+            console.error('Otomatik yenileme sırasında hata oluştu:', error);
+        }
+    }, refreshInterval);
+}
+
+// Sayfa yüklendiğinde otomatik yenilemeyi başlat
+document.addEventListener('DOMContentLoaded', () => {
+    // ... diğer kodlar ...
+    startAutoRefresh(); // Bu satır eklenmeli
 });
