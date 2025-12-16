@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">İndirim</span>' : ''}
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -366,9 +366,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
     
-    const updateFavoritesCount = () => {
-        favoritesCount.textContent = favorites.length;
-        favoritesCount.classList.toggle('show', favorites.length > 0);
+    const updateCartCount = () => {
+        const total = cart.reduce((sum, item) => sum + item.quantity, 0);
+        cartCount.textContent = total;
+        cartCount.classList.toggle('show', total > 0);
     };
     
     const addToCart = (product) => {
@@ -380,12 +381,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         updateCartCount();
         showNotification(product.title + ' sepete eklendi!');
-    };
-    
-    const updateCartCount = () => {
-        const total = cart.reduce((sum, item) => sum + item.quantity, 0);
-        cartCount.textContent = total;
-        cartCount.classList.toggle('show', total > 0);
     };
 
     // --- OLAY DİNLEYİCİLER ---
@@ -443,8 +438,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Modal kontrolleri
     document.getElementById('modal-add-cart').addEventListener('click', () => {
-        const title = document.getElementById('modal-title').textContent;
-        const product = allProducts.find(p => p.title === title);
+        const modal = document.getElementById('product-modal');
+        const productId = modal.getAttribute('data-product-id');
+        const product = allProducts.find(p => p.id === productId);
         if (product) { 
             addToCart(product); 
             document.getElementById('product-modal').style.display = 'none'; 
@@ -474,7 +470,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
-                    <img src="${item.imageUrl || 'https://picsum.photos/70/70?random=' + item.id}" alt="${item.title}">
+                    <img src="${item.imageUrl || 'https://picsum.photos/70/70?random=  ' + item.id}" alt="${item.title}">
                     <div class="cart-item-details">
                         <div class="cart-item-title">${item.title}</div>
                         <div class="cart-item-price">${item.price}</div>
@@ -620,7 +616,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
-                    <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=' + product.id}" alt="${product.title}">
+                    <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=  ' + product.id}" alt="${product.title}">
                     <div class="favorite-item-info">
                         <div class="favorite-item-title">${product.title}</div>
                         <div class="favorite-item-price">${product.price}</div>
@@ -681,7 +677,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
         const modal = document.getElementById('product-modal');
-        document.getElementById('modal-image').src = product.imageUrl || 'https://picsum.photos/400/500?random=' + product.id;
+        modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
+        document.getElementById('modal-image').src = product.imageUrl || 'https://picsum.photos/400/500?random=  ' + product.id;
         document.getElementById('modal-title').textContent = product.title;
         document.getElementById('modal-price').textContent = product.price;
         document.getElementById('modal-description').textContent = product.description || '';
