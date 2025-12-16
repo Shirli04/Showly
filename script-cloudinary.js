@@ -271,6 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">İndirim</span>' : ''}
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -327,6 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container">
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -472,6 +474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
+                    <img src="${item.imageUrl || 'https://picsum.photos/70/70?random=' + item.id}" alt="${item.title}">
                     <div class="cart-item-details">
                         <div class="cart-item-title">${item.title}</div>
                         <div class="cart-item-price">${item.price}</div>
@@ -521,6 +524,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
+                    <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=' + product.id}" alt="${product.title}">
                     <div class="favorite-item-info">
                         <div class="favorite-item-title">${product.title}</div>
                         <div class="favorite-item-price">${product.price}</div>
