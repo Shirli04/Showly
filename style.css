@@ -1827,3 +1827,61 @@ header {
 .hero-cta-link:hover .hero-cta-image {
     transform: scale(1.03); /* Resmin kendisini çok az büyüt */
 }
+
+.order-form-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.order-form-modal {
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.order-form-modal h3 {
+    margin-bottom: 20px;
+    color: var(--dark-color);
+}
+
+.order-form-modal .form-group {
+    margin-bottom: 20px;
+}
+
+.order-form-modal label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.order-form-modal input,
+.order-form-modal textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--light-color);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.order-form-modal input:focus,
+.order-form-modal textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.order-form-modal .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}

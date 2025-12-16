@@ -512,6 +512,97 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    // --- SİPARİŞ TAMAMLAMA FONKSİYONU ---
+    document.querySelector('.checkout-button').addEventListener('click', () => {
+        if (cart.length === 0) {
+            showNotification('Sepetiniz boş!', false);
+            return;
+        }
+
+        // Sipariş formunu oluştur
+        const formHTML = `
+            <div class="order-form-overlay">
+                <div class="order-form-modal">
+                    <h3>Sipariş Bilgileri</h3>
+                    <form id="order-form">
+                        <div class="form-group">
+                            <label>Adınız Soyadınız</label>
+                            <input type="text" id="customer-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Telefon Numaranız</label>
+                            <input type="tel" id="customer-phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Adresiniz</label>
+                            <textarea id="customer-address" rows="3" required></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" id="cancel-order" class="btn-secondary">İptal</button>
+                            <button type="submit" class="btn-primary">Siparişi Onayla</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', formHTML);
+
+        // İptal butonu
+        document.getElementById('cancel-order').addEventListener('click', () => {
+            document.querySelector('.order-form-overlay').remove();
+        });
+
+        // Form submit
+        document.getElementById('order-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('customer-name').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+            const address = document.getElementById('customer-address').value.trim();
+
+            if (!name || !phone || !address) {
+                showNotification('Lütfen tüm alanları doldurun!', false);
+                return;
+            }
+
+            // Sipariş verilerini oluştur
+            const order = {
+                customer: { name, phone, address },
+                items: [...cart], // Sepetteki ürünleri kopyala
+                total: cart.reduce((sum, item) => {
+                    const price = parseFloat(item.price.replace(' TMT', ''));
+                    return sum + (price * item.quantity);
+                }, 0).toFixed(2) + ' TMT',
+                date: new Date().toISOString(),
+                status: 'pending'
+            };
+
+            try {
+                // Firebase'e siparişi ekle
+                const docRef = await window.db.collection('orders').add(order);
+                console.log('Sipariş Firebase\'e eklendi, ID:', docRef.id);
+
+                // Kullanıcıya başarı mesajı
+                showNotification('Siparişiniz başarıyla alındı!', true);
+
+                // Sepeti temizle
+                cart = [];
+                updateCartCount();
+
+                // Modalı kapat
+                document.querySelector('.order-form-overlay').remove();
+
+                // Sepet modalını da kapat
+                document.getElementById('cart-modal').style.display = 'none';
+
+            } catch (error) {
+                console.error('Sipariş eklenemedi:', error);
+                showNotification('Sipariş oluşturulamadı!', false);
+            }
+        });
+    });
+
     // Favoriler modalı
     favoritesButton.addEventListener('click', () => {
         const favoritesModal = document.getElementById('favorites-modal');
