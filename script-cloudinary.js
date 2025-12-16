@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mainFiltersSection = document.getElementById('main-filters-section');
     const mainFilterToggleBtn = document.getElementById('main-filter-toggle-btn');
     const mainFiltersContainer = document.getElementById('main-filters-container');
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 dakika = 300000 milisaniye
+
+    const cachedData = localStorage.getItem('showlyCachedData');
+    const cacheTimestamp = localStorage.getItem('showlyCacheTimestamp');
     
     // --- DURUM DEĞİŞKENLERİ (STATE) ---
     let cart = [];
@@ -34,11 +38,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allStores = [];
     let allProducts = [];
     loadingOverlay.style.display = 'flex'; // Yükleniyor animasyonunu göster
+    if (cachedData && cacheTimestamp) {
+        const now = Date.now();
+        const timestamp = parseInt(cacheTimestamp);
+
+        if (now - timestamp < CACHE_DURATION) {
+            // Önbellekten veri yükle
+            console.log('🔄 Önbellekten veriler yükleniyor...');
+            const parsed = JSON.parse(cachedData);
+            allStores = parsed.stores;
+            allProducts = parsed.products;
+
+            // Sidebar ve yönlendirme gibi işlemleri yap
+            renderStores();
+            router();
+            return; // Burada fonksiyonu bitir, alttaki veri çekme işlemi olmasın
+        }
+    }
     
     // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
     console.log('🔄 Firebase\'den veriler yükleniyor...');
     
     try {
+                // Firebase'den verileri çektikten sonra
+        allStores = storesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        allProducts = productsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        // Verileri önbelleğe kaydet
+        localStorage.setItem('showlyCachedData', JSON.stringify({ stores: allStores, products: allProducts }));
+        localStorage.setItem('showlyCacheTimestamp', Date.now().toString());
         // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
         console.log('🔄 Firebase\'den veriler yükleniyor...');
 
