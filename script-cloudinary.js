@@ -518,5 +518,5 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('❌ Firebaseden veri çekilemedi:', error);
         }
-    })();
     });
+});
