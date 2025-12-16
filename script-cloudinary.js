@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    
+
     // --- DOM ELEMANLARI ---
     const storeList = document.getElementById('store-list');
     const productsGrid = document.getElementById('products-grid');
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const favoritesButton = document.getElementById('favorites-button');
     const cartCount = document.querySelector('.cart-count');
     const favoritesCount = document.querySelector('.favorites-count');
-    
+
     // Mobil menü elemanları
     const menuToggle = document.getElementById('menu-toggle');
     const menuClose = document.getElementById('menu-close');
@@ -25,17 +25,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mainFiltersSection = document.getElementById('main-filters-section');
     const mainFilterToggleBtn = document.getElementById('main-filter-toggle-btn');
     const mainFiltersContainer = document.getElementById('main-filters-container');
-    
+
     // --- DURUM DEĞİŞKENLERİ (STATE) ---
     let cart = [];
     let favorites = [];
     let currentStoreId = null;
     let allStores = [];
     let allProducts = [];
-    
+
+    // --- COOKIE FONKSİYONLARI ---
+    const getCookie = (name) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    };
+
+    const setCookie = (name, value, ms) => {
+        const expires = new Date(Date.now() + ms).toUTCString();
+        document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+    };
+
+    // --- ÖNBELLEK SÜRESİ (5 dakika = 300000 ms) ---
+    const CACHE_DURATION = 5 * 60 * 1000;
+
+    // Cookie'den veri varsa kullan
+    const cachedDataString = getCookie('showlyCachedData');
+    const cacheTimestampString = getCookie('showlyCacheTimestamp');
+
+    if (cachedDataString && cacheTimestampString) {
+        const cacheTimestamp = parseInt(decodeURIComponent(cacheTimestampString));
+        if (Date.now() - cacheTimestamp < CACHE_DURATION) {
+            console.log('🔄 Cookie\'den veriler yükleniyor...');
+            const parsedData = JSON.parse(decodeURIComponent(cachedDataString));
+            allStores = parsedData.stores;
+            allProducts = parsedData.products;
+            console.log(`✅ Cookie\'den ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
+
+            // Sidebar'ı güncelle
+            renderStores();
+            // Sayfayı yönlendir
+            router();
+            return; // Fonksiyonu burada bitir
+        } else {
+            console.log('🔄 Cookie süresi geçmiş, yeni veriler çekiliyor...');
+        }
+    } else {
+        console.log('🔄 Cookie bulunamadı, yeni veriler çekiliyor...');
+    }
+
     // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
     console.log('🔄 Firebase\'den veriler yükleniyor...');
-    
+
     try {
         // Mağazaları çek
         const storesSnapshot = await window.db.collection('stores').get();
@@ -43,31 +84,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             id: doc.id,
             ...doc.data()
         }));
-        
+
         // Ürünleri çek
         const productsSnapshot = await window.db.collection('products').get();
         allProducts = productsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
-        
+
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
-        
+
+        // Verileri cookie'ye kaydet
+        setCookie('showlyCachedData', encodeURIComponent(JSON.stringify({ stores: allStores, products: allProducts })), CACHE_DURATION);
+        setCookie('showlyCacheTimestamp', Date.now().toString(), CACHE_DURATION);
+
         // Sidebar'ı güncelle
         renderStores();
-        
+
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
         showNotification('Veriler yüklenemedi!', false);
     }
-    
+
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
     const router = async () => {
         const path = window.location.pathname.replace('/', '');
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const storeBanner = document.getElementById('store-banner');
-        
+
         if (!path) { // Ana sayfaysak
             if (heroSection) heroSection.style.display = 'block';
             if (infoSection) infoSection.style.display = 'grid';
@@ -99,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.title = 'Sayfa Bulunamadı - Showly';
         }
     };
-    
+
     // --- MAĞAZA LİSTELEME FONKSİYONU ---
     function renderStores() {
         storeList.innerHTML = '';
@@ -121,7 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('category-buttons-container');
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
         const categories = [...new Set(storeProducts.map(p => p.category).filter(Boolean))];
-        
+
         container.innerHTML = '';
 
         const allBtn = document.createElement('button');
@@ -193,17 +238,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         minPriceInput.addEventListener('input', applyPriceRange);
         maxPriceInput.addEventListener('input', applyPriceRange);
     };
-    
+
     // --- ÜRÜNLERİ FİLTRELEYİP GÖSTEREN ANA FONKSİYON ---
     const renderStorePage = (storeId, activeFilter = null) => {
         currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
-        
+
         const storeBanner = document.getElementById('store-banner');
         storeBanner.style.display = 'block';
         storeBanner.innerHTML = `<h2>${store.name}</h2><p>${storeProducts.length} ürün</p>`;
-        
+
         categoryFiltersSection.style.display = 'block';
         mainFiltersSection.style.display = 'block';
         productsGrid.style.display = 'grid';
@@ -215,17 +260,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         let productsToRender = storeProducts;
         if (activeFilter) {
             switch (activeFilter.type) {
-                case 'CATEGORY': 
-                    productsToRender = storeProducts.filter(p => p.category === activeFilter.value); 
+                case 'CATEGORY':
+                    productsToRender = storeProducts.filter(p => p.category === activeFilter.value);
                     break;
-                case 'DISCOUNT': 
-                    productsToRender = storeProducts.filter(p => p.isOnSale); 
+                case 'DISCOUNT':
+                    productsToRender = storeProducts.filter(p => p.isOnSale);
                     break;
-                case 'FREE': 
-                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) === 0); 
+                case 'FREE':
+                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) === 0);
                     break;
-                case 'EXPENSIVE': 
-                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500); 
+                case 'EXPENSIVE':
+                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500);
                     break;
                 case 'PRICE_RANGE':
                     const min = activeFilter.min || 0;
@@ -242,20 +287,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrede ürün bulunamadı.</h3></div>`;
             return;
         }
-        
+
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
-            
+
             let priceDisplay = `<p class="product-price">${product.price}</p>`;
 
             if (product.isOnSale && product.originalPrice) {
                 const originalPrice = parseFloat(product.originalPrice.replace(' TMT', ''));
                 const currentPrice = parseFloat(product.price.replace(' TMT', ''));
-                
+
                 if (!isNaN(originalPrice) && !isNaN(currentPrice) && originalPrice > 0) {
                     const discountPercentage = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-                    
+
                     priceDisplay = `
                         <div class="price-container">
                             <div class="price-info">
@@ -267,11 +312,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                 }
             }
-            
+
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">İndirim</span>' : ''}
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -289,46 +334,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- ARAMA FONKSİYONU ---
     const performSearch = () => {
         const query = searchInput.value.trim().toLowerCase();
-        if (query === '') { 
-            showNotification('Lütfen bir arama terimi girin!'); 
-            return; 
+        if (query === '') {
+            showNotification('Lütfen bir arama terimi girin!');
+            return;
         }
-        
-        let productsToSearch = currentStoreId 
+
+        let productsToSearch = currentStoreId
             ? allProducts.filter(p => p.storeId === currentStoreId)
             : allProducts;
-            
-        const filteredProducts = productsToSearch.filter(product => 
-            product.title.toLowerCase().includes(query) || 
+
+        const filteredProducts = productsToSearch.filter(product =>
+            product.title.toLowerCase().includes(query) ||
             (product.description && product.description.toLowerCase().includes(query))
         );
-        
+
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const storeBanner = document.getElementById('store-banner');
-        
+
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
         if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
         if (mainFiltersSection) mainFiltersSection.style.display = 'none';
-        
+
         storeBanner.style.display = 'block';
         storeBanner.innerHTML = `<h2>Arama Sonuçları: "${query}"</h2><p>${filteredProducts.length} ürün</p>`;
-        
+
         productsGrid.style.display = 'grid';
         productsGrid.innerHTML = '';
-        
-        if (filteredProducts.length === 0) { 
-            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-search"></i><h3>Sonuç Bulunamadı</h3></div>`; 
-            return; 
+
+        if (filteredProducts.length === 0) {
+            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-search"></i><h3>Sonuç Bulunamadı</h3></div>`;
+            return;
         }
-        
+
         filteredProducts.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -342,21 +387,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateFavoriteButton(product.id);
         });
     };
-    
+
     // --- SEPET VE FAVORİ FONKSİYONLARI ---
     const toggleFavorite = (product) => {
         const index = favorites.findIndex(item => item.id === product.id);
-        if (index !== -1) { 
-            favorites.splice(index, 1); 
-            showNotification('Favorilerden kaldırıldı'); 
-        } else { 
-            favorites.push(product); 
-            showNotification('Favorilere eklendi'); 
+        if (index !== -1) {
+            favorites.splice(index, 1);
+            showNotification('Favorilerden kaldırıldı');
+        } else {
+            favorites.push(product);
+            showNotification('Favorilere eklendi');
         }
         updateFavoritesCount();
         updateFavoriteButton(product.id);
     };
-    
+
     const updateFavoriteButton = (productId) => {
         const buttons = document.querySelectorAll(`.btn-favorite[data-id="${productId}"]`);
         const isFavorite = favorites.some(item => item.id === productId);
@@ -365,23 +410,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             button.innerHTML = isFavorite ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>';
         });
     };
-    
+
     const updateFavoritesCount = () => {
         favoritesCount.textContent = favorites.length;
         favoritesCount.classList.toggle('show', favorites.length > 0);
     };
-    
+
     const addToCart = (product) => {
         const existing = cart.find(item => item.id === product.id);
-        if (existing) { 
-            existing.quantity += 1; 
-        } else { 
-            cart.push({ ...product, quantity: 1 }); 
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            cart.push({ ...product, quantity: 1 });
         }
         updateCartCount();
         showNotification(product.title + ' sepete eklendi!');
     };
-    
+
     const updateCartCount = () => {
         const total = cart.reduce((sum, item) => sum + item.quantity, 0);
         cartCount.textContent = total;
@@ -389,28 +434,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // --- OLAY DİNLEYİCİLER ---
-    
+
     // Mobil menü
-    menuToggle.addEventListener('click', () => { 
-        storeMenu.classList.add('active'); 
-        menuOverlay.classList.add('active'); 
-        document.body.style.overflow = 'hidden'; 
+    menuToggle.addEventListener('click', () => {
+        storeMenu.classList.add('active');
+        menuOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
     });
-    menuClose.addEventListener('click', () => { 
-        storeMenu.classList.remove('active'); 
-        menuOverlay.classList.remove('active'); 
-        document.body.style.overflow = ''; 
+    menuClose.addEventListener('click', () => {
+        storeMenu.classList.remove('active');
+        menuOverlay.classList.remove('active');
+        document.body.style.overflow = '';
     });
-    menuOverlay.addEventListener('click', () => { 
-        storeMenu.classList.remove('active'); 
-        menuOverlay.classList.remove('active'); 
-        document.body.style.overflow = ''; 
+    menuOverlay.addEventListener('click', () => {
+        storeMenu.classList.remove('active');
+        menuOverlay.classList.remove('active');
+        document.body.style.overflow = '';
     });
 
     // Arama
     searchButton.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', (e) => { 
-        if (e.key === 'Enter') performSearch(); 
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
     });
 
     // Filtreler butonu
@@ -422,22 +467,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Ürün gridi olayları
     productsGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-favorite');
-        if (btn) { 
+        if (btn) {
             const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
             if (product) toggleFavorite(product);
-            return; 
+            return;
         }
-        
-        if (e.target.classList.contains('btn-cart')) { 
+
+        if (e.target.classList.contains('btn-cart')) {
             const product = allProducts.find(p => p.id === e.target.getAttribute('data-id'));
             if (product) addToCart(product);
-            return; 
+            return;
         }
-        
+
         const card = e.target.closest('.product-card');
-        if (card) { 
-            const productId = card.querySelector('.btn-cart').getAttribute('data-id'); 
-            openProductModal(productId); 
+        if (card) {
+            const productId = card.querySelector('.btn-cart').getAttribute('data-id');
+            openProductModal(productId);
         }
     });
 
@@ -445,36 +490,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('modal-add-cart').addEventListener('click', () => {
         const title = document.getElementById('modal-title').textContent;
         const product = allProducts.find(p => p.title === title);
-        if (product) { 
-            addToCart(product); 
-            document.getElementById('product-modal').style.display = 'none'; 
+        if (product) {
+            addToCart(product);
+            document.getElementById('product-modal').style.display = 'none';
         }
     });
-    
-    document.querySelectorAll('.close-modal').forEach(btn => { 
-        btn.addEventListener('click', () => btn.closest('.modal').style.display = 'none'); 
+
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => btn.closest('.modal').style.display = 'none');
     });
-    
-    window.addEventListener('click', (e) => { 
-        if (e.target.classList.contains('modal')) e.target.style.display = 'none'; 
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) e.target.style.display = 'none';
     });
 
     // Sepet modalı
     cartButton.addEventListener('click', () => {
         const cartModal = document.getElementById('cart-modal');
         const cartItems = document.getElementById('cart-items');
-        if (cart.length === 0) { 
-            cartItems.innerHTML = '<p class="empty-cart-message">Sepetiniz boş</p>'; 
+        if (cart.length === 0) {
+            cartItems.innerHTML = '<p class="empty-cart-message">Sepetiniz boş</p>';
         } else {
-            cartItems.innerHTML = ''; 
+            cartItems.innerHTML = '';
             let total = 0;
             cart.forEach(item => {
-                const price = parseFloat(item.price.replace(' TMT', '')); 
+                const price = parseFloat(item.price.replace(' TMT', ''));
                 total += price * item.quantity;
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
-                    <img src="${item.imageUrl || 'https://picsum.photos/70/70?random=' + item.id}" alt="${item.title}">
+                    <img src="${item.imageUrl || 'https://picsum.photos/70/70?random=  ' + item.id}" alt="${item.title}">
                     <div class="cart-item-details">
                         <div class="cart-item-title">${item.title}</div>
                         <div class="cart-item-price">${item.price}</div>
@@ -489,26 +534,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 cartItems.appendChild(cartItem);
             });
             document.getElementById('cart-total-price').textContent = total.toFixed(2) + ' TMT';
-        } 
+        }
         cartModal.style.display = 'block';
     });
-    
+
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('quantity-btn')) {
-            const productId = e.target.getAttribute('data-id'); 
-            const action = e.target.getAttribute('data-action'); 
+            const productId = e.target.getAttribute('data-id');
+            const action = e.target.getAttribute('data-action');
             const item = cart.find(i => i.id === productId);
-            if (item) { 
-                if (action === 'increase') item.quantity++; 
-                else if (action === 'decrease' && item.quantity > 1) item.quantity--; 
-                updateCartCount(); 
-                cartButton.click(); 
+            if (item) {
+                if (action === 'increase') item.quantity++;
+                else if (action === 'decrease' && item.quantity > 1) item.quantity--;
+                updateCartCount();
+                cartButton.click();
             }
         }
-        if (e.target.classList.contains('cart-item-remove')) { 
-            cart = cart.filter(i => i.id !== e.target.getAttribute('data-id')); 
-            updateCartCount(); 
-            cartButton.click(); 
+        if (e.target.classList.contains('cart-item-remove')) {
+            cart = cart.filter(i => i.id !== e.target.getAttribute('data-id'));
+            updateCartCount();
+            cartButton.click();
         }
     });
 
@@ -516,15 +561,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     favoritesButton.addEventListener('click', () => {
         const favoritesModal = document.getElementById('favorites-modal');
         const favoritesItems = document.getElementById('favorites-items');
-        if (favorites.length === 0) { 
-            favoritesItems.innerHTML = '<p class="empty-favorites-message">Favorileriniz boş</p>'; 
+        if (favorites.length === 0) {
+            favoritesItems.innerHTML = '<p class="empty-favorites-message">Favorileriniz boş</p>';
         } else {
             favoritesItems.innerHTML = '';
             favorites.forEach(product => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
-                    <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=' + product.id}" alt="${product.title}">
+                    <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=  ' + product.id}" alt="${product.title}">
                     <div class="favorite-item-info">
                         <div class="favorite-item-title">${product.title}</div>
                         <div class="favorite-item-price">${product.price}</div>
@@ -536,32 +581,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
                 favoritesItems.appendChild(favItem);
             });
-        } 
+        }
         favoritesModal.style.display = 'block';
     });
-    
+
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-remove-favorite')) { 
-            favorites = favorites.filter(f => f.id !== e.target.getAttribute('data-id')); 
-            updateFavoritesCount(); 
-            favoritesButton.click(); 
+        if (e.target.classList.contains('btn-remove-favorite')) {
+            favorites = favorites.filter(f => f.id !== e.target.getAttribute('data-id'));
+            updateFavoritesCount();
+            favoritesButton.click();
         }
-        if (e.target.classList.contains('btn-add-cart-from-fav')) { 
-            const product = favorites.find(f => f.id === e.target.getAttribute('data-id')); 
-            if (product) { 
-                addToCart(product); 
-                favoritesButton.click(); 
-            } 
+        if (e.target.classList.contains('btn-add-cart-from-fav')) {
+            const product = favorites.find(f => f.id === e.target.getAttribute('data-id'));
+            if (product) {
+                addToCart(product);
+                favoritesButton.click();
+            }
         }
     });
 
     // Logo ve mağaza linkleri
-    document.getElementById('logo-link').addEventListener('click', (e) => { 
-        e.preventDefault(); 
-        history.pushState(null, null, '/'); 
-        router(); 
+    document.getElementById('logo-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        history.pushState(null, null, '/');
+        router();
     });
-    
+
     document.addEventListener('click', (e) => {
         if (e.target.closest('.store-link')) {
             e.preventDefault();
@@ -570,11 +615,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             router();
         }
     });
-    
-    backHomeLink?.addEventListener('click', (e) => { 
-        e.preventDefault(); 
-        history.pushState(null, null, '/'); 
-        router(); 
+
+    backHomeLink?.addEventListener('click', (e) => {
+        e.preventDefault();
+        history.pushState(null, null, '/');
+        router();
     });
 
     // Tarayıcının geri/ileri butonları
@@ -585,23 +630,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
         const modal = document.getElementById('product-modal');
-        document.getElementById('modal-image').src = product.imageUrl || 'https://picsum.photos/400/500?random=' + product.id;
+        document.getElementById('modal-image').src = product.imageUrl || 'https://picsum.photos/400/500?random=  ' + product.id;
         document.getElementById('modal-title').textContent = product.title;
         document.getElementById('modal-price').textContent = product.price;
         document.getElementById('modal-description').textContent = product.description || '';
         document.getElementById('modal-material').textContent = product.material || '';
         modal.style.display = 'block';
     };
-    
+
     const showNotification = (message, isSuccess = true) => {
         const notification = document.createElement('div');
         notification.className = 'notification';
         notification.innerHTML = `<div class="notification-content"><i class="fas fa-check-circle"></i><span>${message}</span></div>`;
         document.body.appendChild(notification);
         setTimeout(() => notification.classList.add('show'), 10);
-        setTimeout(() => { 
-            notification.classList.remove('show'); 
-            setTimeout(() => notification.remove(), 300); 
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
         }, 3000);
     };
 
