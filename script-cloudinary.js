@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             cart.push({ ...product, quantity: 1 }); 
         }
         updateCartCount();
-        showNotification(product.title + ' sepebe goşuldy!');
+        showNotification(product.title + ' sebede goşuldy!');
     };
 
     // --- OLAY DİNLEYİCİLER ---
@@ -561,7 +561,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <textarea id="customer-address" rows="3" placeholder="Adresiňizi ýazyň" required></textarea>
                         </div>
                         <div class="form-actions">
-                            <button type="button" id="cancel-order" class="btn-secondary">İptal</button>
+                            <button type="button" id="cancel-order" class="btn-secondary">Aýyr</button>
                             <button type="submit" class="btn-primary">Sargyt ediň</button>
                         </div>
                     </form>
