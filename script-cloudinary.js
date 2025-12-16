@@ -211,11 +211,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const storeBanner = document.getElementById('store-banner');
         storeBanner.style.display = 'block';
 
-        // ✅ Yeni: Mağaza Üstü Metin
+        // ✅ customBannerText doğru şekilde geliyor mu kontrol et
+        console.log(store); // Bu satırı ekle
+
         storeBanner.innerHTML = `
             <h2>${store.name}</h2>
             <p>${store.customBannerText || 'Bu mağazada sadece en kaliteli ürünler!'}</p>
-        `;
+    `;
         
         categoryFiltersSection.style.display = 'block';
         mainFiltersSection.style.display = 'block';
