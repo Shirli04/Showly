@@ -396,29 +396,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const orders = await window.showlyDB.getOrders();
         ordersTableBody.innerHTML = '';
         if (orders.length === 0) {
-            ordersTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
+            ordersTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
             return;
         }
         orders.sort((a, b) => new Date(b.date) - new Date(a.date));
         orders.forEach(order => {
+            // Her ürün için mağaza adını bulmak için döngü
+            const storeNames = [...new Set(order.items.map(item => {
+                const product = allProducts.find(p => p.id === item.id);
+                const store = allStores.find(s => s.id === product?.storeId);
+                return store?.name || 'Bilinmiyor';
+            }))].join(', ');
+
             const row = document.createElement('tr');
             if (order.status === 'pending') {
                 row.innerHTML = `
-                    <td><strong style="color: #fdcb6e;">${order.id}</strong></td>
+                    <td>${order.id}</td>
                     <td>
-                        <div class="customer-info">
-                            <strong>${order.customer.name}</strong><br>
-                            <small>${order.customer.phone}</small><br>
-                            <small>${order.customer.address}</small>
-                        </div>
-                    </td>
-                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                    <td>${order.total}</td>
-                    <td>
-                        <ul style="list-style: none; padding: 0;">
-                            ${order.items.map(item => `<li>${item.title} (${item.quantity}x)</li>`).join('')}
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
                         </ul>
                     </td>
+                    <td>${order.customer.name}</td>
+                    <td>${order.customer.phone}</td>
+                    <td>${order.customer.address}</td>
+                    <td>${storeNames}</td>
+                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
                     <td><span class="status pending">Beklemede</span></td>
                     <td>
                         <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
@@ -431,19 +434,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.innerHTML = `
                     <td>${order.id}</td>
                     <td>
-                        <div class="customer-info">
-                            <strong>${order.customer.name}</strong><br>
-                            <small>${order.customer.phone}</small><br>
-                            <small>${order.customer.address}</small>
-                        </div>
-                    </td>
-                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                    <td>${order.total}</td>
-                    <td>
-                        <ul style="list-style: none; padding: 0;">
-                            ${order.items.map(item => `<li>${item.title} (${item.quantity}x)</li>`).join('')}
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
                         </ul>
                     </td>
+                    <td>${order.customer.name}</td>
+                    <td>${order.customer.phone}</td>
+                    <td>${order.customer.address}</td>
+                    <td>${storeNames}</td>
+                    <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
                     <td><span class="status completed">Onaylandı</span></td>
                     <td><strong>${order.orderNumber}</strong></td>
                 `;
