@@ -349,16 +349,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateFavoriteButton(product.id);
         });
     };
+
+    // --- FAVORİLER SAYISINI GÜNCELLEME FONKSİYONU ---
+    const updateFavoritesCount = () => {
+        const favoritesCount = document.querySelector('.favorites-count');
+        if (favoritesCount) {
+            favoritesCount.textContent = favorites.length;
+            favoritesCount.classList.toggle('show', favorites.length > 0);
+        }
+    };
     
     // --- SEPET VE FAVORİ FONKSİYONLARI ---
     const toggleFavorite = (product) => {
         const index = favorites.findIndex(item => item.id === product.id);
-        if (index !== -1) { 
-            favorites.splice(index, 1); 
-            showNotification('Favorilerden kaldırıldı'); 
-        } else { 
-            favorites.push(product); 
-            showNotification('Favorilere eklendi'); 
+        if (index !== -1) {
+            favorites.splice(index, 1);
+            showNotification('Favorilerden kaldırıldı');
+        } else {
+            favorites.push(product);
+            showNotification('Favorilere eklendi');
         }
         updateFavoritesCount();
         updateFavoriteButton(product.id);
