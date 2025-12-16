@@ -419,7 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             if (order.status === 'pending') {
                 row.innerHTML = `
-                    <td>${order.id}</td>
                     <td>
                         <ul style="list-style: none; padding: 0; margin: 0;">
                             ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
