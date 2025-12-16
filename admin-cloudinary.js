@@ -194,15 +194,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // Mağaza düzenle
-    const editStore = (storeId) => {
-        const store = window.showlyDB.getStores().find(s => s.id === storeId);
+    const editStore = async (storeId) => {
+        const stores = await window.showlyDB.getStores(); // await ile bekle
+        const store = stores.find(s => s.id === storeId);
         if (!store) return;
 
         document.getElementById('store-modal-title').textContent = 'Mağazayı Düzenle';
         document.getElementById('store-id').value = store.id;
         document.getElementById('store-name').value = store.name;
         document.getElementById('store-description').value = store.description || '';
-        document.getElementById('store-custom-banner-text').value = store.customBannerText || ''; // Yeni
+        document.getElementById('store-custom-banner-text').value = store.customBannerText || '';
 
         storeModal.style.display = 'block';
         editingStoreId = storeId;
