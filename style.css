@@ -1827,3 +1827,18 @@ header {
 .hero-cta-link:hover .hero-cta-image {
     transform: scale(1.03); /* Resmin kendisini çok az büyüt */
 }
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #6c5ce7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
