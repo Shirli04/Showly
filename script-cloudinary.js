@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
-                    <span class="product-category-label">${product.category || ''}</span>
+                    <span class="product-category-label">${product.category || 'TMT'}</span>
                     ${priceDisplay}
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
