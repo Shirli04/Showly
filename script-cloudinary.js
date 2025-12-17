@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
-                    <span class="product-category-label">${product.category || 'TMT'}</span>
+                    <span class="product-category-label">${product.category || ''}</span>
                     ${priceDisplay}
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
                     <span class="product-category-label">${product.category || ''}</span>
-                    <p class="product-price">${product.price}</p>
+                    <p class="product-price">${product.price} TMT</p>
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
             `;
