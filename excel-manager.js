@@ -2,84 +2,108 @@
 class ExcelManager {
     
     // Mağazaları Excel'e dönüştür ve indir
-    static exportStoresToExcel() {
-        const stores = window.showlyDB.getStores();
-        
-        // Excel verilerine dönüştür
-        const excelData = stores.map(store => ({
-            'Mağaza ID': store.id,
-            'Mağaza Adı': store.name,
-            'Açıklama': store.description || '',
-            'Logo URL': store.logoUrl || '',
-            'Oluşturulma Tarihi': store.createdAt
-        }));
-        
-        // Excel çalışma kitabı oluştur
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Mağazalar');
-        
-        // İndir
-        XLSX.writeFile(workbook, 'showly_magazines.xlsx');
+    static async exportStoresToExcel() {
+        try {
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Excel verilerine dönüştür
+            const excelData = stores.map(store => ({
+                'Mağaza ID': store.id,
+                'Mağaza Adı': store.name,
+                'Açıklama': store.description || '',
+                'Oluşturulma Tarihi': store.createdAt || ''
+            }));
+            
+            // Excel çalışma kitabı oluştur
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Mağazalar');
+            
+            // İndir
+            XLSX.writeFile(workbook, 'showly_magazines.xlsx');
+        } catch (error) {
+            console.error('Mağazalar indirilemedi:', error);
+            alert('Mağazalar indirilemedi: ' + error.message);
+        }
     }
     
     // Ürünleri Excel'e dönüştür ve indir
     static async exportProductsToExcel() {
-        const productsSnapshot = await window.db.collection('products').get();
-        const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        const storesSnapshot = await window.db.collection('stores').get();
-        const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Excel verilerine dönüştür
-        const excelData = products.map(product => {
-            const store = stores.find(s => s.id === product.storeId);
-            return {
-                'Mağaza Adı': store ? store.name : 'Bilinmiyor',
-                'Ürün Adı': product.title,
-                'Fiyat': product.price.replace(' TMT', ''),
-                'Eski Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
-                'Kategori': product.category || '',
-                'Malzeme': product.material || '',
-                'Açıklama': product.description || '',
-                'Resim URL': product.imageUrl || ''
-            };
-        });
-        
-        // Excel çalışma kitabı oluştur
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Ürünler');
-        
-        // İndir
-        XLSX.writeFile(workbook, 'showly_products.xlsx');
+        try {
+            // Firebase'den ürünleri çek
+            const productsSnapshot = await window.db.collection('products').get();
+            const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Firebase'den mağazaları çek
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            console.log('📦 İndirilen ürünler:', products.length);
+            console.log('🏪 İndirilen mağazalar:', stores.length);
+            
+            // Excel verilerine dönüştür
+            const excelData = products.map(product => {
+                const store = stores.find(s => s.id === product.storeId);
+                return {
+                    'Mağaza Adı': store ? store.name : 'Bilinmiyor',
+                    'Ürün Adı': product.title,
+                    'Fiyat': product.price ? product.price.replace(' TMT', '') : '',
+                    'Eski Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
+                    'Kategori': product.category || '',
+                    'Malzeme': product.material || '',
+                    'Açıklama': product.description || '',
+                    'Resim URL': product.imageUrl || ''
+                };
+            });
+            
+            console.log('📊 Excel verisi hazır:', excelData.length);
+            
+            // Excel çalışma kitabı oluştur
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Ürünler');
+            
+            // İndir
+            XLSX.writeFile(workbook, 'showly_products.xlsx');
+            console.log('✅ Excel dosyası indirildi!');
+        } catch (error) {
+            console.error('❌ Ürünler indirilemedi:', error);
+            alert('Ürünler indirilemedi: ' + error.message);
+        }
     }
     
     // Mağazaları Excel'den içe aktar
-    static importStoresFromExcel(file) {
+    static async importStoresFromExcel(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
                     
-                    // Mağazaları ekle
-                    jsonData.forEach(row => {
-                        window.showlyDB.addStore({
-                            name: row['Mağaza Adı'],
-                            description: row['Açıklama'] || '',
-                            logoUrl: row['Logo URL'] || ''
-                        });
-                    });
+                    let successCount = 0;
+                    
+                    // Mağazaları Firebase'e ekle
+                    for (const row of jsonData) {
+                        try {
+                            await window.addStoreToFirebase({
+                                name: row['Mağaza Adı'],
+                                description: row['Açıklama'] || ''
+                            });
+                            successCount++;
+                        } catch (error) {
+                            console.error('Mağaza eklenemedi:', error);
+                        }
+                    }
                     
                     resolve({
                         success: true,
-                        count: jsonData.length,
-                        message: `${jsonData.length} mağaza başarıyla içe aktarıldı`
+                        count: successCount,
+                        message: `${successCount} mağaza başarıyla içe aktarıldı`
                     });
                 } catch (error) {
                     reject({
@@ -100,35 +124,41 @@ class ExcelManager {
         });
     }
     
-    // ✅ YENİ: Ürünleri Excel'den Firebase'e yükle (OTOMATİK)
+    // ✅ Ürünleri Excel'den Firebase'e yükle (OTOMATİK)
     static async importProductsFromExcel(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             
             reader.onload = async (e) => {
                 try {
+                    console.log('📂 Excel dosyası okunuyor...');
+                    
                     // 1. Excel dosyasını oku
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
                     
-                    console.log('📊 Excel verisi okundu:', jsonData);
+                    console.log('📊 Excel verisi okundu:', jsonData.length, 'satır');
+                    console.log('İlk satır:', jsonData[0]);
                     
                     // 2. Firebase'den mağazaları çek
                     const storesSnapshot = await window.db.collection('stores').get();
                     const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     
-                    console.log('🏪 Mağazalar yüklendi:', stores);
+                    console.log('🏪 Mağazalar yüklendi:', stores.length);
+                    console.log('Mağaza adları:', stores.map(s => s.name));
                     
                     let successCount = 0;
                     let errorCount = 0;
                     const errors = [];
                     
                     // 3. Her ürünü işle
-                    for (const row of jsonData) {
+                    for (let i = 0; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        
                         try {
-                            console.log('🔄 İşleniyor:', row);
+                            console.log(`\n🔄 ${i + 1}/${jsonData.length} işleniyor:`, row['Ürün Adı']);
                             
                             // Mağazayı bul (büyük/küçük harf duyarsız)
                             const storeName = (row['Mağaza Adı'] || '').trim();
@@ -138,10 +168,13 @@ class ExcelManager {
                             
                             if (!store) {
                                 errorCount++;
-                                errors.push(`❌ "${storeName}" mağazası bulunamadı - Ürün: ${row['Ürün Adı']}`);
-                                console.error(`Mağaza bulunamadı: ${storeName}`);
+                                const errorMsg = `❌ "${storeName}" mağazası bulunamadı - Ürün: ${row['Ürün Adı']}`;
+                                errors.push(errorMsg);
+                                console.error(errorMsg);
                                 continue;
                             }
+                            
+                            console.log(`✅ Mağaza bulundu: ${store.name} (ID: ${store.id})`);
                             
                             // Ürün adı kontrolü
                             const productTitle = (row['Ürün Adı'] || '').trim();
@@ -186,13 +219,14 @@ class ExcelManager {
                             console.log('💾 Firebase\'e ekleniyor:', productData);
                             
                             // 4. Firebase'e ekle
-                            await window.db.collection('products').add(productData);
+                            const docRef = await window.db.collection('products').add(productData);
                             successCount++;
-                            console.log(`✅ ${productTitle} eklendi`);
+                            console.log(`✅ ${productTitle} eklendi (ID: ${docRef.id})`);
                             
                         } catch (itemError) {
                             errorCount++;
-                            errors.push(`❌ Hata (${row['Ürün Adı']}): ${itemError.message}`);
+                            const errorMsg = `❌ Hata (${row['Ürün Adı']}): ${itemError.message}`;
+                            errors.push(errorMsg);
                             console.error('Ürün eklenirken hata:', itemError);
                         }
                     }
@@ -209,7 +243,7 @@ class ExcelManager {
                         }
                     }
                     
-                    console.log(message);
+                    console.log('\n📊 SONUÇ:', message);
                     
                     resolve({
                         success: true,
