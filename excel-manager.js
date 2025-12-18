@@ -1,8 +1,4 @@
 // Excel dosyası yönetimi
-// SheetJS kütüphanesini HTML'de şu şekilde import edin:
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-// Excel dosyası yönetimi
 class ExcelManager {
     
     // Mağazaları Excel'e dönüştür ve indir
@@ -242,23 +238,3 @@ class ExcelManager {
         });
     }
 }
-
-// Kullanım örnekleri:
-/*
-// Mağazaları indir
-ExcelManager.exportStoresToExcel();
-
-// Ürünleri indir
-ExcelManager.exportProductsToExcel();
-
-// Excel'den mağaza içe aktar
-const fileInput = document.getElementById('import-stores-file');
-ExcelManager.importStoresFromExcel(fileInput.files[0])
-    .then(result => console.log(result))
-    .catch(error => console.error(error));
-
-// Excel'den ürün içe aktar
-ExcelManager.importProductsFromExcel(fileInput.files[0])
-    .then(result => console.log(result))
-    .catch(error => console.error(error));
-*/
