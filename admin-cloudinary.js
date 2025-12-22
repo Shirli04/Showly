@@ -115,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const productImagePreview = document.getElementById('product-image-preview');
     const productImageStatus = document.getElementById('product-image-status');
         // --- YENİ: LOADING OVERLAY ---
-    const loadingOverlay = document.getElementById('loading-overlay');
     
     let editingStoreId = null;
     let editingProductId = null;
@@ -210,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Mağaza tablosunu güncelle
     const renderStoresTable = async () => {
-        const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay.style.display = 'flex'; // ✅ Loading göster
         
         try {
@@ -351,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Ürün tablosunu güncelle
     async function renderProductsTable() {
-        const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay.style.display = 'flex'; // ✅ Loading göster
 
         try {
@@ -979,7 +976,6 @@ document.getElementById('delete-all-products-btn')?.addEventListener('click', as
         
     } catch (error) {
         console.error('Ürünler silinirken hata:', error);
-        document.getElementById('loading-overlay').style.display = 'none';
         showNotification('❌ Ürünler silinemedi: ' + error.message, false);
     }
 });
