@@ -1,7 +1,4 @@
 // Excel dosyası yönetimi
-// SheetJS kütüphanesini HTML'de şu şekilde import edin:
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 class ExcelManager {
 
     // Mağazaları Excel'e dönüştür ve indir
@@ -39,14 +36,11 @@ class ExcelManager {
 
             const excelData = products.map(product => {
                 const store = stores.find(s => s.id === product.storeId);
-                // Yeni yapıya göre: price = normal fiyat, originalPrice = indirimli fiyat
-                // Yeni sütunlar: "Normal Fiyat", "İndirimli Fiyat"
-                // "İndirimde mi?" sütunu kaldırıldı
                 return {
                     'Mağaza Adı': store ? store.name : 'Bilinmiyor',
                     'Ürün Adı': product.title,
-                    'Normal Fiyat': product.price ? product.price.replace(' TMT', '') : '', // Sadece sayıyı al
-                    'İndirimli Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '', // Sadece sayıyı al, yoksa boş
+                    'Normal Fiyat': product.price ? product.price.replace(' TMT', '') : '',
+                    'İndirimli Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
                     'Kategori': product.category || '',
                     'Malzeme': product.material || '',
                     'Açıklama': product.description || '',
@@ -82,44 +76,25 @@ class ExcelManager {
                     for (const row of jsonData) {
                         try {
                             const storeName = (row['Mağaza Adı'] || '').trim();
-                            const store = stores.find(s => s.name.toLowerCase() === storeName.toLowerCase());
-
-                            if (!store) {
-                                errorCount++;
-                                errors.push(`❌ "${storeName}" mağazası bulunamadı`);
+                            
+                            if (!storeName) {
+                                console.warn('Boş mağaza adı atlandı');
                                 continue;
                             }
 
-                            // Yeni yapıya göre verileri al: "Normal Fiyat", "İndirimli Fiyat"
-                            const normalPriceValue = row['Normal Fiyat'] ? String(row['Normal Fiyat']).trim() : '';
-                            const discountedPriceValue = row['İndirimli Fiyat'] ? String(row['İndirimli Fiyat']).trim() : '';
-
-                            // Fiyat formatını düzenle (TMT ekle)
-                            const price = normalPriceValue ? (normalPriceValue.includes('TMT') ? normalPriceValue : `${normalPriceValue} TMT`) : '';
-                            const originalPrice = discountedPriceValue ? (discountedPriceValue.includes('TMT') ? discountedPriceValue : `${discountedPriceValue} TMT`) : '';
-
-                            // isOnSale mantığını sadece "İndirimli Fiyat" sütununa göre belirle
-                            // Eğer "İndirimli Fiyat" doluysa, ürün indirimdedir.
-                            const isOnSale = !!originalPrice; // originalPrice doluysa true, boşsa false
-
-                            const productData = {
-                                storeId: store.id,
-                                title: row['Ürün Adı'],
-                                price, // Normal fiyat
-                                originalPrice, // İndirimli fiyat (eğer varsa)
-                                category: row['Kategori'] || '',
-                                material: row['Malzeme'] || '',
+                            const slug = storeName.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
+                            
+                            await window.db.collection('stores').add({
+                                name: storeName,
+                                slug: slug,
                                 description: row['Açıklama'] || '',
-                                imageUrl: row['Resim URL'] || '',
-                                isOnSale, // Indirim durumu (sadece indirimli fiyat doluysa true)
+                                customBannerText: row['Banner Metni'] || '',
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            };
-
-                            await window.db.collection('products').add(productData);
+                            });
+                            
                             successCount++;
                         } catch (err) {
-                            errorCount++;
-                            errors.push(err.message);
+                            console.error('Mağaza eklenirken hata:', err);
                         }
                     }
 
@@ -138,9 +113,13 @@ class ExcelManager {
         });
     }
 
-    // Ürünleri Excel'den Firebase'e yükle (OTOMATİK)
+    // ✅ DÜZELTİLMİŞ: Ürünleri Excel'den Firebase'e yükle
     static async importProductsFromExcel(file) {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.querySelector('.loading-text');
+        
         loadingOverlay.style.display = 'flex';
+        loadingText.textContent = 'Excel dosyası okunuyor...';
 
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -152,60 +131,144 @@ class ExcelManager {
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+                    console.log('📊 Excel verisi:', jsonData);
+                    loadingText.textContent = 'Mağazalar yükleniyor...';
+
+                    // Firebase'den mağazaları çek
                     const storesSnapshot = await window.db.collection('stores').get();
                     const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    console.log('🏪 Mağazalar:', stores);
 
                     let successCount = 0;
                     let errorCount = 0;
                     const errors = [];
 
-                    for (const row of jsonData) {
-                        try {
-                            const storeName = (row['Mağaza Adı'] || '').trim();
-                            const store = stores.find(s => s.name.toLowerCase() === storeName.toLowerCase());
+                    for (let i = 0; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        loadingText.textContent = `Ürün yükleniyor... (${i + 1}/${jsonData.length})`;
 
-                            if (!store) {
+                        try {
+                            // ✅ Mağaza adını temizle ve bul
+                            const storeName = (row['Mağaza Adı'] || row['Magaza Adi'] || '').trim();
+                            
+                            if (!storeName) {
                                 errorCount++;
-                                errors.push(`❌ "${storeName}" mağazası bulunamadı`);
+                                errors.push(`Satır ${i + 1}: Mağaza adı boş`);
                                 continue;
                             }
 
-                            const priceValue = row['Fiyat'] ? String(row['Fiyat']).trim() : '';
-                            const price = priceValue.includes('TMT') ? priceValue : `${priceValue} TMT`;
+                            // ✅ Mağazayı bul (büyük/küçük harf duyarsız)
+                            const store = stores.find(s => 
+                                s.name.toLowerCase() === storeName.toLowerCase()
+                            );
 
-                            const oldPriceValue = row['Eski Fiyat'] ? String(row['Eski Fiyat']).trim() : '';
-                            const originalPrice = oldPriceValue ? `${oldPriceValue} TMT` : '';
+                            if (!store) {
+                                errorCount++;
+                                errors.push(`Satır ${i + 1}: "${storeName}" mağazası bulunamadı`);
+                                continue;
+                            }
 
+                            // ✅ Ürün adını al
+                            const title = (row['Ürün Adı'] || row['Urun Adi'] || '').trim();
+                            if (!title) {
+                                errorCount++;
+                                errors.push(`Satır ${i + 1}: Ürün adı boş`);
+                                continue;
+                            }
+
+                            // ✅ Normal fiyatı al ve formatla
+                            let normalPriceValue = row['Normal Fiyat'] || row['Normal Fiyat'] || '';
+                            normalPriceValue = String(normalPriceValue).trim().replace('TMT', '').replace(' ', '');
+                            
+                            if (!normalPriceValue || isNaN(normalPriceValue)) {
+                                errorCount++;
+                                errors.push(`Satır ${i + 1}: Normal fiyat geçersiz (${normalPriceValue})`);
+                                continue;
+                            }
+
+                            const price = `${normalPriceValue} TMT`;
+
+                            // ✅ İndirimli fiyatı al (opsiyonel)
+                            let discountedPriceValue = row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '';
+                            discountedPriceValue = String(discountedPriceValue).trim().replace('TMT', '').replace(' ', '');
+
+                            let originalPrice = '';
+                            let isOnSale = false;
+
+                            // Eğer indirimli fiyat varsa ve geçerli bir sayıysa
+                            if (discountedPriceValue && !isNaN(discountedPriceValue) && parseFloat(discountedPriceValue) > 0) {
+                                originalPrice = `${discountedPriceValue} TMT`;
+                                isOnSale = true;
+                            }
+
+                            // ✅ Resim URL'sini al
+                            const imageUrl = (row['Resim URL'] || row['Image URL'] || '').trim();
+
+                            // ✅ Ürün verisini oluştur
                             const productData = {
                                 storeId: store.id,
-                                title: row['Ürün Adı'],
-                                price,
-                                originalPrice,
-                                category: row['Kategori'] || '',
-                                material: row['Malzeme'] || '',
-                                description: row['Açıklama'] || '',
-                                imageUrl: row['Resim URL'] || '',
-                                isOnSale: originalPrice && parseFloat(originalPrice) > parseFloat(price),
+                                title: title,
+                                price: price,
+                                originalPrice: originalPrice,
+                                isOnSale: isOnSale,
+                                category: (row['Kategori'] || '').trim(),
+                                material: (row['Malzeme'] || '').trim(),
+                                description: (row['Açıklama'] || row['Aciklama'] || '').trim(),
+                                imageUrl: imageUrl,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             };
 
+                            console.log(`✅ Ürün ${i + 1}:`, productData);
+
+                            // Firebase'e ekle
                             await window.db.collection('products').add(productData);
                             successCount++;
+
                         } catch (err) {
                             errorCount++;
-                            errors.push(err.message);
+                            errors.push(`Satır ${i + 1}: ${err.message}`);
+                            console.error(`Satır ${i + 1} hatası:`, err);
                         }
                     }
 
                     loadingOverlay.style.display = 'none';
-                    resolve({ success: true, successCount, errorCount, errors });
+
+                    // Sonuçları göster
+                    let resultMessage = `✅ ${successCount} ürün başarıyla yüklendi`;
+                    
+                    if (errorCount > 0) {
+                        resultMessage += `\n❌ ${errorCount} ürün yüklenemedi`;
+                        console.error('Hatalar:', errors);
+                        
+                        // İlk 5 hatayı göster
+                        if (errors.length > 0) {
+                            alert(resultMessage + '\n\nİlk hatalar:\n' + errors.slice(0, 5).join('\n'));
+                        }
+                    } else {
+                        alert(resultMessage);
+                    }
+
+                    resolve({ 
+                        success: true, 
+                        successCount, 
+                        errorCount, 
+                        errors,
+                        message: resultMessage
+                    });
 
                 } catch (error) {
+                    loadingOverlay.style.display = 'none';
+                    console.error('Excel okuma hatası:', error);
                     reject({ success: false, error: error.message });
                 }
             };
 
-            reader.onerror = () => reject({ success: false, error: 'Dosya okunamadı' });
+            reader.onerror = () => {
+                loadingOverlay.style.display = 'none';
+                reject({ success: false, error: 'Dosya okunamadı' });
+            };
+            
             reader.readAsArrayBuffer(file);
         });
     }
