@@ -357,10 +357,6 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Fiyat</label>
-                            <input type="text" id="product-price" placeholder="Örn: 500 TMT" required>
-                        </div>
-                        <div class="form-group">
                             <label>Açıklama</label>
                             <textarea id="product-description" rows="3"></textarea>
                         </div>
@@ -373,15 +369,15 @@
                             <input type="text" id="product-category" placeholder="Örn: Switerler, Pantolonlar">
                         </div>  
                         <div class="form-group">
-                            <label>Fiyat (TMT)</label>
-                            <input type="text" id="product-price" placeholder="Fiyat girin (örn: 500 TMT)">
+                            <label>Normal Fiyat (TMT)</label> <!-- Daha açıklayıcı etiket -->
+                            <input type="text" id="product-price" placeholder="Normal fiyatı girin (örn: 500 TMT)" required> <!-- ID aynı kalır, ama artık normal fiyat için -->
                         </div>
                         <div class="form-group">
-                            <label>İndirimli Fiyat (TMT) (Opsiyonel)</label>
-                            <input type="text" id="product-discounted-price" placeholder="İndirimli fiyatı girin (örn: 400 TMT)">
+                            <label>İndirimli Fiyat (TMT) (Opsiyonel)</label> <!-- Daha açıklayıcı etiket -->
+                            <input type="text" id="product-discounted-price" placeholder="İndirimli fiyatı girin (örn: 400 TMT)"> <!-- Yeni ID -->
                         </div>
                         <!-- Eski fiyat alanı artık gizli olacak, sadece hesaplama için kullanılır -->
-                        <input type="hidden" id="product-original-price">                                    
+                        <input type="hidden" id="product-original-price"> <!-- Yeni ID -->                                  
                         <div class="form-group">
                             <label>Ürün Görseli</label>
                             <input type="file" id="product-image" accept="image/*">
