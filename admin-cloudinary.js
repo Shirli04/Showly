@@ -403,8 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const title    = document.getElementById('product-name').value.trim();
             const storeId  = document.getElementById('product-store').value;
-            const priceInput = document.getElementById('product-price').value.trim(); // Normal fiyat inputu
-            const discountedPriceInput = document.getElementById('product-discounted-price').value.trim(); // İndirimli fiyat inputu
+            const priceInput = document.getElementById('product-price').value.trim(); // <-- Yeni ID
+            const discountedPriceInput = document.getElementById('product-discounted-price').value.trim(); // <-- Yeni ID
             const desc     = document.getElementById('product-description').value.trim();
             const material = document.getElementById('product-material').value.trim();
             const category = document.getElementById('product-category').value.trim();
