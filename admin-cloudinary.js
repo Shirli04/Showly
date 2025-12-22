@@ -449,31 +449,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 isOnSale = false; // İndirim yok
             }
 
-            // Kullanıcının girdiği fiyat artık "price" olacak (normal fiyat)
-            // "originalPrice" ise indirimliyse o değer, değilse boş olacak
-            // Bu yapı, mevcut `showlyDB` veya frontend gösterim mantığınıza göre ayarlanabilir.
-            // ÖNEMLİ: Burada "price" her zaman normal fiyatı, "originalPrice" (eğer varsa) indirimli fiyatı tutacak.
-            // Ve "isOnSale" true ise indirimli, false ise değil anlamına gelecek.
-            // Ancak genelde "originalPrice" orijinal (indirimsiz) fiyat, "currentPrice" veya "price" indirimli fiyat olur.
-            // Bu yapıya göre ayarlamak için, "price" normal fiyat, "originalPrice" indirimli fiyat olacak şekilde
-            // `script.js` içindeki fiyat gösterim mantığını da güncellememiz gerekir.
-            // Aşağıda, "price" normal fiyat, "originalPrice" indirimli fiyat, "isOnSale" durumu olarak kalmış olsun.
-            // script.js tarafında da bu yeni tanıma göre gösterim yapılacak.
-            // YANLIŞ: originalPrice = normal fiyat, price = indirimli fiyat
-            // DOĞRU: price = normal fiyat, originalPrice = indirimli fiyat (sadece isOnSale true ise dolu olur)
-            // isOnSale = originalPrice dolu mu diye bakılır.
-            // Bu yüzden, `script.js` içindeki fiyat gösterimini de değiştireceğim.
-
             const productData = {
                 storeId, title, price, description: desc, material, category,
                 isOnSale, originalPrice, imageUrl
             };
 
+            // Geçici çözüm: Sadece gerekli alanları doldur ve ürünü ekle
             if (editingProductId) {
                 await window.db.collection('products').doc(editingProductId).update(productData);
                 showNotification('Ürün başarıyla güncellendi!');
             } else {
-                await window.addProductToFirebase(productData);
+                // Geçici çözüm: Eğer resim yüklenemediyse, imageUrl'i boş bırak
+                if (!imageUrl) {
+                    productData.imageUrl = '';
+                }
+                await window.db.collection('products').add(productData);
                 showNotification('Ürün Firebase\'e eklendi!');
             }
 
