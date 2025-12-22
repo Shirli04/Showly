@@ -543,7 +543,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     async function renderOrdersTable() {
-        const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay.style.display = 'flex'; // ✅ Loading göster
         
         try {
@@ -930,7 +929,6 @@ document.getElementById('delete-all-products-btn')?.addEventListener('click', as
     
     try {
         // Loading göster
-        const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.querySelector('.loading-text');
         loadingOverlay.style.display = 'flex';
         loadingText.textContent = 'Ürünler siliniyor...';
