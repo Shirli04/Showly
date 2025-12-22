@@ -35,27 +35,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allStores = [];
     let allProducts = [];
     loadingOverlay.style.display = 'flex'; // Yükleniyor animasyonunu göster
-    
-    // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
+
     console.log('🔄 Firebase\'den veriler yükleniyor...');
-    
+
     try {
-        // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
-        console.log('🔄 Firebase\'den veriler yükleniyor...');
+        // ✅ YENİ: 45 saniye timeout ekle
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Firebase bağlantısı zaman aşımına uğradı')), 45000);
+        });
 
-        // Mağazaları çek
-        const storesSnapshot = await window.db.collection('stores').get();
-        allStores = storesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-        }));
+        // Firebase veri çekme işlemleri
+        const fetchDataPromise = (async () => {
+            // Mağazaları çek
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
 
-        // Ürünleri çek
-        const productsSnapshot = await window.db.collection('products').get();
-        allProducts = productsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-        }));
+            // Ürünleri çek
+            const productsSnapshot = await window.db.collection('products').get();
+            const products = productsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            return { stores, products };
+        })();
+
+        // ✅ Timeout ile yarış: Hangisi önce biterse onu al
+        const { stores, products } = await Promise.race([fetchDataPromise, timeoutPromise]);
+
+        allStores = stores;
+        allProducts = products;
 
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
 
@@ -64,7 +76,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
-        showNotification('Veriler yüklenemedi!', false);
+        
+        // ✅ YENİ: Hata mesajını 404 sayfasında göster
+        const notFoundSection = document.getElementById('not-found');
+        const heroSection = document.querySelector('.hero-section');
+        const infoSection = document.querySelector('.info-section');
+        const errorTitle = document.getElementById('error-title');
+        const errorMessage = document.getElementById('error-message');
+        
+        if (heroSection) heroSection.style.display = 'none';
+        if (infoSection) infoSection.style.display = 'none';
+        
+        errorTitle.textContent = 'Baglanyşyk Ýok';
+        errorMessage.textContent = 'Firebase bilen baglanyşyk guralyp bilinmedi. Sahypany täzeleň.';
+        notFoundSection.style.display = 'block';
+        
+        showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
     } finally {
         loadingOverlay.style.display = 'none'; // Animasyonu gizle
     }
@@ -724,4 +751,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- İLK YÜKLEME ---
     router();
+});
+
+// ✅ YENİ: Sahypany täzele butonu
+document.getElementById('reload-page-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Loading göster
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.querySelector('.loading-text');
+    loadingOverlay.style.display = 'flex';
+    loadingText.textContent = 'Sahypa täzelenýär...';
+    
+    // 500ms bekle (kullanıcının butona bastığını görmesi için)
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+});
+
+// ✅ YENİ: Ana sayfaya dön butonu
+document.getElementById('back-home-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Loading göster
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.querySelector('.loading-text');
+    loadingOverlay.style.display = 'flex';
+    loadingText.textContent = 'Sahypa täzelenýär...';
+    
+    // Ana sayfaya git
+    setTimeout(() => {
+        history.pushState(null, null, '/');
+        window.location.reload();
+    }, 500);
 });

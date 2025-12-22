@@ -106,6 +106,7 @@ class ExcelManager {
     
     // ✅ YENİ: Ürünleri Excel'den Firebase'e yükle (OTOMATİK)
     static async importProductsFromExcel(file) {
+        loadingOverlay.style.display = 'flex';
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             
@@ -214,7 +215,7 @@ class ExcelManager {
                     }
                     
                     console.log(message);
-                    
+                    loadingOverlay.style.display = 'none';
                     resolve({
                         success: true,
                         count: successCount,
