@@ -292,17 +292,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Yeni fiyat gösterim mantığı
             let priceDisplay = `<p class="product-price">${product.price}</p>`; // Normal fiyatı göster
 
-            // isOnSale true ve originalPrice doluysa, indirimliyse demektir
-            if (product.isOnSale && product.originalPrice) {
-                // product.price = normal fiyat
-                // product.originalPrice = indirimli fiyat
+            if (product.isOnSale && product.originalPrice) { // Sadece indirimli fiyat doluysa ve isOnSale trueysa göster
                 const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
                 const discountedPriceValue = parseFloat(product.originalPrice.replace(' TMT', ''));
 
                 if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
-                    // İndirim yüzdesini hesapla (Normal - İndirimli) / Normal * 100
+                    // İndirim yüzdesini hesapla: ((Normal - İndirimli) / Normal) * 100
                     const discountPercentage = Math.round(((normalPriceValue - discountedPriceValue) / normalPriceValue) * 100);
 
+                    // İndirimli fiyatı büyük ve kalın, eski fiyatı çizgili ve küçük göster
                     priceDisplay = `
                         <div class="price-container">
                             <div class="price-info">
