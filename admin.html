@@ -1,420 +1,424 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Paneli - Showly</title>
-    <style>
-        .upload-preview {
-            max-width: 200px;
-            max-height: 200px;
-            margin: 10px 0;
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .upload-preview.show {
-            display: block;
-        }
-        
-        .upload-status {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
-            display: none;
-        }
-        
-        .upload-status.show {
-            display: block;
-        }
-        
-        .upload-status.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .upload-status.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #6c5ce7;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .export-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .btn-export {
-            background-color: #28a745;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-export:hover {
-            background-color: #218838;
-        }
-        
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-        
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            left: -9999px;
-        }
-    </style>
-</head>
-<body>
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin Paneli - Showly</title>
+        <style>
+            .upload-preview {
+                max-width: 200px;
+                max-height: 200px;
+                margin: 10px 0;
+                border-radius: 8px;
+                display: none;
+            }
+            
+            .upload-preview.show {
+                display: block;
+            }
+            
+            .upload-status {
+                padding: 10px;
+                margin: 10px 0;
+                border-radius: 8px;
+                display: none;
+            }
+            
+            .upload-status.show {
+                display: block;
+            }
+            
+            .upload-status.success {
+                background-color: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+            
+            .upload-status.error {
+                background-color: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }
+            
+            .loading-spinner {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #6c5ce7;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-right: 8px;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .export-buttons {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .btn-export {
+                background-color: #28a745;
+                color: white;
+                padding: 10px 15px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .btn-export:hover {
+                background-color: #218838;
+            }
+            
+            .file-input-wrapper {
+                position: relative;
+                overflow: hidden;
+                display: inline-block;
+            }
+            
+            .file-input-wrapper input[type=file] {
+                position: absolute;
+                left: -9999px;
+            }
+        </style>
+    </head>
+    <body>
 
-    <div class="admin-container">
-        <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <div class="sidebar-header">
-                <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765385200/logo_e_background_removal_b_rgb_FFFFFF_f_png_vjwprg.png" alt="Showly Logo" class="admin-header-logo">
-                <span class="admin-sidebar-text">Showlytm</span>
-            </div>
-            <nav class="sidebar-nav">
-                <ul>
-                    <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Panel</a></li>
-                    <li><a href="#" class="nav-link" data-section="stores"><i class="fas fa-store"></i> Mağazalar</a></li>
-                    <li><a href="#" class="nav-link" data-section="products"><i class="fas fa-box"></i> Ürünler</a></li>
-                    <li><a href="#" class="nav-link" data-section="orders"><i class="fas fa-shopping-cart"></i> Siparişler</a></li>
-                    <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Ayarlar</a></li>
-                </ul>
-            </nav>
-            <div class="sidebar-footer">
-                <a href="index.html" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="admin-main">
-            <!-- Top Bar -->
-            <header class="admin-header">
-                <div class="header-left">
-                    <button class="menu-toggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h1 id="page-title">Panel</h1>
+        <div class="admin-container">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar">
+                <div class="sidebar-header">
+                    <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765385200/logo_e_background_removal_b_rgb_FFFFFF_f_png_vjwprg.png" alt="Showly Logo" class="admin-header-logo">
+                    <span class="admin-sidebar-text">Showlytm</span>
                 </div>
-                <div class="header-right">
-                    <div class="admin-info">
-                        <img src="https://picsum.photos/seed/admin/40/40.jpg" alt="Admin">
-                        <span>Admin</span>
-                    </div>
+                <nav class="sidebar-nav">
+                    <ul>
+                        <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Panel</a></li>
+                        <li><a href="#" class="nav-link" data-section="stores"><i class="fas fa-store"></i> Mağazalar</a></li>
+                        <li><a href="#" class="nav-link" data-section="products"><i class="fas fa-box"></i> Ürünler</a></li>
+                        <li><a href="#" class="nav-link" data-section="orders"><i class="fas fa-shopping-cart"></i> Siparişler</a></li>
+                        <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Ayarlar</a></li>
+                    </ul>
+                </nav>
+                <div class="sidebar-footer">
+                    <a href="index.html" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
                 </div>
-            </header>
+            </aside>
 
-            <!-- Content Area -->
-            <div class="admin-content">
-                <!-- Dashboard Section -->
-                <section id="dashboard" class="content-section active">
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon"><i class="fas fa-store"></i></div>
-                            <div class="stat-info">
-                                <h3 id="total-stores">0</h3>
-                                <p>Toplam Mağaza</p>
+            <!-- Main Content -->
+            <main class="admin-main">
+                <!-- Top Bar -->
+                <header class="admin-header">
+                    <div class="header-left">
+                        <button class="menu-toggle">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h1 id="page-title">Panel</h1>
+                    </div>
+                    <div class="header-right">
+                        <div class="admin-info">
+                            <img src="https://picsum.photos/seed/admin/40/40.jpg" alt="Admin">
+                            <span>Admin</span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Content Area -->
+                <div class="admin-content">
+                    <!-- Dashboard Section -->
+                    <section id="dashboard" class="content-section active">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-store"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="total-stores">0</h3>
+                                    <p>Toplam Mağaza</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-box"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="total-products">0</h3>
+                                    <p>Toplam Ürün</p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                                <div class="stat-info">
+                                    <h3 id="total-orders">0</h3>
+                                    <p>Toplam Sipariş</p>
+                                </div>
                             </div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-icon"><i class="fas fa-box"></i></div>
-                            <div class="stat-info">
-                                <h3 id="total-products">0</h3>
-                                <p>Toplam Ürün</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
-                            <div class="stat-info">
-                                <h3 id="total-orders">0</h3>
-                                <p>Toplam Sipariş</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                    </section>
 
-                <!-- Stores Section -->
-                <section id="stores" class="content-section">
-                    <div class="section-header">
-                        <h2>Mağazalar</h2>
-                        <button class="btn-primary" id="add-store-btn">
-                            <i class="fas fa-plus"></i> Yeni Mağaza Ekle
-                        </button>
-                    </div>
-                    <div class="export-buttons">
-                        <button class="btn-export" id="export-stores-btn">
-                            <i class="fas fa-download"></i> Excel'e İndir
-                        </button>
-                        <button class="btn-export" id="import-stores-btn" style="background-color: #17a2b8;">
-                            <i class="fas fa-upload"></i> Excel'den Yükle
-                        </button>
-                        <input type="file" id="import-stores-input" accept=".xlsx,.xls" style="display: none;">
-                    </div>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Mağaza Adı</th>
-                                    <th>Ürün Sayısı</th>
-                                    <th>İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stores-table-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Products Section -->
-                <section id="products" class="content-section">
-                    <div class="section-header">
-                        <h2>Ürünler</h2>
-                        <button class="btn-primary" id="add-product-btn">
-                            <i class="fas fa-plus"></i> Yeni Ürün Ekle
-                        </button>
-                    </div>
-                    <div class="product-filters">
-                        <div class="form-group">
-                            <label for="filter-store-select">Mağaza Filtresi</label>
-                            <select id="filter-store-select">
-                                <option value="">Tüm Mağazalar</option>
-                            </select>
+                    <!-- Stores Section -->
+                    <section id="stores" class="content-section">
+                        <div class="section-header">
+                            <h2>Mağazalar</h2>
+                            <button class="btn-primary" id="add-store-btn">
+                                <i class="fas fa-plus"></i> Yeni Mağaza Ekle
+                            </button>
                         </div>
-                        <div class="form-group">
-                            <label for="filter-category-select">Kategori Filtresi</label>
-                            <select id="filter-category-select" disabled>
-                                <option value="">Önce Mağaza Seçin</option>
-                            </select>
+                        <div class="export-buttons">
+                            <button class="btn-export" id="export-stores-btn">
+                                <i class="fas fa-download"></i> Excel'e İndir
+                            </button>
+                            <button class="btn-export" id="import-stores-btn" style="background-color: #17a2b8;">
+                                <i class="fas fa-upload"></i> Excel'den Yükle
+                            </button>
+                            <input type="file" id="import-stores-input" accept=".xlsx,.xls" style="display: none;">
                         </div>
-                    </div>
-                    <div class="export-buttons">
-                        <button class="btn-export" id="export-products-btn">
-                            <i class="fas fa-download"></i> Excel'e İndir
-                        </button>
-                        <button class="btn-export" id="import-products-btn" style="background-color: #17a2b8;">
-                            <i class="fas fa-upload"></i> Excel'den Yükle
-                        </button>
-                        <input type="file" id="import-products-input" accept=".xlsx,.xls" style="display: none;">
-                    </div>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Ürün Adı</th>
-                                    <th>Mağaza</th>
-                                    <th>Fiyat</th>
-                                    <th>Resim</th>
-                                    <th>İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody id="products-table-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Mağaza Adı</th>
+                                        <th>Ürün Sayısı</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stores-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
 
-                <!-- Orders Section -->
-                <section id="orders" class="content-section">
-                    <div class="section-header">
-                        <h2>Siparişler</h2>
-                    </div>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Ürün ID'leri</th>
-                                    <th>Müşteri Adı</th>
-                                    <th>Telefon</th>
-                                    <th>Adres</th>
-                                    <th>Mağaza</th>
-                                    <th>Tarih</th>
-                                    <th>Durum</th>
-                                    <th>İşlem</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orders-table-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- Settings Section -->
-                <section id="settings" class="content-section">
-                    <div class="settings-container">
-                        <h2>Site Ayarları</h2>
-                        <form class="settings-form">
+                    <!-- Products Section -->
+                    <section id="products" class="content-section">
+                        <div class="section-header">
+                            <h2>Ürünler</h2>
+                            <button class="btn-primary" id="add-product-btn">
+                                <i class="fas fa-plus"></i> Yeni Ürün Ekle
+                            </button>
+                        </div>
+                        <div class="product-filters">
                             <div class="form-group">
-                                <label>Site Adı</label>
-                                <input type="text" value="Showly">
-                            </div>
-                            <div class="form-group">
-                                <label>Para Birimi</label>
-                                <select>
-                                    <option>TMT</option>
-                                    <option>USD</option>
-                                    <option>EUR</option>
+                                <label for="filter-store-select">Mağaza Filtresi</label>
+                                <select id="filter-store-select">
+                                    <option value="">Tüm Mağazalar</option>
                                 </select>
                             </div>
-                            <div class="backup-section">
-                                <h3>Yedek Oluştur</h3>
-                                <p>Mağaza ve ürün verilerinizi indir ve yedekle</p>
-                                <button class="btn-primary" id="backup-excel-btn">
-                                    <i class="fas fa-download"></i> Excel Yedek Al
-                                </button>
-                                <button class="btn-primary" id="backup-csv-btn" style="background-color: #17a2b8;">
-                                    <i class="fas fa-cloud-download-alt"></i> Cloudinary'ye Yedekle
-                                </button>
+                            <div class="form-group">
+                                <label for="filter-category-select">Kategori Filtresi</label>
+                                <select id="filter-category-select" disabled>
+                                    <option value="">Önce Mağaza Seçin</option>
+                                </select>
                             </div>
-                            <button type="submit" class="btn-primary">Kaydet</button>
-                        </form>
-                    </div>
-                </section>
-            </div>
-        </main>
-    </div>
+                        </div>
+                        <div class="export-buttons">
+                            <button class="btn-export" id="export-products-btn">
+                                <i class="fas fa-download"></i> Excel'e İndir
+                            </button>
+                            <button class="btn-export" id="import-products-btn" style="background-color: #17a2b8;">
+                                <i class="fas fa-upload"></i> Excel'den Yükle
+                            </button>
+                            <input type="file" id="import-products-input" accept=".xlsx,.xls" style="display: none;">
+                        </div>
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Ürün Adı</th>
+                                        <th>Mağaza</th>
+                                        <th>Fiyat</th>
+                                        <th>Resim</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
 
-    <!-- Mağaza Ekleme Modalı -->
-    <div id="store-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="store-modal-title">Yeni Mağaza Ekle</h3>
-                <span class="close-modal">&times;</span>
-            </div>
-            <form id="store-form">
-                <input type="hidden" id="store-id">
-                <div class="form-group">
-                    <label>Mağaza Adı</label>
-                    <input type="text" id="store-name" required>
+                    <!-- Orders Section -->
+                    <section id="orders" class="content-section">
+                        <div class="section-header">
+                            <h2>Siparişler</h2>
+                        </div>
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ürün ID'leri</th>
+                                        <th>Müşteri Adı</th>
+                                        <th>Telefon</th>
+                                        <th>Adres</th>
+                                        <th>Mağaza</th>
+                                        <th>Tarih</th>
+                                        <th>Durum</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orders-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Settings Section -->
+                    <section id="settings" class="content-section">
+                        <div class="settings-container">
+                            <h2>Site Ayarları</h2>
+                            <form class="settings-form">
+                                <div class="form-group">
+                                    <label>Site Adı</label>
+                                    <input type="text" value="Showly">
+                                </div>
+                                <div class="form-group">
+                                    <label>Para Birimi</label>
+                                    <select>
+                                        <option>TMT</option>
+                                        <option>USD</option>
+                                        <option>EUR</option>
+                                    </select>
+                                </div>
+                                <div class="backup-section">
+                                    <h3>Yedek Oluştur</h3>
+                                    <p>Mağaza ve ürün verilerinizi indir ve yedekle</p>
+                                    <button class="btn-primary" id="backup-excel-btn">
+                                        <i class="fas fa-download"></i> Excel Yedek Al
+                                    </button>
+                                    <button class="btn-primary" id="backup-csv-btn" style="background-color: #17a2b8;">
+                                        <i class="fas fa-cloud-download-alt"></i> Cloudinary'ye Yedekle
+                                    </button>
+                                </div>
+                                <button type="submit" class="btn-primary">Kaydet</button>
+                            </form>
+                        </div>
+                    </section>
                 </div>
-                <div class="form-group">
-                    <label>Mağaza Açıklaması</label>
-                    <textarea id="store-description" rows="3"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Mağaza Üstü Metin</label>
-                    <input type="text" id="store-custom-banner-text" placeholder="Mağaza üstünde gösterilecek metin">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancel-store">İptal</button>
-                    <button type="submit" class="btn-primary">Kaydet</button>
-                </div>
-            </form>
+            </main>
         </div>
-    </div>
 
-    <!-- Ürün Ekleme Modalı -->
-    <div id="product-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Yeni Ürün Ekle</h3>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="product-form">
+        <!-- Mağaza Ekleme Modalı -->
+        <div id="store-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="store-modal-title">Yeni Mağaza Ekle</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <form id="store-form">
+                    <input type="hidden" id="store-id">
                     <div class="form-group">
-                        <label>Ürün Adı</label>
-                        <input type="text" id="product-name" required>
+                        <label>Mağaza Adı</label>
+                        <input type="text" id="store-name" required>
                     </div>
                     <div class="form-group">
-                        <label>Mağaza</label>
-                        <select id="product-store" required>
-                        </select>
+                        <label>Mağaza Açıklaması</label>
+                        <textarea id="store-description" rows="3"></textarea>
                     </div>
+                    
+                    <!-- ✅ BURAYA EKLE -->
                     <div class="form-group">
-                        <label>Fiyat</label>
-                        <input type="text" id="product-price" placeholder="Örn: 500 TMT" required>
+                        <label>Mağaza Üstü Metin</label>
+                        <input type="text" id="store-custom-banner-text" placeholder="Mağaza üstünde gösterilecek metin">
                     </div>
-                    <div class="form-group">
-                        <label>Açıklama</label>
-                        <textarea id="product-description" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Malzeme</label>
-                        <input type="text" id="product-material">
-                    </div>
-                    <div class="form-group">
-                        <label>Kategori</label>
-                        <input type="text" id="product-category" placeholder="Örn: Switerler, Pantolonlar">
-                    </div>  
-                    <div class="form-group">
-                        <label>Eski Fiyat (TMT)</label>
-                        <input type="text" id="product-original-price" placeholder="Örn: 600 TMT">
-                    </div>
-                    <div class="form-group">
-                        <label>Yeni Fiyat (TMT)</label>
-                        <input type="text" id="product-new-price" placeholder="İndirimli fiyatı girin (örn: 500 TMT)">
-                    </div>
-                    <div class="form-group" id="original-price-group" style="display: none;">
-                        <label>Eski Fiyat</label>
-                        <input type="text" id="product-original-price" placeholder="Örn: 600 TMT">
-                    </div>                                      
-                    <div class="form-group">
-                        <label>Ürün Görseli</label>
-                        <input type="file" id="product-image" accept="image/*">
-                        <img id="product-image-preview" class="upload-preview" alt="Ürün">
-                        <div id="product-image-status" class="upload-status"></div>
-                    </div>
+                    
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancel-product">İptal</button>
+                        <button type="button" class="btn-secondary" id="cancel-store">İptal</button>
                         <button type="submit" class="btn-primary">Kaydet</button>
                     </div>
                 </form>
             </div>
         </div>
-    </div>
 
-    <!-- Yükleniyor animasyonu -->
-    <div id="loading-overlay" class="loading-overlay" style="display: none;">
-    <div class="loading-content">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Veriler yükleniyor...</div>
-    </div>
-    </div>
+        <!-- Ürün Ekleme Modalı -->
+        <div id="product-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Yeni Ürün Ekle</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="product-form">
+                        <div class="form-group">
+                            <label>Ürün Adı</label>
+                            <input type="text" id="product-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mağaza</label>
+                            <select id="product-store" required>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fiyat</label>
+                            <input type="text" id="product-price" placeholder="Örn: 500 TMT" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Açıklama</label>
+                            <textarea id="product-description" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Malzeme</label>
+                            <input type="text" id="product-material">
+                        </div>
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <input type="text" id="product-category" placeholder="Örn: Switerler, Pantolonlar">
+                        </div>  
+                        <div class="form-group">
+                            <label>Eski Fiyat (TMT)</label>
+                            <input type="text" id="product-original-price" placeholder="Örn: 600 TMT">
+                        </div>
+                        <div class="form-group">
+                            <label>Yeni Fiyat (TMT)</label>
+                            <input type="text" id="product-new-price" placeholder="İndirimli fiyatı girin (örn: 500 TMT)">
+                        </div>
+                        <div class="form-group" id="original-price-group" style="display: none;">
+                            <label>Eski Fiyat</label>
+                            <input type="text" id="product-original-price" placeholder="Örn: 600 TMT">
+                        </div>                                      
+                        <div class="form-group">
+                            <label>Ürün Görseli</label>
+                            <input type="file" id="product-image" accept="image/*">
+                            <img id="product-image-preview" class="upload-preview" alt="Ürün">
+                            <div id="product-image-status" class="upload-status"></div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" id="cancel-product">İptal</button>
+                            <button type="submit" class="btn-primary">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
-    <!-- Firebase Compat SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="firebase-config.js"></script>
-    <!-- Gerekli Kütüphaneler -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="admin.css">
+        <!-- Yükleniyor animasyonu -->
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Veriler yükleniyor...</div>
+        </div>
+        </div>
 
-    <!-- Google Drive API -->
-    <script src="https://apis.google.com/js/api.js"></script>
+        <!-- Firebase Compat SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+        <script src="firebase-config.js"></script>
+        <script src="r2-config.js"></script>
+        <!-- Gerekli Kütüphaneler -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="admin.css">
 
-    <!-- Diğer Scriptleriniz (Versiyon Parametresi İLE) -->
-    <script src="admin-cloudinary.js"></script>
-    <script src="excel-manager.js"></script>
-</body>
-</html>
+        <!-- Google Drive API -->
+        <script src="https://apis.google.com/js/api.js"></script>
+
+        <!-- Diğer Scriptleriniz (Versiyon Parametresi İLE) -->
+        <script src="admin-cloudinary.js"></script>
+        <script src="excel-manager.js"></script>
+    </body>
+    </html>

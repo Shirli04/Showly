@@ -203,8 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('store-id').value = store.id;
         document.getElementById('store-name').value = store.name;
         document.getElementById('store-description').value = store.description || '';
-
-        // ✅ Yeni: Mağaza Üstü Metin
+        
+        // ✅ Yeni: Mağaza üstü metin
         const customBannerInput = document.getElementById('store-custom-banner-text');
         if (customBannerInput) {
             customBannerInput.value = store.customBannerText || '';
@@ -240,8 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isSubmitting = true;
         const name = document.getElementById('store-name').value.trim();
         const desc = document.getElementById('store-description').value.trim();
-
-        // ✅ Yeni: Mağaza Üstü Metin
+        
+        // ✅ Yeni: Mağaza üstü metin
         const customBannerInput = document.getElementById('store-custom-banner-text');
         const customBannerText = customBannerInput ? customBannerInput.value.trim() : '';
 
@@ -249,10 +249,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await window.addStoreToFirebase({ 
                 name, 
-                description: desc, 
-                customBannerText // ✅ Burada kullan
+                description: desc,
+                customBannerText // ✅ Yeni alan
             });
-            showNotification('Mağaza Firebase’e eklendi!');
+            showNotification('Mağaza Firebase eklendi!');
             renderStoresTable(); populateStoreSelect(); updateDashboard();
             closeAllModals();
         } catch (err) {
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
         productModal.style.display = 'block';
     };
     
-    // Ürün form submit (FIREBASE + Cloudinary)
+    // Ürün form submit (FIREBASE + Cloudflare)
     const handleProductSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
@@ -395,10 +395,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let imageUrl = uploadedProductImageUrl; // Mevcut resmi koru
+            let imageUrl = uploadedProductImageUrl;
             if (file) {
                 showUploadStatus(productImageStatus, 'Resim yükleniyor...', true);
-                const uploadResult = await uploadToCloudinary(file);
+                
+                // ✅ Mağaza ismini al
+                const storesSnapshot = await window.db.collection('stores').get();
+                const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const selectedStore = stores.find(s => s.id === storeId);
+                const storeName = selectedStore ? selectedStore.name : 'bilinmeyen-magaza';
+                
+                // ✅ Mağaza ismiyle yükle
+                const uploadResult = await uploadToR2(file, storeName);
                 imageUrl = uploadResult;
                 showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
             }
@@ -415,21 +423,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Düzenleme mi, yoksa yeni ekleme mi?
             if (editingProductId) {
-                // Mevcut ürünü güncelle
                 await window.db.collection('products').doc(editingProductId).update({
                     storeId, title, price: newPrice, description: desc, material, category,
                     isOnSale, originalPrice, imageUrl
                 });
                 showNotification('Ürün başarıyla güncellendi!');
             } else {
-                // Yeni ürün ekle
                 await window.addProductToFirebase({
                     storeId, title, price: newPrice, description: desc, material, category,
                     isOnSale, originalPrice, imageUrl
                 });
-                showNotification('Ürün Firebase’e eklendi!');
+                showNotification('Ürün Firebase\'e eklendi!');
             }
 
             renderProductsTable();
@@ -441,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             isSubmitting = false;
         }
-    };
+    }
 
     async function uploadToCloudinary(file) {
         const fd = new FormData();
@@ -731,9 +736,16 @@ document.addEventListener('DOMContentLoaded', () => {
             name: store.name,
             slug: slug,
             description: store.description || '',
+            customBannerText: store.customBannerText || '', // ✅ Yeni alan
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        return { id: doc.id, name: store.name, slug, description: store.description };
+        return { 
+            id: doc.id, 
+            name: store.name, 
+            slug, 
+            description: store.description,
+            customBannerText: store.customBannerText // ✅ Yeni alan
+        };
     };
 
     // Ürün ekle (Firestore)

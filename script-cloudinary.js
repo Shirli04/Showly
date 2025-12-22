@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         storeBanner.innerHTML = `
             <h2>${store.name}</h2>
-            <p>${store.customBannerText || 'Bu magazynda iň gowy harytlar bar'}</p>
+            <p>${store.customBannerText}</p>
     `;
         
         categoryFiltersSection.style.display = 'block';
