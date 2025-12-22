@@ -177,17 +177,15 @@ class ExcelManager {
                                 continue;
                             }
 
-                            // ✅ Normal fiyatı al ve formatla
+                            // ✅ Normal fiyatı al ve formatla (opsiyonel)
                             let normalPriceValue = row['Normal Fiyat'] || row['Normal Fiyat'] || '';
                             normalPriceValue = String(normalPriceValue).trim().replace('TMT', '').replace(' ', '');
                             
-                            if (!normalPriceValue || isNaN(normalPriceValue)) {
-                                errorCount++;
-                                errors.push(`Satır ${i + 1}: Normal fiyat geçersiz (${normalPriceValue})`);
-                                continue;
+                            // Fiyat yoksa veya geçersizse 0 TMT olarak ayarla
+                            let price = '0 TMT';
+                            if (normalPriceValue && !isNaN(normalPriceValue) && parseFloat(normalPriceValue) > 0) {
+                                price = `${normalPriceValue} TMT`;
                             }
-
-                            const price = `${normalPriceValue} TMT`;
 
                             // ✅ İndirimli fiyatı al (opsiyonel)
                             let discountedPriceValue = row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '';
@@ -232,30 +230,35 @@ class ExcelManager {
                         }
                     }
 
-                    loadingOverlay.style.display = 'none';
-
-                    // Sonuçları göster
-                    let resultMessage = `✅ ${successCount} ürün başarıyla yüklendi`;
+                    loadingText.textContent = 'Ürünler başarıyla yüklendi!';
                     
-                    if (errorCount > 0) {
-                        resultMessage += `\n❌ ${errorCount} ürün yüklenemedi`;
-                        console.error('Hatalar:', errors);
+                    // ✅ 2 saniye bekle, sonra loading'i kapat
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
                         
-                        // İlk 5 hatayı göster
-                        if (errors.length > 0) {
-                            alert(resultMessage + '\n\nİlk hatalar:\n' + errors.slice(0, 5).join('\n'));
+                        // Sonuçları göster
+                        let resultMessage = `✅ ${successCount} ürün başarıyla yüklendi`;
+                        
+                        if (errorCount > 0) {
+                            resultMessage += `\n❌ ${errorCount} ürün yüklenemedi`;
+                            console.error('Hatalar:', errors);
+                            
+                            // İlk 5 hatayı göster
+                            if (errors.length > 0) {
+                                alert(resultMessage + '\n\nİlk hatalar:\n' + errors.slice(0, 5).join('\n'));
+                            }
+                        } else {
+                            alert(resultMessage);
                         }
-                    } else {
-                        alert(resultMessage);
-                    }
 
-                    resolve({ 
-                        success: true, 
-                        successCount, 
-                        errorCount, 
-                        errors,
-                        message: resultMessage
-                    });
+                        resolve({ 
+                            success: true, 
+                            successCount, 
+                            errorCount, 
+                            errors,
+                            message: resultMessage
+                        });
+                    }, 2000); // 2 saniye bekle
 
                 } catch (error) {
                     loadingOverlay.style.display = 'none';

@@ -316,8 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''} <!-- Burası sadece indirim varsa -->
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
-                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3EResim Yok%3C/text%3E%3C/svg%3E'}" alt="${product.title}">                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
@@ -373,8 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
-                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3EResim Yok%3C/text%3E%3C/svg%3E'}" alt="${product.title}">                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
@@ -524,7 +522,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
-                    <img src="${item.imageUrl || 'https://picsum.photos/70/70?random=  ' + item.id}" alt="${item.title}">
+                    <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3EResim Yok%3C/text%3E%3C/svg%3E'}" alt="${item.title}">
                     <div class="cart-item-details">
                         <div class="cart-item-title">${item.title}</div>
                         <div class="cart-item-price">${item.price}</div>
@@ -670,7 +668,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
-                    <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=  ' + product.id}" alt="${product.title}">
+                        <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3EResim Yok%3C/text%3E%3C/svg%3E'}" alt="${product.title}">
                     <div class="favorite-item-info">
                         <div class="favorite-item-title">${product.title}</div>
                         <div class="favorite-item-price">${product.price}</div>
@@ -732,7 +730,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!product) return;
         const modal = document.getElementById('product-modal');
         modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
-        document.getElementById('modal-image').src = product.imageUrl || 'https://picsum.photos/400/500?random=  ' + product.id;
+        document.getElementById('modal-image').src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22500%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22400%22 height=%22500%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2218%22%3EResim Yok%3C/text%3E%3C/svg%3E';
         document.getElementById('modal-title').textContent = product.title;
         document.getElementById('modal-price').textContent = product.price;
         document.getElementById('modal-description').textContent = product.description || '';
