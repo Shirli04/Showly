@@ -40,6 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingStoreId = null;
     let editingProductId = null;
     let uploadedProductImageUrl = null;
+
+        // İndirim checkbox'ı değiştiğinde
+    if (productIsOnSale) {
+        productIsOnSale.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                originalPriceGroup.style.display = 'block'; // Göster
+            } else {
+                originalPriceGroup.style.display = 'none'; // Gizle
+                document.getElementById('product-original-price').value = ''; // Temizle
+            }
+        });
+    }
     
     // Form gönderme kontrolü
     let isSubmitting = false;
@@ -338,6 +350,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-store').value = product.storeId || '';
             document.getElementById('product-new-price').value = product.price || '';
             document.getElementById('product-original-price').value = product.originalPrice || '';
+            if (product.isOnSale && product.originalPrice) {
+                isOnSaleCheckbox.checked = true;
+                originalPriceGroup.style.display = 'block'; // Eski fiyat alanını göster
+            } else {
+                isOnSaleCheckbox.checked = false;
+                originalPriceGroup.style.display = 'none'; // Gizle
+            }
             document.getElementById('product-description').value = product.description || '';
             document.getElementById('product-material').value = product.material || '';
             document.getElementById('product-category').value = product.category || '';
@@ -377,6 +396,8 @@ document.addEventListener('DOMContentLoaded', () => {
         productForm.reset();
         productImagePreview.classList.remove('show');
         productImageStatus.classList.remove('show');
+        document.getElementById('product-is-on-sale').checked = false;
+        document.getElementById('original-price-group').style.display = 'none';
         uploadedProductImageUrl = null;
         editingProductId = null;
         isSubmitting = false;
@@ -396,6 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const desc     = document.getElementById('product-description').value.trim();
             const material = document.getElementById('product-material').value.trim();
             const category = document.getElementById('product-category').value.trim();
+            const isOnSaleChecked = document.getElementById('product-is-on-sale').checked;
             const file     = productImage.files[0];
 
             if (!title || !storeId || !newPrice) {
@@ -423,13 +445,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // İndirim hesaplaması
             let isOnSale = false;
             let originalPrice = '';
-            if (originalPriceInput) {
-                const original = parseFloat(originalPriceInput.replace(' TMT', ''));
-                const current = parseFloat(newPrice.replace(' TMT', ''));
-                if (!isNaN(original) && !isNaN(current) && original > current) {
-                    isOnSale = true;
-                    originalPrice = originalPriceInput;
-                }
+            
+            if (isOnSaleChecked && originalPriceInput) {
+                // Checkbox işaretli VE eski fiyat girilmişse
+                originalPrice = originalPriceInput.includes('TMT') ? originalPriceInput : originalPriceInput + ' TMT';
+                isOnSale = true;
             }
 
             if (editingProductId) {
