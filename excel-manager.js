@@ -39,11 +39,14 @@ class ExcelManager {
 
             const excelData = products.map(product => {
                 const store = stores.find(s => s.id === product.storeId);
+                // Yeni yapıya göre: price = normal fiyat, originalPrice = indirimli fiyat
+                // Yeni sütunlar: "Normal Fiyat", "İndirimli Fiyat"
+                // "İndirimde mi?" sütunu kaldırıldı
                 return {
                     'Mağaza Adı': store ? store.name : 'Bilinmiyor',
                     'Ürün Adı': product.title,
-                    'Fiyat': product.price ? product.price.replace(' TMT', '') : '',
-                    'Eski Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
+                    'Normal Fiyat': product.price ? product.price.replace(' TMT', '') : '', // Sadece sayıyı al
+                    'İndirimli Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '', // Sadece sayıyı al, yoksa boş
                     'Kategori': product.category || '',
                     'Malzeme': product.material || '',
                     'Açıklama': product.description || '',
@@ -78,13 +81,45 @@ class ExcelManager {
 
                     for (const row of jsonData) {
                         try {
-                            await window.addStoreToFirebase({
-                                name: row['Mağaza Adı'],
-                                description: row['Açıklama'] || ''
-                            });
+                            const storeName = (row['Mağaza Adı'] || '').trim();
+                            const store = stores.find(s => s.name.toLowerCase() === storeName.toLowerCase());
+
+                            if (!store) {
+                                errorCount++;
+                                errors.push(`❌ "${storeName}" mağazası bulunamadı`);
+                                continue;
+                            }
+
+                            // Yeni yapıya göre verileri al: "Normal Fiyat", "İndirimli Fiyat"
+                            const normalPriceValue = row['Normal Fiyat'] ? String(row['Normal Fiyat']).trim() : '';
+                            const discountedPriceValue = row['İndirimli Fiyat'] ? String(row['İndirimli Fiyat']).trim() : '';
+
+                            // Fiyat formatını düzenle (TMT ekle)
+                            const price = normalPriceValue ? (normalPriceValue.includes('TMT') ? normalPriceValue : `${normalPriceValue} TMT`) : '';
+                            const originalPrice = discountedPriceValue ? (discountedPriceValue.includes('TMT') ? discountedPriceValue : `${discountedPriceValue} TMT`) : '';
+
+                            // isOnSale mantığını sadece "İndirimli Fiyat" sütununa göre belirle
+                            // Eğer "İndirimli Fiyat" doluysa, ürün indirimdedir.
+                            const isOnSale = !!originalPrice; // originalPrice doluysa true, boşsa false
+
+                            const productData = {
+                                storeId: store.id,
+                                title: row['Ürün Adı'],
+                                price, // Normal fiyat
+                                originalPrice, // İndirimli fiyat (eğer varsa)
+                                category: row['Kategori'] || '',
+                                material: row['Malzeme'] || '',
+                                description: row['Açıklama'] || '',
+                                imageUrl: row['Resim URL'] || '',
+                                isOnSale, // Indirim durumu (sadece indirimli fiyat doluysa true)
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+
+                            await window.db.collection('products').add(productData);
                             successCount++;
-                        } catch (error) {
-                            console.error('Mağaza eklenemedi:', error);
+                        } catch (err) {
+                            errorCount++;
+                            errors.push(err.message);
                         }
                     }
 
