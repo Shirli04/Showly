@@ -400,6 +400,8 @@
             <div class="loading-text">Veriler yükleniyor...</div>
         </div>
         </div>
+        
+        <script src="excel-manager.js"></script>
 
         <!-- Firebase Compat SDK -->
         <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -415,83 +417,6 @@
         <script src="https://apis.google.com/js/api.js"></script>
 
         <!-- Diğer Scriptleriniz (Versiyon Parametresi İLE) -->
-        <script src="excel-manager.js"></script>
         <script src="admin-cloudinary.js"></script>
-
-        <script>
-            // Excel dosyasından ürün yükleme fonksiyonu
-            async function loadProductsFromExcel(file) {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-                        // Firebase'e bağlan
-                        const db = firebase.firestore();
-
-                        let successCount = 0;
-                        let errorCount = 0;
-
-                        for (const row of jsonData) {
-                            try {
-                                // Mağaza adını bul
-                                const storeSnapshot = await db.collection('stores').where('name', '==', row['Mağaza Adı']).get();
-                                if (storeSnapshot.empty) {
-                                    errorCount++;
-                                    console.log(`❌ "${row['Mağaza Adı']}" mağazası bulunamadı`);
-                                    continue;
-                                }
-
-                                const storeId = storeSnapshot.docs[0].id;
-
-                                // Ürün bilgilerini hazırla
-                                const productData = {
-                                    storeId: storeId,
-                                    title: row['Ürün Adı'],
-                                    price: row['Normal Fiyat'] ? `${row['Normal Fiyat']} TMT` : '',
-                                    originalPrice: row['İndirimli Fiyat'] ? `${row['İndirimli Fiyat']} TMT` : '',
-                                    isOnSale: !!row['İndirimli Fiyat'], // İndirimli fiyat doluysa true
-                                    category: row['Kategori'] || '',
-                                    material: row['Malzeme'] || '',
-                                    description: row['Açıklama'] || '',
-                                    imageUrl: row['Resim URL'] || '',
-                                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                                };
-
-                                // Ürünü ekle
-                                await db.collection('products').add(productData);
-                                successCount++;
-
-                            } catch (err) {
-                                errorCount++;
-                                console.error('Ürün eklenirken hata:', err);
-                            }
-                        }
-
-                        alert(`${successCount} ürün başarıyla eklendi. ${errorCount} hata oluştu.`);
-
-                    } catch (error) {
-                        alert('Excel dosyası okunurken hata: ' + error.message);
-                    }
-                };
-                reader.onerror = () => alert('Dosya okunamadı');
-                reader.readAsArrayBuffer(file);
-            }
-
-            // "Excel'den Yükle" butonuna tıklandığında çalışacak
-            document.getElementById('import-products-btn')?.addEventListener('click', () => {
-                document.getElementById('import-products-input').click();
-            });
-
-            document.getElementById('import-products-input')?.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    loadProductsFromExcel(file);
-                }
-            });
-        </script>
     </body>
     </html>
