@@ -288,23 +288,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
-            
-            let priceDisplay = `<p class="product-price">${product.price}</p>`;
 
+            // Yeni fiyat gösterim mantığı
+            let priceDisplay = `<p class="product-price">${product.price}</p>`; // Normal fiyatı göster
+
+            // isOnSale true ve originalPrice doluysa, indirimliyse demektir
             if (product.isOnSale && product.originalPrice) {
-                const originalPrice = parseFloat(product.originalPrice.replace(' TMT', ''));
-                const currentPrice = parseFloat(product.price.replace(' TMT', ''));
+                // product.price = normal fiyat
+                // product.originalPrice = indirimli fiyat
+                const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
+                const discountedPriceValue = parseFloat(product.originalPrice.replace(' TMT', ''));
 
-                if (!isNaN(originalPrice) && !isNaN(currentPrice) && originalPrice > 0) {
-                    const discountPercentage = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+                if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
+                    // İndirim yüzdesini hesapla (Normal - İndirimli) / Normal * 100
+                    const discountPercentage = Math.round(((normalPriceValue - discountedPriceValue) / normalPriceValue) * 100);
 
                     priceDisplay = `
                         <div class="price-container">
                             <div class="price-info">
-                                <span class="original-price">${product.originalPrice}</span>
-                                <span class="current-price">${product.price}</span>
+                                <span class="current-price">${product.originalPrice}</span> <!-- İndirimli fiyat -->
+                                <span class="original-price">${product.price}</span> <!-- Normal fiyat -->
                             </div>
-                            <span class="discount-percentage-badge">-${discountPercentage}%</span>
+                            <span class="discount-percentage-badge">-%${discountPercentage}</span>
                         </div>
                     `;
                 }
@@ -313,13 +318,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''} <!-- Burası sadece indirim varsa -->
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
+                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=' + product.id}" alt="${product.title}">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
                     <span class="product-category-label">${product.category || ''}</span>
-                    ${priceDisplay}
+                    ${priceDisplay} <!-- Burada yeni fiyat gösterimi -->
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
             `;

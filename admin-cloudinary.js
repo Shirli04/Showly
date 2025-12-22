@@ -348,19 +348,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Modal içeriğini doldur
             document.getElementById('product-name').value = product.title || '';
             document.getElementById('product-store').value = product.storeId || '';
-            document.getElementById('product-new-price').value = product.price || '';
-            document.getElementById('product-original-price').value = product.originalPrice || '';
-            if (product.isOnSale && product.originalPrice) {
-                isOnSaleCheckbox.checked = true;
-                originalPriceGroup.style.display = 'block'; // Eski fiyat alanını göster
-            } else {
-                isOnSaleCheckbox.checked = false;
-                originalPriceGroup.style.display = 'none'; // Gizle
-            }
-            document.getElementById('product-description').value = product.description || '';
-            document.getElementById('product-material').value = product.material || '';
-            document.getElementById('product-category').value = product.category || '';
-
+            // Normal fiyatı doldur
+            document.getElementById('product-price').value = product.price ? product.price.replace(' TMT', '') : ''; // Sadece sayıyı koy
+            // İndirimli fiyatı doldur (eğer varsa)
+            document.getElementById('product-discounted-price').value = product.originalPrice && product.isOnSale ? product.originalPrice.replace(' TMT', '') : ''; // Eski fiyat alanı indirimli fiyat için kullanılıyor
             // Resim varsa, önizlemeyi göster
             if (product.imageUrl) {
                 productImagePreview.src = product.imageUrl;
@@ -412,15 +403,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const title    = document.getElementById('product-name').value.trim();
             const storeId  = document.getElementById('product-store').value;
-            const newPrice = document.getElementById('product-new-price').value.trim();
-            const originalPriceInput = document.getElementById('product-original-price').value.trim();
+            const priceInput = document.getElementById('product-price').value.trim(); // Normal fiyat inputu
+            const discountedPriceInput = document.getElementById('product-discounted-price').value.trim(); // İndirimli fiyat inputu
             const desc     = document.getElementById('product-description').value.trim();
             const material = document.getElementById('product-material').value.trim();
             const category = document.getElementById('product-category').value.trim();
-            const isOnSaleChecked = document.getElementById('product-is-on-sale').checked;
             const file     = productImage.files[0];
 
-            if (!title || !storeId || !newPrice) {
+            if (!title || !storeId || !priceInput) { // priceInput zorunlu
                 showNotification('Zorunlu alanları doldurun!', false);
                 isSubmitting = false;
                 return;
@@ -429,40 +419,61 @@ document.addEventListener('DOMContentLoaded', () => {
             let imageUrl = uploadedProductImageUrl;
             if (file) {
                 showUploadStatus(productImageStatus, 'Resim yükleniyor...', true);
-                
+
                 // ✅ Mağaza ismini al
                 const storesSnapshot = await window.db.collection('stores').get();
                 const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 const selectedStore = stores.find(s => s.id === storeId);
                 const storeName = selectedStore ? selectedStore.name : 'bilinmeyen-magaza';
-                
+
                 // ✅ Mağaza ismiyle yükle
                 const uploadResult = await uploadToR2(file, storeName);
                 imageUrl = uploadResult;
                 showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
             }
 
-            // İndirim hesaplaması
+            // Fiyat formatlaması
+            const price = priceInput.includes('TMT') ? priceInput : `${priceInput} TMT`;
+
+            // İndirim hesaplaması ve veri ayarlaması
             let isOnSale = false;
-            let originalPrice = '';
-            
-            if (isOnSaleChecked && originalPriceInput) {
-                // Checkbox işaretli VE eski fiyat girilmişse
-                originalPrice = originalPriceInput.includes('TMT') ? originalPriceInput : originalPriceInput + ' TMT';
-                isOnSale = true;
+            let originalPrice = ''; // Eski fiyat (indirimli değilse boş kalacak)
+
+            if (discountedPriceInput) {
+                // İndirimli fiyat girilmişse
+                originalPrice = discountedPriceInput.includes('TMT') ? discountedPriceInput : `${discountedPriceInput} TMT`;
+                isOnSale = true; // İndirimliyse isOnSale true olur
+            } else {
+                // İndirimli fiyat girilmemişse, normal fiyat orijinal fiyattır, indirim yok
+                originalPrice = ''; // Eski fiyat boş
+                isOnSale = false; // İndirim yok
             }
 
+            // Kullanıcının girdiği fiyat artık "price" olacak (normal fiyat)
+            // "originalPrice" ise indirimliyse o değer, değilse boş olacak
+            // Bu yapı, mevcut `showlyDB` veya frontend gösterim mantığınıza göre ayarlanabilir.
+            // ÖNEMLİ: Burada "price" her zaman normal fiyatı, "originalPrice" (eğer varsa) indirimli fiyatı tutacak.
+            // Ve "isOnSale" true ise indirimli, false ise değil anlamına gelecek.
+            // Ancak genelde "originalPrice" orijinal (indirimsiz) fiyat, "currentPrice" veya "price" indirimli fiyat olur.
+            // Bu yapıya göre ayarlamak için, "price" normal fiyat, "originalPrice" indirimli fiyat olacak şekilde
+            // `script.js` içindeki fiyat gösterim mantığını da güncellememiz gerekir.
+            // Aşağıda, "price" normal fiyat, "originalPrice" indirimli fiyat, "isOnSale" durumu olarak kalmış olsun.
+            // script.js tarafında da bu yeni tanıma göre gösterim yapılacak.
+            // YANLIŞ: originalPrice = normal fiyat, price = indirimli fiyat
+            // DOĞRU: price = normal fiyat, originalPrice = indirimli fiyat (sadece isOnSale true ise dolu olur)
+            // isOnSale = originalPrice dolu mu diye bakılır.
+            // Bu yüzden, `script.js` içindeki fiyat gösterimini de değiştireceğim.
+
+            const productData = {
+                storeId, title, price, description: desc, material, category,
+                isOnSale, originalPrice, imageUrl
+            };
+
             if (editingProductId) {
-                await window.db.collection('products').doc(editingProductId).update({
-                    storeId, title, price: newPrice, description: desc, material, category,
-                    isOnSale, originalPrice, imageUrl
-                });
+                await window.db.collection('products').doc(editingProductId).update(productData);
                 showNotification('Ürün başarıyla güncellendi!');
             } else {
-                await window.addProductToFirebase({
-                    storeId, title, price: newPrice, description: desc, material, category,
-                    isOnSale, originalPrice, imageUrl
-                });
+                await window.addProductToFirebase(productData);
                 showNotification('Ürün Firebase\'e eklendi!');
             }
 
@@ -475,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             isSubmitting = false;
         }
-    }
+    };
     
     async function renderOrdersTable() {
         const loadingOverlay = document.getElementById('loading-overlay');
