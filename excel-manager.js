@@ -1,271 +1,275 @@
 // Excel dosyası yönetimi
 class ExcelManager {
-    
+
     // Mağazaları Excel'e dönüştür ve indir
     static async exportStoresToExcel() {
         try {
             const storesSnapshot = await window.db.collection('stores').get();
             const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            // Excel verilerine dönüştür
+
             const excelData = stores.map(store => ({
                 'Mağaza ID': store.id,
                 'Mağaza Adı': store.name,
                 'Açıklama': store.description || '',
                 'Oluşturulma Tarihi': store.createdAt || ''
             }));
-            
-            // Excel çalışma kitabı oluştur
+
             const worksheet = XLSX.utils.json_to_sheet(excelData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Mağazalar');
-            
-            // İndir
+
             XLSX.writeFile(workbook, 'showly_magazines.xlsx');
         } catch (error) {
             console.error('Mağazalar indirilemedi:', error);
             alert('Mağazalar indirilemedi: ' + error.message);
         }
     }
-    
+
     // Ürünleri Excel'e dönüştür ve indir
     static async exportProductsToExcel() {
         try {
-            // Firebase'den ürünleri çek
             const productsSnapshot = await window.db.collection('products').get();
             const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            // Firebase'den mağazaları çek
+
             const storesSnapshot = await window.db.collection('stores').get();
             const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            console.log('📦 İndirilen ürünler:', products.length);
-            console.log('🏪 İndirilen mağazalar:', stores.length);
-            
-            // Excel verilerine dönüştür
+
             const excelData = products.map(product => {
                 const store = stores.find(s => s.id === product.storeId);
                 return {
                     'Mağaza Adı': store ? store.name : 'Bilinmiyor',
                     'Ürün Adı': product.title,
-                    'Fiyat': product.price ? product.price.replace(' TMT', '') : '',
-                    'Eski Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
+                    'Normal Fiyat': product.price ? product.price.replace(' TMT', '') : '',
+                    'İndirimli Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
                     'Kategori': product.category || '',
                     'Malzeme': product.material || '',
                     'Açıklama': product.description || '',
                     'Resim URL': product.imageUrl || ''
                 };
             });
-            
-            console.log('📊 Excel verisi hazır:', excelData.length);
-            
-            // Excel çalışma kitabı oluştur
+
             const worksheet = XLSX.utils.json_to_sheet(excelData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Ürünler');
-            
-            // İndir
+
             XLSX.writeFile(workbook, 'showly_products.xlsx');
-            console.log('✅ Excel dosyası indirildi!');
         } catch (error) {
-            console.error('❌ Ürünler indirilemedi:', error);
+            console.error('Ürünler indirilemedi:', error);
             alert('Ürünler indirilemedi: ' + error.message);
         }
     }
-    
+
     // Mağazaları Excel'den içe aktar
     static async importStoresFromExcel(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = async (e) => {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                    
+
                     let successCount = 0;
-                    
-                    // Mağazaları Firebase'e ekle
+
                     for (const row of jsonData) {
                         try {
-                            await window.addStoreToFirebase({
-                                name: row['Mağaza Adı'],
-                                description: row['Açıklama'] || ''
+                            const storeName = (row['Mağaza Adı'] || '').trim();
+                            
+                            if (!storeName) {
+                                console.warn('Boş mağaza adı atlandı');
+                                continue;
+                            }
+
+                            const slug = storeName.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
+                            
+                            await window.db.collection('stores').add({
+                                name: storeName,
+                                slug: slug,
+                                description: row['Açıklama'] || '',
+                                customBannerText: row['Banner Metni'] || '',
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
+                            
                             successCount++;
-                        } catch (error) {
-                            console.error('Mağaza eklenemedi:', error);
+                        } catch (err) {
+                            console.error('Mağaza eklenirken hata:', err);
                         }
                     }
-                    
+
                     resolve({
                         success: true,
                         count: successCount,
                         message: `${successCount} mağaza başarıyla içe aktarıldı`
                     });
                 } catch (error) {
-                    reject({
-                        success: false,
-                        error: error.message
-                    });
+                    reject({ success: false, error: error.message });
                 }
             };
-            
-            reader.onerror = () => {
-                reject({
-                    success: false,
-                    error: 'Dosya okunamadı'
-                });
-            };
-            
+
+            reader.onerror = () => reject({ success: false, error: 'Dosya okunamadı' });
             reader.readAsArrayBuffer(file);
         });
     }
-    
-    // ✅ Ürünleri Excel'den Firebase'e yükle (OTOMATİK)
+
+    // ✅ DÜZELTİLMİŞ: Ürünleri Excel'den Firebase'e yükle
     static async importProductsFromExcel(file) {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.querySelector('.loading-text');
+        
+        loadingOverlay.style.display = 'flex';
+        loadingText.textContent = 'Excel dosyası okunuyor...';
+
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = async (e) => {
                 try {
-                    console.log('📂 Excel dosyası okunuyor...');
-                    
-                    // 1. Excel dosyasını oku
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                    
-                    console.log('📊 Excel verisi okundu:', jsonData.length, 'satır');
-                    console.log('İlk satır:', jsonData[0]);
-                    
-                    // 2. Firebase'den mağazaları çek
+
+                    console.log('📊 Excel verisi:', jsonData);
+                    loadingText.textContent = 'Mağazalar yükleniyor...';
+
+                    // Firebase'den mağazaları çek
                     const storesSnapshot = await window.db.collection('stores').get();
                     const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    
-                    console.log('🏪 Mağazalar yüklendi:', stores.length);
-                    console.log('Mağaza adları:', stores.map(s => s.name));
-                    
+
+                    console.log('🏪 Mağazalar:', stores);
+
                     let successCount = 0;
                     let errorCount = 0;
                     const errors = [];
-                    
-                    // 3. Her ürünü işle
+
                     for (let i = 0; i < jsonData.length; i++) {
                         const row = jsonData[i];
-                        
+                        loadingText.textContent = `Ürün yükleniyor... (${i + 1}/${jsonData.length})`;
+
                         try {
-                            console.log(`\n🔄 ${i + 1}/${jsonData.length} işleniyor:`, row['Ürün Adı']);
+                            // ✅ Mağaza adını temizle ve bul
+                            const storeName = (row['Mağaza Adı'] || row['Magaza Adi'] || '').trim();
                             
-                            // Mağazayı bul (büyük/küçük harf duyarsız)
-                            const storeName = (row['Mağaza Adı'] || '').trim();
+                            if (!storeName) {
+                                errorCount++;
+                                errors.push(`Satır ${i + 1}: Mağaza adı boş`);
+                                continue;
+                            }
+
+                            // ✅ Mağazayı bul (büyük/küçük harf duyarsız)
                             const store = stores.find(s => 
                                 s.name.toLowerCase() === storeName.toLowerCase()
                             );
-                            
+
                             if (!store) {
                                 errorCount++;
-                                const errorMsg = `❌ "${storeName}" mağazası bulunamadı - Ürün: ${row['Ürün Adı']}`;
-                                errors.push(errorMsg);
-                                console.error(errorMsg);
+                                errors.push(`Satır ${i + 1}: "${storeName}" mağazası bulunamadı`);
                                 continue;
                             }
-                            
-                            console.log(`✅ Mağaza bulundu: ${store.name} (ID: ${store.id})`);
-                            
-                            // Ürün adı kontrolü
-                            const productTitle = (row['Ürün Adı'] || '').trim();
-                            if (!productTitle) {
+
+                            // ✅ Ürün adını al
+                            const title = (row['Ürün Adı'] || row['Urun Adi'] || '').trim();
+                            if (!title) {
                                 errorCount++;
-                                errors.push(`❌ Ürün adı eksik`);
+                                errors.push(`Satır ${i + 1}: Ürün adı boş`);
                                 continue;
                             }
+
+                            // ✅ Normal fiyatı al ve formatla (opsiyonel)
+                            let normalPriceValue = row['Normal Fiyat'] || row['Normal Fiyat'] || '';
+                            normalPriceValue = String(normalPriceValue).trim().replace('TMT', '').replace(' ', '');
                             
-                            // Fiyat kontrolü
-                            const priceValue = row['Fiyat'] ? String(row['Fiyat']).trim() : '';
-                            if (!priceValue) {
-                                errorCount++;
-                                errors.push(`❌ Fiyat eksik - Ürün: ${productTitle}`);
-                                continue;
+                            // Fiyat yoksa veya geçersizse 0 TMT olarak ayarla
+                            let price = '0 TMT';
+                            if (normalPriceValue && !isNaN(normalPriceValue) && parseFloat(normalPriceValue) > 0) {
+                                price = `${normalPriceValue} TMT`;
                             }
-                            
-                            // Fiyatı düzenle (TMT ekle)
-                            const price = priceValue.includes('TMT') ? priceValue : `${priceValue} TMT`;
-                            
-                            // Eski fiyat kontrolü
-                            const oldPriceValue = row['Eski Fiyat'] ? String(row['Eski Fiyat']).trim() : '';
-                            const originalPrice = oldPriceValue ? (oldPriceValue.includes('TMT') ? oldPriceValue : `${oldPriceValue} TMT`) : '';
-                            
-                            // İndirim var mı?
-                            const isOnSale = originalPrice && parseFloat(originalPrice.replace(' TMT', '')) > parseFloat(price.replace(' TMT', ''));
-                            
-                            // Ürün verisini hazırla
+
+                            // ✅ İndirimli fiyatı al (opsiyonel)
+                            let discountedPriceValue = row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '';
+                            discountedPriceValue = String(discountedPriceValue).trim().replace('TMT', '').replace(' ', '');
+
+                            let originalPrice = '';
+                            let isOnSale = false;
+
+                            // Eğer indirimli fiyat varsa ve geçerli bir sayıysa
+                            if (discountedPriceValue && !isNaN(discountedPriceValue) && parseFloat(discountedPriceValue) > 0) {
+                                originalPrice = `${discountedPriceValue} TMT`;
+                                isOnSale = true;
+                            }
+
+                            // ✅ Resim URL'sini al
+                            const imageUrl = (row['Resim URL'] || row['Image URL'] || '').trim();
+
+                            // ✅ Ürün verisini oluştur
                             const productData = {
                                 storeId: store.id,
-                                title: productTitle,
+                                title: title,
                                 price: price,
                                 originalPrice: originalPrice,
+                                isOnSale: isOnSale,
                                 category: (row['Kategori'] || '').trim(),
                                 material: (row['Malzeme'] || '').trim(),
-                                description: (row['Açıklama'] || '').trim(),
-                                imageUrl: (row['Resim URL'] || '').trim(),
-                                isOnSale: isOnSale,
+                                description: (row['Açıklama'] || row['Aciklama'] || '').trim(),
+                                imageUrl: imageUrl,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             };
-                            
-                            console.log('💾 Firebase\'e ekleniyor:', productData);
-                            
-                            // 4. Firebase'e ekle
-                            const docRef = await window.db.collection('products').add(productData);
+
+                            console.log(`✅ Ürün ${i + 1}:`, productData);
+
+                            // Firebase'e ekle
+                            await window.db.collection('products').add(productData);
                             successCount++;
-                            console.log(`✅ ${productTitle} eklendi (ID: ${docRef.id})`);
-                            
-                        } catch (itemError) {
+
+                        } catch (err) {
                             errorCount++;
-                            const errorMsg = `❌ Hata (${row['Ürün Adı']}): ${itemError.message}`;
-                            errors.push(errorMsg);
-                            console.error('Ürün eklenirken hata:', itemError);
+                            errors.push(`Satır ${i + 1}: ${err.message}`);
+                            console.error(`Satır ${i + 1} hatası:`, err);
                         }
                     }
+
+                    loadingText.textContent = 'Ürünler başarıyla yüklendi!';
                     
-                    // 5. Sonuç mesajı
-                    let message = `✅ ${successCount} ürün başarıyla eklendi!`;
-                    if (errorCount > 0) {
-                        message += `\n⚠️ ${errorCount} ürün eklenemedi`;
-                        if (errors.length > 0) {
-                            message += '\n\n❌ Hatalar:\n' + errors.slice(0, 5).join('\n');
-                            if (errors.length > 5) {
-                                message += `\n... ve ${errors.length - 5} hata daha`;
+                    // ✅ 2 saniye bekle, sonra loading'i kapat
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        
+                        // Sonuçları göster
+                        let resultMessage = `✅ ${successCount} ürün başarıyla yüklendi`;
+                        
+                        if (errorCount > 0) {
+                            resultMessage += `\n❌ ${errorCount} ürün yüklenemedi`;
+                            console.error('Hatalar:', errors);
+                            
+                            // İlk 5 hatayı göster
+                            if (errors.length > 0) {
+                                alert(resultMessage + '\n\nİlk hatalar:\n' + errors.slice(0, 5).join('\n'));
                             }
+                        } else {
+                            alert(resultMessage);
                         }
-                    }
-                    
-                    console.log('\n📊 SONUÇ:', message);
-                    
-                    resolve({
-                        success: true,
-                        count: successCount,
-                        errors: errorCount,
-                        message: message
-                    });
-                    
+
+                        resolve({ 
+                            success: true, 
+                            successCount, 
+                            errorCount, 
+                            errors,
+                            message: resultMessage
+                        });
+                    }, 2000); // 2 saniye bekle
+
                 } catch (error) {
-                    console.error('❌ Excel okuma hatası:', error);
-                    reject({
-                        success: false,
-                        error: error.message
-                    });
+                    loadingOverlay.style.display = 'none';
+                    console.error('Excel okuma hatası:', error);
+                    reject({ success: false, error: error.message });
                 }
             };
-            
+
             reader.onerror = () => {
-                reject({
-                    success: false,
-                    error: 'Dosya okunamadı'
-                });
+                loadingOverlay.style.display = 'none';
+                reject({ success: false, error: 'Dosya okunamadı' });
             };
             
             reader.readAsArrayBuffer(file);

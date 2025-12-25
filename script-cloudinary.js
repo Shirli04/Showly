@@ -35,27 +35,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allStores = [];
     let allProducts = [];
     loadingOverlay.style.display = 'flex'; // Yükleniyor animasyonunu göster
-    
-    // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
+
     console.log('🔄 Firebase\'den veriler yükleniyor...');
-    
+
     try {
-        // --- FIREBASE'DEN VERİLERİ ÇEK VE KAYDET ---
-        console.log('🔄 Firebase\'den veriler yükleniyor...');
+        // ✅ YENİ: 45 saniye timeout ekle
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Firebase bağlantısı zaman aşımına uğradı')), 45000);
+        });
 
-        // Mağazaları çek
-        const storesSnapshot = await window.db.collection('stores').get();
-        allStores = storesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-        }));
+        // Firebase veri çekme işlemleri
+        const fetchDataPromise = (async () => {
+            // Mağazaları çek
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
 
-        // Ürünleri çek
-        const productsSnapshot = await window.db.collection('products').get();
-        allProducts = productsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-        }));
+            // Ürünleri çek
+            const productsSnapshot = await window.db.collection('products').get();
+            const products = productsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            return { stores, products };
+        })();
+
+        // ✅ Timeout ile yarış: Hangisi önce biterse onu al
+        const { stores, products } = await Promise.race([fetchDataPromise, timeoutPromise]);
+
+        allStores = stores;
+        allProducts = products;
 
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
 
@@ -64,7 +76,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
-        showNotification('Veriler yüklenemedi!', false);
+        
+        // ✅ YENİ: Hata mesajını 404 sayfasında göster
+        const notFoundSection = document.getElementById('not-found');
+        const heroSection = document.querySelector('.hero-section');
+        const infoSection = document.querySelector('.info-section');
+        const errorTitle = document.getElementById('error-title');
+        const errorMessage = document.getElementById('error-message');
+        
+        if (heroSection) heroSection.style.display = 'none';
+        if (infoSection) infoSection.style.display = 'none';
+        
+        errorTitle.textContent = 'Baglanyşyk Ýok';
+        errorMessage.textContent = 'Firebase bilen baglanyşyk guralyp bilinmedi. Sahypany täzeleň.';
+        notFoundSection.style.display = 'block';
+        
+        showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
     } finally {
         loadingOverlay.style.display = 'none'; // Animasyonu gizle
     }
@@ -213,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         storeBanner.innerHTML = `
             <h2>${store.name}</h2>
-            <p>${store.customBannerText || 'Bu magazynda iň gowy harytlar bar'}</p>
+            <p>${store.customBannerText}</p>
     `;
         
         categoryFiltersSection.style.display = 'block';
@@ -258,23 +285,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
-            
-            let priceDisplay = `<p class="product-price">${product.price}</p>`;
 
-            if (product.isOnSale && product.originalPrice) {
-                const originalPrice = parseFloat(product.originalPrice.replace(' TMT', ''));
-                const currentPrice = parseFloat(product.price.replace(' TMT', ''));
+            // Yeni fiyat gösterim mantığı
+            let priceDisplay = `<p class="product-price">${product.price}</p>`; // Normal fiyatı göster
 
-                if (!isNaN(originalPrice) && !isNaN(currentPrice) && originalPrice > 0) {
-                    const discountPercentage = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+            if (product.isOnSale && product.originalPrice) { // Sadece indirimli fiyat doluysa ve isOnSale trueysa göster
+                const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
+                const discountedPriceValue = parseFloat(product.originalPrice.replace(' TMT', ''));
 
+                if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
+                    // İndirim yüzdesini hesapla: ((Normal - İndirimli) / Normal) * 100
+                    const discountPercentage = Math.round(((normalPriceValue - discountedPriceValue) / normalPriceValue) * 100);
+
+                    // İndirimli fiyatı büyük ve kalın, eski fiyatı çizgili ve küçük göster
                     priceDisplay = `
                         <div class="price-container">
                             <div class="price-info">
-                                <span class="original-price">${product.originalPrice}</span>
-                                <span class="current-price">${product.price}</span>
+                                <span class="current-price">${product.originalPrice}</span> <!-- İndirimli fiyat -->
+                                <span class="original-price">${product.price}</span> <!-- Normal fiyat -->
                             </div>
-                            <span class="discount-percentage-badge">-${discountPercentage}%</span>
+                            <span class="discount-percentage-badge">-%${discountPercentage}</span>
                         </div>
                     `;
                 }
@@ -283,13 +313,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''} <!-- Burası sadece indirim varsa -->
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
-                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
                     <span class="product-category-label">${product.category || ''}</span>
-                    ${priceDisplay}
+                    ${priceDisplay} <!-- Burada yeni fiyat gösterimi -->
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
             `;
@@ -340,8 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    <img src="${product.imageUrl || 'https://picsum.photos/300/400?random=  ' + product.id}" alt="${product.title}">
-                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
@@ -491,7 +519,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
-                    <img src="${item.imageUrl || 'https://picsum.photos/70/70?random=  ' + item.id}" alt="${item.title}">
+                    <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3E%3C/text%3E%3C/svg%3E'}" alt="${item.title}">
                     <div class="cart-item-details">
                         <div class="cart-item-title">${item.title}</div>
                         <div class="cart-item-price">${item.price}</div>
@@ -637,7 +665,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
-                    <img src="${product.imageUrl || 'https://picsum.photos/200/200?random=  ' + product.id}" alt="${product.title}">
+                        <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">
                     <div class="favorite-item-info">
                         <div class="favorite-item-title">${product.title}</div>
                         <div class="favorite-item-price">${product.price}</div>
@@ -699,7 +727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!product) return;
         const modal = document.getElementById('product-modal');
         modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
-        document.getElementById('modal-image').src = product.imageUrl || 'https://picsum.photos/400/500?random=  ' + product.id;
+        document.getElementById('modal-image').src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22500%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22400%22 height=%22500%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2218%22%3E%3C/text%3E%3C/svg%3E';
         document.getElementById('modal-title').textContent = product.title;
         document.getElementById('modal-price').textContent = product.price;
         document.getElementById('modal-description').textContent = product.description || '';
@@ -721,4 +749,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- İLK YÜKLEME ---
     router();
+});
+
+// ✅ YENİ: Sahypany täzele butonu
+document.getElementById('reload-page-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Loading göster
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.querySelector('.loading-text');
+    loadingOverlay.style.display = 'flex';
+    loadingText.textContent = 'Sahypa täzelenýär...';
+    
+    // 500ms bekle (kullanıcının butona bastığını görmesi için)
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+});
+
+// ✅ YENİ: Ana sayfaya dön butonu
+document.getElementById('back-home-link')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Loading göster
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.querySelector('.loading-text');
+    loadingOverlay.style.display = 'flex';
+    loadingText.textContent = 'Sahypa täzelenýär...';
+    
+    // Ana sayfaya git
+    setTimeout(() => {
+        history.pushState(null, null, '/');
+        window.location.reload();
+    }, 500);
 });

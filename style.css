@@ -2043,3 +2043,51 @@ header {
   50% { transform: scale(1.02); }
   100% { transform: scale(1); }
 }
+
+/* ================================ YENİLEME BUTONU ================================ */
+#reload-page-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+#reload-page-btn:hover {
+    background-color: #138496;
+    transform: translateY(-2px);
+}
+
+#reload-page-btn i {
+    animation: none;
+}
+
+#reload-page-btn:hover i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ================================ HATA SAYFASI DÜZENLEMELERİ ================================ */
+#not-found h1 {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+#not-found h2 {
+    color: var(--dark-color);
+    font-weight: 600;
+}
+
+#not-found p {
+    font-size: 16px;
+    max-width: 500px;
+    margin: 0 auto 30px;
+    line-height: 1.6;
+}
+
+#not-found .cta-button {
+    margin: 0;
+}

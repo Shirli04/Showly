@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Showly - Online Katalog Platformasy</title>
+    <title>Showly</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -116,10 +116,15 @@
     </div>
     <!-- 404 Sayfa Bulunamadı Bölümü -->
     <div id="not-found" style="display: none; text-align: center; padding: 60px 20px;">
-        <h1 style="font-size: 48px; color: var(--primary-color);">404</h1>
-        <h2 style="font-size: 24px; margin-bottom: 10px;">Sahypa Tapylmady</h2>
-        <p style="color: #666; margin-bottom: 20px;">Gözleýän magazynyňyz tapylmady</p>
-        <a href="#" id="back-home-link" class="cta-button">Esasy sahypa git</a>
+        <h1 style="font-size: 48px; color: var(--primary-color);">⚠️</h1>
+        <h2 style="font-size: 24px; margin-bottom: 10px;" id="error-title">Sahypa Tapylmady</h2>
+        <p style="color: #666; margin-bottom: 20px;" id="error-message">Gözleýän magazynyňyz tapylmady</p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a href="#" id="back-home-link" class="cta-button">Esasy sahypa git</a>
+            <button id="reload-page-btn" class="cta-button" style="background-color: #17a2b8;">
+                <i class="fas fa-sync-alt"></i> Sahypany täzele
+            </button>
+        </div>
     </div>
     <!-- Ürün Detay Modalı -->
     <div id="product-modal" class="modal">
@@ -189,7 +194,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
-
+    <script src="r2-config.js"></script>
     <!-- Gerekli Kütüphaneler -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 

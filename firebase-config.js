@@ -17,9 +17,13 @@ const db = firebase.firestore();
 // Veritabanını (db) diğer scriptlerin kullanabileceği yap
 window.db = db;
 db.settings({
-    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED, // Önbelleği sınırsız yap
-    experimentalForceLongPolling: true, // Yeni bağlantı stratejisi
+    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+    experimentalForceLongPolling: true,
+    ignoreUndefinedProperties: true, // ✅ Tanımsız alanları yok say
 });
+
+// ✅ YENİ: Firestore için özel timeout ayarları
+// Not: Firebase SDK'nın kendi timeout'u 60 saniye, ama biz 30 saniyede müdahale ediyoruz
 
 // localStorage ve Firebase senkronizasyonu
 class ShowlyDB {
