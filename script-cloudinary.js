@@ -229,27 +229,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         maxPriceInput.addEventListener('input', applyPriceRange);
     };
     
-    // --- ÜRÜNLERİ FİLTRELEYİP GÖSTEREN ANA FONKSİYON ---
+    
     const renderStorePage = (storeId, activeFilter = null) => {
         currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
-        const storeBanner = document.getElementById('store-banner');
-        storeBanner.style.display = 'block';
-
-        storeBanner.innerHTML = `
-            <h2>${store.name}</h2>
-            <p>${store.customBannerText || 'Bu magazynda iň gowy harytlar bar'}</p>
-        `;
-        
-        categoryFiltersSection.style.display = 'block';
-        mainFiltersSection.style.display = 'block';
-        productsGrid.style.display = 'grid';
-        productsGrid.innerHTML = '';
-
-        renderCategories(storeId, activeFilter);
-        renderMainFilters(storeId, activeFilter);
+        // ... (banner ve diğer kodlar)
 
         let productsToRender = storeProducts;
         if (activeFilter) {
@@ -263,8 +249,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'EXPENSIVE': 
                     productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500); 
                     break;
-                case 'SORT_PRICE_ASC': // ✅ YENİ: Ucuzdan pahalıya sıralama
-                    productsToRender = [...storeProducts]; // Kopyasını al
+                case 'SORT_PRICE_ASC':
+                    productsToRender = [...storeProducts];
                     break;
                 case 'PRICE_RANGE':
                     const min = activeFilter.min || 0;
@@ -282,8 +268,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
+        // ✅✅✅ İŞTE BURAYA YAPIŞTIRIN ✅✅✅
         if (activeFilter?.type === 'SORT_PRICE_ASC') {
-            // Ucuzdan pahalıya sırala
             productsToRender.sort((a, b) => {
                 const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
                 const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
@@ -291,7 +277,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             console.log('✅ Ürünler ucuzdan pahalıya sıralandı');
         } else {
-            // Normal öncelik sıralaması (fotoğraf + fiyat)
             productsToRender.sort((a, b) => {
                 const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
                 const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
@@ -304,9 +289,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 return bScore - aScore;
             });
+            console.log('✅ Ürünler öncelik sırasına göre sıralandı');
         }
-
-        console.log('✅ Ürünler öncelik sırasına göre sıralandı');
         
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
