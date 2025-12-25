@@ -176,7 +176,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderMainFilters = (storeId, activeFilter) => {
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
         const discountedProducts = storeProducts.filter(p => p.isOnSale);
-        const freeProducts = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) === 0);
         const expensiveProducts = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500);
 
         mainFiltersContainer.innerHTML = `
@@ -186,8 +185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <button class="filter-option-btn ${activeFilter?.type === 'DISCOUNT' ? 'active' : ''}" data-filter-type="DISCOUNT">
                         <i class="fas fa-percentage"></i> Arzanladyş <span class="category-count">${discountedProducts.length}</span>
                     </button>
-                    <button class="filter-option-btn ${activeFilter?.type === 'FREE' ? 'active' : ''}" data-filter-type="FREE">
-                        <i class="fas fa-gift"></i> Mugt <span class="category-count">${freeProducts.length}</span>
+                    <button class="filter-option-btn ${activeFilter?.type === 'SORT_PRICE_ASC' ? 'active' : ''}" data-filter-type="SORT_PRICE_ASC">
+                        <i class="fas fa-arrow-up"></i> Arzandan <span class="category-count">${storeProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'EXPENSIVE' ? 'active' : ''}" data-filter-type="EXPENSIVE">
                         <i class="fas fa-crown"></i> Gymmatdan <span class="category-count">${expensiveProducts.length}</span>
@@ -195,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
             <div class="price-filter-group">
-                <div class="price-filter-group-title">Fiyat Aralığı</div>
+                <div class="price-filter-group-title">Baha aralygy</div>
                 <div class="price-range-inputs">
                     <input type="number" id="min-price" placeholder="Min TMT" min="0" value="${activeFilter?.type === 'PRICE_RANGE' ? activeFilter.min : ''}">
                     <span>-</span>
@@ -204,6 +203,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
+        // Hızlı filtre butonları
         mainFiltersContainer.querySelectorAll('.filter-option-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const filterType = btn.getAttribute('data-filter-type');
@@ -211,8 +211,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
+        // Fiyat aralığı inputları
         const minPriceInput = document.getElementById('min-price');
         const maxPriceInput = document.getElementById('max-price');
+        
         const applyPriceRange = () => {
             const min = parseFloat(minPriceInput.value) || 0;
             const max = parseFloat(maxPriceInput.value) || Infinity;
@@ -222,6 +224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderStorePage(storeId, null);
             }
         };
+        
         minPriceInput.addEventListener('input', applyPriceRange);
         maxPriceInput.addEventListener('input', applyPriceRange);
     };
@@ -257,11 +260,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'DISCOUNT': 
                     productsToRender = storeProducts.filter(p => p.isOnSale); 
                     break;
-                case 'FREE': 
-                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) === 0); 
-                    break;
                 case 'EXPENSIVE': 
                     productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500); 
+                    break;
+                case 'SORT_PRICE_ASC': // ✅ YENİ: Ucuzdan pahalıya sıralama
+                    productsToRender = [...storeProducts]; // Kopyasını al
                     break;
                 case 'PRICE_RANGE':
                     const min = activeFilter.min || 0;
@@ -279,23 +282,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // ✅ ÜRÜN ÖNCELÝK SIRALAMASI - BURAYA EKLEYIN
-        productsToRender.sort((a, b) => {
-            // Fotoğraf ve fiyat kontrolü
-            const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
-            const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
-            
-            const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
-            const bHasPrice = b.price && parseFloat(b.price.replace(' TMT', '')) > 0;
-            
-            // Öncelik puanı hesapla
-            const aScore = (aHasImage ? 2 : 0) + (aHasPrice ? 1 : 0);
-            const bScore = (bHasImage ? 2 : 0) + (bHasPrice ? 1 : 0);
-            
-            // Büyükten küçüğe sırala (3, 2, 1, 0)
-            return bScore - aScore;
-        });
-        
+        if (activeFilter?.type === 'SORT_PRICE_ASC') {
+            // Ucuzdan pahalıya sırala
+            productsToRender.sort((a, b) => {
+                const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
+                const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
+                return priceA - priceB;
+            });
+            console.log('✅ Ürünler ucuzdan pahalıya sıralandı');
+        } else {
+            // Normal öncelik sıralaması (fotoğraf + fiyat)
+            productsToRender.sort((a, b) => {
+                const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
+                const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
+                
+                const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
+                const bHasPrice = b.price && parseFloat(b.price.replace(' TMT', '')) > 0;
+                
+                const aScore = (aHasImage ? 2 : 0) + (aHasPrice ? 1 : 0);
+                const bScore = (bHasImage ? 2 : 0) + (bHasPrice ? 1 : 0);
+                
+                return bScore - aScore;
+            });
+        }
+
         console.log('✅ Ürünler öncelik sırasına göre sıralandı');
         
         productsToRender.forEach(product => {
