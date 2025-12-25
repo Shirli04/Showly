@@ -229,13 +229,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         maxPriceInput.addEventListener('input', applyPriceRange);
     };
     
-    
+
     const renderStorePage = (storeId, activeFilter = null) => {
         currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
-        // ... (banner ve diğer kodlar)
+        const storeBanner = document.getElementById('store-banner');
+        storeBanner.style.display = 'block';
+
+        storeBanner.innerHTML = `
+            <h2>${store.name}</h2>
+            <p>${store.customBannerText || 'Bu magazynda iň gowy harytlar bar'}</p>
+        `;
+        
+        // ✅ BURAYI EKLEYİN - Kategori ve filtreleri göster
+        categoryFiltersSection.style.display = 'block';
+        mainFiltersSection.style.display = 'block';
+        productsGrid.style.display = 'grid';
+        productsGrid.innerHTML = '';
+
+        // ✅ BURAYI EKLEYİN - Fonksiyonları çağır
+        renderCategories(storeId, activeFilter);
+        renderMainFilters(storeId, activeFilter);
 
         let productsToRender = storeProducts;
         if (activeFilter) {
@@ -268,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        // ✅✅✅ İŞTE BURAYA YAPIŞTIRIN ✅✅✅
+        // ✅ Sıralama kodu (daha önce eklediğiniz)
         if (activeFilter?.type === 'SORT_PRICE_ASC') {
             productsToRender.sort((a, b) => {
                 const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
@@ -292,27 +308,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('✅ Ürünler öncelik sırasına göre sıralandı');
         }
         
+        // Ürün kartlarını oluştur
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
 
-            // Yeni fiyat gösterim mantığı
-            let priceDisplay = `<p class="product-price">${product.price}</p>`; // Normal fiyatı göster
+            let priceDisplay = `<p class="product-price">${product.price}</p>`;
 
-            if (product.isOnSale && product.originalPrice) { // Sadece indirimli fiyat doluysa ve isOnSale trueysa göster
+            if (product.isOnSale && product.originalPrice) {
                 const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
                 const discountedPriceValue = parseFloat(product.originalPrice.replace(' TMT', ''));
 
                 if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
-                    // İndirim yüzdesini hesapla: ((Normal - İndirimli) / Normal) * 100
                     const discountPercentage = Math.round(((normalPriceValue - discountedPriceValue) / normalPriceValue) * 100);
 
-                    // İndirimli fiyatı büyük ve kalın, eski fiyatı çizgili ve küçük göster
                     priceDisplay = `
                         <div class="price-container">
                             <div class="price-info">
-                                <span class="current-price">${product.originalPrice}</span> <!-- İndirimli fiyat -->
-                                <span class="original-price">${product.price}</span> <!-- Normal fiyat -->
+                                <span class="current-price">${product.originalPrice}</span>
+                                <span class="original-price">${product.price}</span>
                             </div>
                             <span class="discount-percentage-badge">-%${discountPercentage}</span>
                         </div>
@@ -322,13 +336,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''} <!-- Burası sadece indirim varsa -->
-                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                    ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
+                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">
+                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
                     <span class="product-category-label">${product.category || ''}</span>
-                    ${priceDisplay} <!-- Burada yeni fiyat gösterimi -->
+                    ${priceDisplay}
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
             `;
