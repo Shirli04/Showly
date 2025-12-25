@@ -263,35 +263,57 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Ürün tablosunu güncelle
     async function renderProductsTable() {
-    const loadingOverlay = document.getElementById('loading-overlay');
-    loadingOverlay.style.display = 'flex'; // Göster
+        const loadingOverlay = document.getElementById('loading-overlay');
+        loadingOverlay.style.display = 'flex'; // Göster
 
-    try {
-        const [products, stores] = await Promise.all([window.showlyDB.getAllProducts(), window.showlyDB.getStores()]);
-        productsTableBody.innerHTML = '';
-        for (const product of products) {
-        const store = stores.find(s => s.id === product.storeId);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${product.id}</td>
-            <td>${product.title}</td>
-            <td>${store ? store.name : 'Bilinmiyor'}</td>
-            <td>${product.price}</td>
-            <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
-            <td>
-            <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
-            <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
-            </td>
-        `;
-        productsTableBody.appendChild(row);
+        try {
+            // ✅ DÜZELTME: Firebase'den mağazaları ve ürünleri çek
+            const [productsSnapshot, storesSnapshot] = await Promise.all([
+                window.db.collection('products').get(),
+                window.db.collection('stores').get()
+            ]);
+            
+            // ✅ Mağazaları bir objeye dönüştür (hızlı erişim için)
+            const storesMap = {};
+            storesSnapshot.docs.forEach(doc => {
+                storesMap[doc.id] = { id: doc.id, ...doc.data() };
+            });
+            
+            // ✅ Ürünleri işle
+            const products = productsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            productsTableBody.innerHTML = '';
+            
+            for (const product of products) {
+                // ✅ Mağazayı storesMap'ten al
+                const store = storesMap[product.storeId];
+                const storeName = store ? store.name : 'Mağaza Bulunamadı';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.id}</td>
+                    <td>${product.title}</td>
+                    <td>${storeName}</td>
+                    <td>${product.price}</td>
+                    <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
+                    <td>
+                        <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                productsTableBody.appendChild(row);
+            }
+            
+            attachProductEventListeners();
+        } catch (error) {
+            console.error('Ürünler yüklenemedi:', error);
+            showNotification('Ürünler yüklenemedi!', false);
+        } finally {
+            loadingOverlay.style.display = 'none'; // Gizle
         }
-        attachProductEventListeners();
-    } catch (error) {
-        console.error('Ürünler yüklenemedi:', error);
-        showNotification('Ürünler yüklenemedi!', false);
-    } finally {
-        loadingOverlay.style.display = 'none'; // Gizle
-    }
     }
     
     // Ürün olay dinleyicileri
@@ -605,6 +627,296 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Mağazalar yüklenemedi!', false);
         }
     }
+
+    // Mağaza filtresini doldur
+    async function populateStoreFilter() {
+        const filterStoreSelect = document.getElementById('filter-store-select');
+        const filterCategorySelect = document.getElementById('filter-category-select');
+        
+        if (!filterStoreSelect) return;
+        
+        try {
+            // Firebase'den mağazaları çek
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Dropdown'ı temizle ve "Tüm Mağazalar" ekle
+            filterStoreSelect.innerHTML = '<option value="">Tüm Mağazalar</option>';
+            
+            // Her mağazayı dropdown'a ekle
+            stores.forEach(store => {
+                const option = document.createElement('option');
+                option.value = store.id;
+                option.textContent = store.name;
+                filterStoreSelect.appendChild(option);
+            });
+            
+            console.log(`✅ ${stores.length} mağaza filtreye yüklendi`);
+            
+        } catch (error) {
+            console.error('❌ Mağaza filtresi yüklenemedi:', error);
+        }
+    }
+
+    // ✅ Mağaza ve kategori filtreleme sistemi
+    (function initProductFilters() {
+        const filterStoreSelect = document.getElementById('filter-store-select');
+        const filterCategorySelect = document.getElementById('filter-category-select');
+        const productsTableBody = document.getElementById('products-table-body');
+        
+        if (!filterStoreSelect || !filterCategorySelect || !productsTableBody) {
+            console.error('❌ Filtre elemanları bulunamadı!');
+            return;
+        }
+        
+        // Mağaza seçilince
+        filterStoreSelect.addEventListener('change', async (e) => {
+            const selectedStoreId = e.target.value;
+            
+            console.log('🔍 Seçilen mağaza:', selectedStoreId);
+            
+            // Kategori filtresini sıfırla
+            filterCategorySelect.innerHTML = '<option value="">Tüm Kategoriler</option>';
+            filterCategorySelect.disabled = true;
+            
+            if (selectedStoreId) {
+                // ✅ Seçilen mağazanın ürünlerini göster
+                await filterAndDisplayProducts(selectedStoreId, null);
+                
+                // ✅ Kategorileri yükle
+                try {
+                    const productsSnapshot = await window.db.collection('products')
+                        .where('storeId', '==', selectedStoreId)
+                        .get();
+                    
+                    const products = productsSnapshot.docs.map(doc => doc.data());
+                    const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+                    
+                    if (categories.length > 0) {
+                        filterCategorySelect.disabled = false;
+                        categories.forEach(cat => {
+                            const option = document.createElement('option');
+                            option.value = cat;
+                            option.textContent = cat;
+                            filterCategorySelect.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('❌ Kategoriler yüklenemedi:', error);
+                }
+            } else {
+                // ✅ Tüm ürünleri göster
+                await renderProductsTable();
+            }
+        });
+        
+        // Kategori seçilince
+        filterCategorySelect.addEventListener('change', async (e) => {
+            const selectedStoreId = filterStoreSelect.value;
+            const selectedCategory = e.target.value;
+            
+            if (selectedStoreId) {
+                await filterAndDisplayProducts(selectedStoreId, selectedCategory);
+            }
+        });
+        
+        console.log('✅ Ürün filtreleme sistemi hazır');
+    })();
+
+    // ✅ Ürünleri filtrele ve göster
+    async function filterAndDisplayProducts(storeId, category) {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const productsTableBody = document.getElementById('products-table-body');
+        
+        if (!productsTableBody) {
+            console.error('❌ products-table-body bulunamadı!');
+            return;
+        }
+        
+        loadingOverlay.style.display = 'flex';
+        
+        try {
+            console.log('🔍 Filtreleme:', { storeId, category });
+            
+            // ✅ Mağazaya göre ürünleri çek
+            let query = window.db.collection('products').where('storeId', '==', storeId);
+            const productsSnapshot = await query.get();
+            let products = productsSnapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data() 
+            }));
+            
+            console.log(`📦 ${products.length} ürün bulundu`);
+            
+            // ✅ Kategori filtresi varsa uygula
+            if (category) {
+                products = products.filter(p => p.category === category);
+                console.log(`🏷️ Kategoriye göre: ${products.length} ürün kaldı`);
+            }
+            
+            // ✅ Mağaza bilgilerini çek
+            const storesSnapshot = await window.db.collection('stores').get();
+            const storesMap = {};
+            storesSnapshot.docs.forEach(doc => {
+                storesMap[doc.id] = { id: doc.id, ...doc.data() };
+            });
+            
+            // ✅ Tabloyu temizle
+            productsTableBody.innerHTML = '';
+            
+            if (products.length === 0) {
+                productsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
+                            <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 10px;"></i>
+                            <p>Bu filtrelerle ürün bulunamadı</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // ✅ Ürünleri tabloya ekle
+            products.forEach(product => {
+                const store = storesMap[product.storeId];
+                const storeName = store ? store.name : 'Mağaza Bulunamadı';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.id}</td>
+                    <td>${product.title}</td>
+                    <td>${storeName}</td>
+                    <td>${product.price}</td>
+                    <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
+                    <td>
+                        <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                productsTableBody.appendChild(row);
+            });
+            
+            // ✅ Butonları yeniden bağla
+            attachProductEventListeners();
+            
+            console.log('✅ Tablo güncellendi');
+            
+        } catch (error) {
+            console.error('❌ Filtreleme hatası:', error);
+            showNotification('Ürünler filtrelenirken hata oluştu!', false);
+        } finally {
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    // Mağaza filtresini dinle
+    document.addEventListener('DOMContentLoaded', () => {
+        const filterStoreSelect = document.getElementById('filter-store-select');
+        const filterCategorySelect = document.getElementById('filter-category-select');
+        
+        if (filterStoreSelect) {
+            filterStoreSelect.addEventListener('change', async (e) => {
+                const selectedStoreId = e.target.value;
+                
+                // Kategori filtresini sıfırla
+                filterCategorySelect.innerHTML = '<option value="">Önce Mağaza Seçin</option>';
+                filterCategorySelect.disabled = true;
+                
+                if (selectedStoreId) {
+                    // Seçilen mağazanın ürünlerini çek
+                    const productsSnapshot = await window.db.collection('products')
+                        .where('storeId', '==', selectedStoreId)
+                        .get();
+                    
+                    const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    // Kategorileri çıkar
+                    const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+                    
+                    if (categories.length > 0) {
+                        filterCategorySelect.disabled = false;
+                        filterCategorySelect.innerHTML = '<option value="">Tüm Kategoriler</option>';
+                        categories.forEach(cat => {
+                            const option = document.createElement('option');
+                            option.value = cat;
+                            option.textContent = cat;
+                            filterCategorySelect.appendChild(option);
+                        });
+                    }
+                    
+                    // Ürünleri filtrele ve göster
+                    filterProducts(selectedStoreId, null);
+                } else {
+                    // Tüm ürünleri göster
+                    renderProductsTable();
+                }
+            });
+            
+            // Kategori değişince
+            filterCategorySelect.addEventListener('change', (e) => {
+                const selectedStoreId = filterStoreSelect.value;
+                const selectedCategory = e.target.value;
+                filterProducts(selectedStoreId, selectedCategory);
+            });
+        }
+    });
+
+    // Ürünleri filtrele
+    async function filterProducts(storeId, category) {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        loadingOverlay.style.display = 'flex';
+        
+        try {
+            let query = window.db.collection('products');
+            
+            if (storeId) {
+                query = query.where('storeId', '==', storeId);
+            }
+            
+            const productsSnapshot = await query.get();
+            let products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Kategori filtresi varsa
+            if (category) {
+                products = products.filter(p => p.category === category);
+            }
+            
+            // Mağaza bilgilerini çek
+            const storesSnapshot = await window.db.collection('stores').get();
+            const storesMap = {};
+            storesSnapshot.docs.forEach(doc => {
+                storesMap[doc.id] = { id: doc.id, ...doc.data() };
+            });
+            
+            // Tabloyu güncelle
+            productsTableBody.innerHTML = '';
+            products.forEach(product => {
+                const store = storesMap[product.storeId];
+                const storeName = store ? store.name : 'Mağaza Bulunamadı';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.id}</td>
+                    <td>${product.title}</td>
+                    <td>${storeName}</td>
+                    <td>${product.price}</td>
+                    <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
+                    <td>
+                        <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                productsTableBody.appendChild(row);
+            });
+            
+            attachProductEventListeners();
+            
+        } catch (error) {
+            console.error('Ürünler filtrelemedi:', error);
+        } finally {
+            loadingOverlay.style.display = 'none';
+        }
+    }
     
     // Dashboard güncelle
     const updateDashboard = () => {
@@ -788,6 +1100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (async () => {
         await renderOrdersTable();
         await populateStoreSelect();
+        await populateStoreFilter();
     })();// Sipariş tablosunu da göster
 });
 

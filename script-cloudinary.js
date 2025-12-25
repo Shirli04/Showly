@@ -113,12 +113,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         storeList.innerHTML = '';
 
         allStores.forEach(store => {
-            // Bu mağazaya ait ürünleri say
-            const storeProducts = allProducts.filter(p => p.storeId === store.id);
-
             const li = document.createElement('li');
             li.innerHTML = `<a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
-                <i class="fas fa-store"></i> ${store.name} <span>(${storeProducts.length})</span>
+                <i class="fas fa-store"></i> ${store.name}
             </a>`;
             storeList.appendChild(li);
         });
