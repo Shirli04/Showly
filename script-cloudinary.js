@@ -235,13 +235,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const storeBanner = document.getElementById('store-banner');
         storeBanner.style.display = 'block';
 
-        // ✅ customBannerText doğru şekilde geliyor mu kontrol et
-        console.log(store); // Bu satırı ekle
-
         storeBanner.innerHTML = `
             <h2>${store.name}</h2>
-            <p>${store.customBannerText}</p>
-    `;
+            <p>${store.customBannerText || 'Bu magazynda iň gowy harytlar bar'}</p>
+        `;
         
         categoryFiltersSection.style.display = 'block';
         mainFiltersSection.style.display = 'block';
@@ -281,6 +278,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrde haryt tapylmady.</h3></div>`;
             return;
         }
+        
+        // ✅ ÜRÜN ÖNCELÝK SIRALAMASI - BURAYA EKLEYIN
+        productsToRender.sort((a, b) => {
+            // Fotoğraf ve fiyat kontrolü
+            const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
+            const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
+            
+            const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
+            const bHasPrice = b.price && parseFloat(b.price.replace(' TMT', '')) > 0;
+            
+            // Öncelik puanı hesapla
+            const aScore = (aHasImage ? 2 : 0) + (aHasPrice ? 1 : 0);
+            const bScore = (bHasImage ? 2 : 0) + (bHasPrice ? 1 : 0);
+            
+            // Büyükten küçüğe sırala (3, 2, 1, 0)
+            return bScore - aScore;
+        });
+        
+        console.log('✅ Ürünler öncelik sırasına göre sıralandı');
         
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
