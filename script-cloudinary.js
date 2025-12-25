@@ -635,14 +635,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             const address = document.getElementById('customer-address').value.trim();
 
             if (!name || !phone || !address) {
-                showNotification('Lütfen tüm alanları doldurun!', false);
+                showNotification('Ähli meýdançalary dolduryň!', false);
                 return;
             }
 
-            // Sipariş verilerini oluştur
+            // ✅ Butonları devre dışı bırak
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const cancelBtn = document.getElementById('cancel-order');
+            submitBtn.disabled = true;
+            cancelBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iberilýär...';
+
+            // ✅ LOADING GÖSTER
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const loadingText = document.querySelector('.loading-text');
+            loadingOverlay.style.display = 'flex';
+            loadingText.textContent = 'Sargydyňyz işlenýär...';
+
             const order = {
                 customer: { name, phone, address },
-                items: [...cart], // Sepetteki ürünleri kopyala
+                items: [...cart],
                 total: cart.reduce((sum, item) => {
                     const price = parseFloat(item.price.replace(' TMT', ''));
                     return sum + (price * item.quantity);
@@ -652,28 +664,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             try {
-                // Firebase'e siparişi ekle
                 const docRef = await window.db.collection('orders').add(order);
                 console.log('Sipariş Firebase\'e eklendi, ID:', docRef.id);
 
-                // Kullanıcıya başarı mesajı
-                const orderedItems = order.items.map(item => `${item.title} (${item.quantity} haryt)`).join(', ');
-                const orderSummary = `Sargydyňyz edildi!\nSargyt edilen haryt: ${orderedItems}\nUmumy baha: ${order.total}`;
-                showNotification(orderSummary, true);
+                loadingOverlay.style.display = 'none';
 
-                // Sepeti temizle
+                const orderedItems = order.items.map(item => `${item.title} (${item.quantity} haryt)`).join(', ');
+                showNotification('✅ Sargydyňyz kabul edildi!', true);
+
                 cart = [];
                 updateCartCount();
-
-                // Modalı kapat
                 document.querySelector('.order-form-overlay').remove();
-
-                // Sepet modalını da kapat
                 document.getElementById('cart-modal').style.display = 'none';
 
             } catch (error) {
-                console.error('Sargydyňyz goşulmady:', error);
-                showNotification('Sargydyňyz döredilmedi!', false);
+                console.error('Sargyt goşulmady:', error);
+                loadingOverlay.style.display = 'none';
+                
+                // ✅ Butonları tekrar aktif et
+                submitBtn.disabled = false;
+                cancelBtn.disabled = false;
+                submitBtn.innerHTML = 'Sargyt ediň';
+                
+                showNotification('Sargydyňyz döredilmedi! Täzeden synanyşyň.', false);
             }
         });
     });
