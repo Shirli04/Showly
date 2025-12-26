@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (infoSection) infoSection.style.display = 'none';
         
         errorTitle.textContent = 'Baglanyşyk Ýok';
-        errorMessage.textContent = 'Firebase bilen baglanyşyk guralyp bilinmedi. Sahypany täzeleň.';
+        errorMessage.textContent = 'Sahypany täzeleň.';
         notFoundSection.style.display = 'block';
         
         showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
