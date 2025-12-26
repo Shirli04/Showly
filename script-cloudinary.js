@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const favoritesModal = document.getElementById('favorites-modal');
         const favoritesItems = document.getElementById('favorites-items');
         if (favorites.length === 0) { 
-            favoritesItems.innerHTML = '<p class="empty-favorites-message">Halanlaryňyz boş</p>'; 
+            favoritesItems.innerHTML = '<p class="empty-favorites-message">Siz harytlardan öz halanlanyňyzy saýlap bilersiňiz </p>'; 
         } else {
             favoritesItems.innerHTML = '';
             favorites.forEach(product => {
