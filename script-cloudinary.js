@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartModal = document.getElementById('cart-modal');
         const cartItems = document.getElementById('cart-items');
         if (cart.length === 0) { 
-            cartItems.innerHTML = '<p class="empty-cart-message">Siz öz sargyt etjek harytlaryňyzy şu sebede goşup bilersiňiz</p>'; 
+            cartItems.innerHTML = '<p class="empty-cart-message">Sebediňiz boş</p>'; 
         } else {
             cartItems.innerHTML = ''; 
             let total = 0;
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const favoritesModal = document.getElementById('favorites-modal');
         const favoritesItems = document.getElementById('favorites-items');
         if (favorites.length === 0) { 
-            favoritesItems.innerHTML = '<p class="empty-favorites-message">Siz harytlardan öz halanyňyzy saýlap bilersiňiz</p>'; 
+            favoritesItems.innerHTML = '<p class="empty-favorites-message">Halanlaryňyz boş</p>'; 
         } else {
             favoritesItems.innerHTML = '';
             favorites.forEach(product => {
