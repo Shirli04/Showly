@@ -4,8 +4,7 @@ class ExcelManager {
     // Mağazaları Excel'e dönüştür ve indir
     static async exportStoresToExcel() {
         try {
-            const storesSnapshot = await window.db.collection('stores').get();
-            const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const stores = await window.cloudflareAPI.stores.getAll();
 
             const excelData = stores.map(store => ({
                 'Mağaza ID': store.id,
@@ -28,11 +27,10 @@ class ExcelManager {
     // Ürünleri Excel'e dönüştür ve indir
     static async exportProductsToExcel() {
         try {
-            const productsSnapshot = await window.db.collection('products').get();
-            const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            const storesSnapshot = await window.db.collection('stores').get();
-            const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const [products, stores] = await Promise.all([
+                window.cloudflareAPI.products.getAll(),
+                window.cloudflareAPI.stores.getAll()
+            ]);
 
             const excelData = products.map(product => {
                 const store = stores.find(s => s.id === product.storeId);
@@ -89,7 +87,6 @@ class ExcelManager {
                                 slug: slug,
                                 description: row['Açıklama'] || '',
                                 customBannerText: row['Banner Metni'] || '',
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
                             
                             successCount++;
@@ -135,8 +132,7 @@ class ExcelManager {
                     loadingText.textContent = 'Mağazalar yükleniyor...';
 
                     // Firebase'den mağazaları çek
-                    const storesSnapshot = await window.db.collection('stores').get();
-                    const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const stores = await window.cloudflareAPI.stores.getAll();
 
                     console.log('🏪 Mağazalar:', stores);
 
@@ -214,13 +210,12 @@ class ExcelManager {
                                 material: (row['Malzeme'] || '').trim(),
                                 description: (row['Açıklama'] || row['Aciklama'] || '').trim(),
                                 imageUrl: imageUrl,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             };
 
                             console.log(`✅ Ürün ${i + 1}:`, productData);
 
                             // Firebase'e ekle
-                            await window.db.collection('products').add(productData);
+                            await window.cloudflareAPI.products.create(productData);
                             successCount++;
 
                         } catch (err) {

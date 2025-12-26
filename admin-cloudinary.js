@@ -949,14 +949,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Dashboard güncelle
-    const updateDashboard = () => {
-        const stores = window.showlyDB.getStores();
-        const products = window.showlyDB.getAllProducts();
-        const orders = window.showlyDB.getOrders();
-        
-        document.getElementById('total-stores').textContent = stores.length;
-        document.getElementById('total-products').textContent = products.length;
-        document.getElementById('total-orders').textContent = orders.length;
+    const updateDashboard = async () => {
+        try {
+            const [stores, products, orders] = await Promise.all([
+                window.cloudflareAPI.stores.getAll(),
+                window.cloudflareAPI.products.getAll(),
+                window.cloudflareAPI.orders.getAll()
+            ]);
+            
+            document.getElementById('total-stores').textContent = stores.length;
+            document.getElementById('total-products').textContent = products.length;
+            document.getElementById('total-orders').textContent = orders.length;
+        } catch (error) {
+            console.error('Dashboard güncellenemedi:', error);
+        }
     };
     
     // Bildirim göster
@@ -1065,35 +1071,6 @@ document.addEventListener('DOMContentLoaded', () => {
             adminSidebar.classList.toggle('active');
         });
     }
-
-    // Mağaza ekle (Firestore)
-    window.addStoreToFirebase = async function(store) {
-        const slug = store.name.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
-        const doc = await window.db.collection('stores').add({
-            name: store.name,
-            slug: slug,
-            description: store.description || '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        return { id: doc.id, name: store.name, slug, description: store.description };
-    };
-
-    // Ürün ekle (Firestore)
-    window.addProductToFirebase = async function(product) {
-        const doc = await window.db.collection('products').add({
-            storeId: product.storeId,
-            title: product.title,
-            price: product.price,
-            description: product.description || '',
-            material: product.material || '',
-            category: product.category || '',
-            isOnSale: product.isOnSale || false,
-            originalPrice: product.originalPrice || '',
-            imageUrl: product.imageUrl || '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        return { id: doc.id, ...product };
-    };
 
     // Mağaza sil (Firestore)
     window.deleteStoreFromFirebase = async function(storeId) {
