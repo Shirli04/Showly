@@ -39,41 +39,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🔄 Firebase\'den veriler yükleniyor...');
 
     try {
-        // ✅ YENİ: 45 saniye timeout ekle
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Firebase bağlantısı zaman aşımına uğradı')), 45000);
+            setTimeout(() => reject(new Error('API zaman aşımına uğradı')), 45000);
         });
 
-        // Firebase veri çekme işlemleri
         const fetchDataPromise = (async () => {
-            // Mağazaları çek
-            const storesSnapshot = await window.db.collection('stores').get();
-            const stores = storesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            // Ürünleri çek
-            const productsSnapshot = await window.db.collection('products').get();
-            const products = productsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
+            const [stores, products] = await Promise.all([
+                window.cloudflareAPI.stores.getAll(),
+                window.cloudflareAPI.products.getAll()
+            ]);
             return { stores, products };
         })();
 
-        // ✅ Timeout ile yarış: Hangisi önce biterse onu al
         const { stores, products } = await Promise.race([fetchDataPromise, timeoutPromise]);
 
         allStores = stores;
         allProducts = products;
 
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
-
-        // Sidebar'ı güncelle
         renderStores();
-
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
         
