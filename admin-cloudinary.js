@@ -1072,32 +1072,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mağaza sil (Firestore)
-    window.deleteStoreFromFirebase = async function(storeId) {
-        const prods = await window.db.collection('products').where('storeId', '==', storeId).get();
-        const batch = window.db.batch();
-        prods.docs.forEach(d => batch.delete(d.ref));
-        batch.delete(window.db.collection('stores').doc(storeId));
-        await batch.commit();
-    };
-
-    // Ürün sil (Firestore)
-    window.deleteProductFromFirebase = async function(productId) {
-        await window.db.collection('products').doc(productId).delete();
-    };
-
-    // Tüm mağazaları getir (Firestore)
-    window.getStoresFromFirebase = async function() {
-        const snap = await window.db.collection('stores').get();
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    };
-
-    // Tüm ürünleri getir (Firestore)
-    window.getProductsFromFirebase = async function() {
-        const snap = await window.db.collection('products').get();
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    };
-
     // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
     processPendingOrders();
     

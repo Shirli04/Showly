@@ -1,4 +1,4 @@
-// Excel dosyası yönetimi
+// Excel dosyası yönetimi (CLOUDFLARE KV VERSİYONU)
 class ExcelManager {
 
     // Mağazaları Excel'e dönüştür ve indir
@@ -57,8 +57,14 @@ class ExcelManager {
         }
     }
 
-    // Mağazaları Excel'den içe aktar
+    // ✅ Mağazaları Excel'den içe aktar (CLOUDFLARE KV)
     static async importStoresFromExcel(file) {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.querySelector('.loading-text');
+        
+        loadingOverlay.style.display = 'flex';
+        loadingText.textContent = 'Excel dosyası okunuyor...';
+
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
 
@@ -69,48 +75,94 @@ class ExcelManager {
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-                    let successCount = 0;
+                    console.log('📊 Excel verisi:', jsonData);
+                    loadingText.textContent = 'Mağazalar yükleniyor...';
 
-                    for (const row of jsonData) {
+                    let successCount = 0;
+                    let errorCount = 0;
+                    const errors = [];
+
+                    for (let i = 0; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        loadingText.textContent = `Mağaza yükleniyor... (${i + 1}/${jsonData.length})`;
+
                         try {
-                            const storeName = (row['Mağaza Adı'] || '').trim();
+                            // ✅ Excel'deki sütun adlarını okuma
+                            const storeName = (row['Mağaza Adı'] || row['Magaza Adi'] || '').trim();
+                            const description = (row['Açıklama'] || row['Aciklama'] || '').trim();
+                            const bannerText = (row['Banner Metni'] || '').trim();
                             
                             if (!storeName) {
-                                console.warn('Boş mağaza adı atlandı');
+                                errorCount++;
+                                errors.push(`Satır ${i + 2}: Mağaza adı boş`);
+                                console.warn(`⚠️ Satır ${i + 2}: Mağaza adı boş`);
                                 continue;
                             }
 
-                            const slug = storeName.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
-                            
-                            await window.db.collection('stores').add({
+                            console.log(`📦 Ekleniyor: ${storeName}`);
+
+                            // ✅ Cloudflare KV API'ye ekle
+                            await window.cloudflareAPI.stores.create({
                                 name: storeName,
-                                slug: slug,
-                                description: row['Açıklama'] || '',
-                                customBannerText: row['Banner Metni'] || '',
+                                description: description,
+                                customBannerText: bannerText
                             });
                             
                             successCount++;
+                            console.log(`✅ Mağaza eklendi: ${storeName}`);
+                            
                         } catch (err) {
-                            console.error('Mağaza eklenirken hata:', err);
+                            errorCount++;
+                            errors.push(`Satır ${i + 2}: ${err.message}`);
+                            console.error(`❌ Satır ${i + 2} hatası:`, err);
                         }
                     }
 
-                    resolve({
-                        success: true,
-                        count: successCount,
-                        message: `${successCount} mağaza başarıyla içe aktarıldı`
-                    });
+                    loadingText.textContent = 'Mağazalar başarıyla yüklendi!';
+                    
+                    // ✅ 2 saniye bekle, sonra loading'i kapat
+                    setTimeout(() => {
+                        loadingOverlay.style.display = 'none';
+                        
+                        let resultMessage = `✅ ${successCount} mağaza başarıyla yüklendi`;
+                        
+                        if (errorCount > 0) {
+                            resultMessage += `\n❌ ${errorCount} mağaza yüklenemedi`;
+                            console.error('Hatalar:', errors);
+                            
+                            if (errors.length > 0) {
+                                alert(resultMessage + '\n\nİlk hatalar:\n' + errors.slice(0, 5).join('\n'));
+                            }
+                        } else {
+                            alert(resultMessage);
+                        }
+
+                        resolve({ 
+                            success: true, 
+                            successCount, 
+                            errorCount, 
+                            errors,
+                            message: resultMessage
+                        });
+                    }, 2000);
+
                 } catch (error) {
+                    loadingOverlay.style.display = 'none';
+                    console.error('❌ Excel okuma hatası:', error);
                     reject({ success: false, error: error.message });
                 }
             };
 
-            reader.onerror = () => reject({ success: false, error: 'Dosya okunamadı' });
+            reader.onerror = () => {
+                loadingOverlay.style.display = 'none';
+                reject({ success: false, error: 'Dosya okunamadı' });
+            };
+            
             reader.readAsArrayBuffer(file);
         });
     }
 
-    // ✅ DÜZELTİLMİŞ: Ürünleri Excel'den Firebase'e yükle
+    // ✅ Ürünleri Excel'den içe aktar (CLOUDFLARE KV)
     static async importProductsFromExcel(file) {
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.querySelector('.loading-text');
@@ -131,7 +183,7 @@ class ExcelManager {
                     console.log('📊 Excel verisi:', jsonData);
                     loadingText.textContent = 'Mağazalar yükleniyor...';
 
-                    // Firebase'den mağazaları çek
+                    // Cloudflare KV'den mağazaları çek
                     const stores = await window.cloudflareAPI.stores.getAll();
 
                     console.log('🏪 Mağazalar:', stores);
@@ -150,7 +202,7 @@ class ExcelManager {
                             
                             if (!storeName) {
                                 errorCount++;
-                                errors.push(`Satır ${i + 1}: Mağaza adı boş`);
+                                errors.push(`Satır ${i + 2}: Mağaza adı boş`);
                                 continue;
                             }
 
@@ -161,7 +213,7 @@ class ExcelManager {
 
                             if (!store) {
                                 errorCount++;
-                                errors.push(`Satır ${i + 1}: "${storeName}" mağazası bulunamadı`);
+                                errors.push(`Satır ${i + 2}: "${storeName}" mağazası bulunamadı`);
                                 continue;
                             }
 
@@ -169,28 +221,26 @@ class ExcelManager {
                             const title = (row['Ürün Adı'] || row['Urun Adi'] || '').trim();
                             if (!title) {
                                 errorCount++;
-                                errors.push(`Satır ${i + 1}: Ürün adı boş`);
+                                errors.push(`Satır ${i + 2}: Ürün adı boş`);
                                 continue;
                             }
 
-                            // ✅ Normal fiyatı al ve formatla (opsiyonel)
-                            let normalPriceValue = row['Normal Fiyat'] || row['Normal Fiyat'] || '';
+                            // ✅ Normal fiyatı al ve formatla
+                            let normalPriceValue = row['Normal Fiyat'] || '';
                             normalPriceValue = String(normalPriceValue).trim().replace('TMT', '').replace(' ', '');
                             
-                            // Fiyat yoksa veya geçersizse 0 TMT olarak ayarla
                             let price = '0 TMT';
                             if (normalPriceValue && !isNaN(normalPriceValue) && parseFloat(normalPriceValue) > 0) {
                                 price = `${normalPriceValue} TMT`;
                             }
 
-                            // ✅ İndirimli fiyatı al (opsiyonel)
+                            // ✅ İndirimli fiyatı al
                             let discountedPriceValue = row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '';
                             discountedPriceValue = String(discountedPriceValue).trim().replace('TMT', '').replace(' ', '');
 
                             let originalPrice = '';
                             let isOnSale = false;
 
-                            // Eğer indirimli fiyat varsa ve geçerli bir sayıysa
                             if (discountedPriceValue && !isNaN(discountedPriceValue) && parseFloat(discountedPriceValue) > 0) {
                                 originalPrice = `${discountedPriceValue} TMT`;
                                 isOnSale = true;
@@ -214,31 +264,28 @@ class ExcelManager {
 
                             console.log(`✅ Ürün ${i + 1}:`, productData);
 
-                            // Firebase'e ekle
+                            // Cloudflare KV'ye ekle
                             await window.cloudflareAPI.products.create(productData);
                             successCount++;
 
                         } catch (err) {
                             errorCount++;
-                            errors.push(`Satır ${i + 1}: ${err.message}`);
-                            console.error(`Satır ${i + 1} hatası:`, err);
+                            errors.push(`Satır ${i + 2}: ${err.message}`);
+                            console.error(`❌ Satır ${i + 2} hatası:`, err);
                         }
                     }
 
                     loadingText.textContent = 'Ürünler başarıyla yüklendi!';
                     
-                    // ✅ 2 saniye bekle, sonra loading'i kapat
                     setTimeout(() => {
                         loadingOverlay.style.display = 'none';
                         
-                        // Sonuçları göster
                         let resultMessage = `✅ ${successCount} ürün başarıyla yüklendi`;
                         
                         if (errorCount > 0) {
                             resultMessage += `\n❌ ${errorCount} ürün yüklenemedi`;
                             console.error('Hatalar:', errors);
                             
-                            // İlk 5 hatayı göster
                             if (errors.length > 0) {
                                 alert(resultMessage + '\n\nİlk hatalar:\n' + errors.slice(0, 5).join('\n'));
                             }
@@ -253,11 +300,11 @@ class ExcelManager {
                             errors,
                             message: resultMessage
                         });
-                    }, 2000); // 2 saniye bekle
+                    }, 2000);
 
                 } catch (error) {
                     loadingOverlay.style.display = 'none';
-                    console.error('Excel okuma hatası:', error);
+                    console.error('❌ Excel okuma hatası:', error);
                     reject({ success: false, error: error.message });
                 }
             };
