@@ -3,28 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Admin Panel - Showly</title>
-            <script>
-                (function() {
-                    const adminUser = localStorage.getItem('adminUser');
-                    if (!adminUser) {
-                        window.location.replace('/login.html');
-                        throw new Error('Unauthorized');
-                    }
-                    try {
-                        const user = JSON.parse(adminUser);
-                        if (!user.username || !user.role) {
-                            localStorage.removeItem('adminUser');
-                            window.location.replace('/login.html');
-                            throw new Error('Invalid session');
-                        }
-                    } catch (e) {
-                        localStorage.removeItem('adminUser');
-                        window.location.replace('/login.html');
-                        throw new Error('Session error');
-                    }
-                })();
-            </script>
+        <title>Admin Paneli - Showly</title>
         <style>
             .upload-preview {
                 max-width: 200px;
