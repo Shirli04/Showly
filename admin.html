@@ -3,7 +3,28 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Admin Paneli - Showly</title>
+        <title>Admin Panel - Showly</title>
+            <script>
+                (function() {
+                    const adminUser = localStorage.getItem('adminUser');
+                    if (!adminUser) {
+                        window.location.replace('/login.html');
+                        throw new Error('Unauthorized');
+                    }
+                    try {
+                        const user = JSON.parse(adminUser);
+                        if (!user.username || !user.role) {
+                            localStorage.removeItem('adminUser');
+                            window.location.replace('/login.html');
+                            throw new Error('Invalid session');
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('adminUser');
+                        window.location.replace('/login.html');
+                        throw new Error('Session error');
+                    }
+                })();
+            </script>
         <style>
             .upload-preview {
                 max-width: 200px;
@@ -92,7 +113,6 @@
         </style>
     </head>
     <body>
-
         <div class="admin-container">
             <!-- Sidebar -->
             <aside class="admin-sidebar">
@@ -103,11 +123,11 @@
                 <nav class="sidebar-nav">
                     <ul>
                         <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Panel</a></li>
-                        <li><a href="#" class="nav-link" data-section="stores"><i class="fas fa-store"></i> Mağazalar</a></li>
-                        <li><a href="#" class="nav-link" data-section="products"><i class="fas fa-box"></i> Ürünler</a></li>
-                        <li><a href="#" class="nav-link" data-section="orders"><i class="fas fa-shopping-cart"></i> Siparişler</a></li>
-                        <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Ayarlar</a></li>
-                        <li><a href="#" class="nav-link" data-section="users"><i class="fas fa-users"></i> Kullanıcılar</a></li>
+                        <li><a href="#" class="nav-link" data-section="stores"><i class="fas fa-store"></i> Magazynlar</a></li>
+                        <li><a href="#" class="nav-link" data-section="products"><i class="fas fa-box"></i> Harytlar</a></li>
+                        <li><a href="#" class="nav-link" data-section="orders"><i class="fas fa-shopping-cart"></i> Zakazlar</a></li>
+                        <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Sazlamalar</a></li>
+                        <li><a href="#" class="nav-link" data-section="users"><i class="fas fa-users"></i> Admin ulanyjylar</a></li>
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
@@ -487,4 +507,4 @@
         <!-- Diğer Scriptleriniz (Versiyon Parametresi İLE) -->
         <script src="admin-cloudinary.js"></script>
     </body>
-    </html>
+</html>
