@@ -110,7 +110,7 @@
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
-                    <a href="index.html" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
+                    <a href="login.html" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çyk</a>
                 </div>
             </aside>
 
@@ -141,21 +141,21 @@
                                 <div class="stat-icon"><i class="fas fa-store"></i></div>
                                 <div class="stat-info">
                                     <h3 id="total-stores">0</h3>
-                                    <p>Toplam Mağaza</p>
+                                    <p>Umumy magazyn</p>
                                 </div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-icon"><i class="fas fa-box"></i></div>
                                 <div class="stat-info">
                                     <h3 id="total-products">0</h3>
-                                    <p>Toplam Ürün</p>
+                                    <p>Umumy haryt</p>
                                 </div>
                             </div>
                             <div class="stat-card">
                                 <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
                                 <div class="stat-info">
                                     <h3 id="total-orders">0</h3>
-                                    <p>Toplam Sipariş</p>
+                                    <p>Umumy zakaz</p>
                                 </div>
                             </div>
                         </div>
@@ -164,17 +164,17 @@
                     <!-- Stores Section -->
                     <section id="stores" class="content-section">
                         <div class="section-header">
-                            <h2>Mağazalar</h2>
+                            <h2>Magazynlar</h2>
                             <button class="btn-primary" id="add-store-btn">
-                                <i class="fas fa-plus"></i> Yeni Mağaza Ekle
+                                <i class="fas fa-plus"></i> Täze magazyn goş
                             </button>
                         </div>
                         <div class="export-buttons">
                             <button class="btn-export" id="export-stores-btn">
-                                <i class="fas fa-download"></i> Excel'e İndir
+                                <i class="fas fa-download"></i> Excel al
                             </button>
                             <button class="btn-export" id="import-stores-btn" style="background-color: #17a2b8;">
-                                <i class="fas fa-upload"></i> Excel'den Yükle
+                                <i class="fas fa-upload"></i> Excel'den goý
                             </button>
                             <input type="file" id="import-stores-input" accept=".xlsx,.xls" style="display: none;">
                         </div>
@@ -183,9 +183,9 @@
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Mağaza Adı</th>
-                                        <th>Ürün Sayısı</th>
-                                        <th>İşlemler</th>
+                                        <th>Magazyn ady</th>
+                                        <th>Haryt sany</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody id="stores-table-body">
@@ -197,35 +197,35 @@
                     <!-- Products Section -->
                     <section id="products" class="content-section">
                         <div class="section-header">
-                            <h2>Ürünler</h2>
+                            <h2>Harytlar</h2>
                             <button class="btn-primary" id="add-product-btn">
-                                <i class="fas fa-plus"></i> Yeni Ürün Ekle
+                                <i class="fas fa-plus"></i> Täze haryt goş
                             </button>
                         </div>
                         <div class="product-filters">
                             <div class="form-group">
-                                <label for="filter-store-select">Mağaza Filtresi</label>
+                                <label for="filter-store-select">Magazyn filtr</label>
                                 <select id="filter-store-select">
-                                    <option value="">Tüm Mağazalar</option>
+                                    <option value="">Hemme magazynlar</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="filter-category-select">Kategori Filtresi</label>
+                                <label for="filter-category-select">Kategoriýa filtr</label>
                                 <select id="filter-category-select" disabled>
-                                    <option value="">Önce Mağaza Seçin</option>
+                                    <option value="">Ilki magazyn saýlaň</option>
                                 </select>
                             </div>
                         </div>
                         <div class="export-buttons">
                             <button class="btn-export" id="export-products-btn">
-                                <i class="fas fa-download"></i> Excel'e İndir
+                                <i class="fas fa-download"></i> Excel al
                             </button>
                             <button class="btn-export" id="import-products-btn" style="background-color: #17a2b8;">
-                                <i class="fas fa-upload"></i> Excel'den Yükle
+                                <i class="fas fa-upload"></i> Excel'den goş
                             </button>
                             <input type="file" id="import-products-input" accept=".xlsx,.xls" style="display: none;">
                             <button class="btn-export" id="delete-all-products-btn" style="background-color: #dc3545;">
-                                <i class="fas fa-trash-alt"></i> Tüm Ürünleri Sil
+                                <i class="fas fa-trash-alt"></i> Hemme harytlary poz
                             </button>
                         </div>
                         <div class="table-container">
@@ -233,11 +233,11 @@
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Ürün Adı</th>
-                                        <th>Mağaza</th>
-                                        <th>Fiyat</th>
-                                        <th>Resim</th>
-                                        <th>İşlemler</th>
+                                        <th>Haryt ady</th>
+                                        <th>Magazyn</th>
+                                        <th>Baha</th>
+                                        <th>Surat</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody id="products-table-body">
@@ -249,20 +249,20 @@
                     <!-- Orders Section -->
                     <section id="orders" class="content-section">
                         <div class="section-header">
-                            <h2>Siparişler</h2>
+                            <h2>Zakazlar</h2>
                         </div>
                         <div class="table-container">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Ürün ID'leri</th>
-                                        <th>Müşteri Adı</th>
+                                        <th>Haryt ID-leri</th>
+                                        <th>Müşderi ady</th>
                                         <th>Telefon</th>
                                         <th>Adres</th>
-                                        <th>Mağaza</th>
-                                        <th>Tarih</th>
-                                        <th>Durum</th>
-                                        <th>İşlem</th>
+                                        <th>Magazyn</th>
+                                        <th>Wagt</th>
+                                        <th></th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody id="orders-table-body">
@@ -306,19 +306,19 @@
                     <!-- Users Section -->
                     <section id="users" class="content-section">
                         <div class="section-header">
-                            <h2>Kullanıcı Yönetimi</h2>
+                            <h2>Admin kontrol</h2>
                             <button class="btn-primary" id="add-user-btn">
-                                <i class="fas fa-user-plus"></i> Yeni Kullanıcı Ekle
+                                <i class="fas fa-user-plus"></i> Täze ulanyjy goş
                             </button>
                         </div>
                         <div class="table-container">
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Kullanıcı Adı</th>
+                                        <th>Ulanyjy ady</th>
                                         <th>Rol</th>
-                                        <th>İzinler</th>
-                                        <th>İşlemler</th>
+                                        <th>Rugsatlar</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody id="users-table-body">
@@ -334,29 +334,29 @@
         <div id="store-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 id="store-modal-title">Yeni Mağaza Ekle</h3>
+                    <h3 id="store-modal-title">Täze magazyn goş</h3>
                     <span class="close-modal">&times;</span>
                 </div>
                 <form id="store-form">
                     <input type="hidden" id="store-id">
                     <div class="form-group">
-                        <label>Mağaza Adı</label>
+                        <label>Magazyn ady</label>
                         <input type="text" id="store-name" required>
                     </div>
                     <div class="form-group">
-                        <label>Mağaza Açıklaması</label>
+                        <label>Magazyn düşündirilişi</label>
                         <textarea id="store-description" rows="3"></textarea>
                     </div>
                     
                     <!-- ✅ BURAYA EKLE -->
                     <div class="form-group">
-                        <label>Mağaza Üstü Metin</label>
+                        <label>Magazyn tekst</label>
                         <input type="text" id="store-custom-banner-text" placeholder="Mağaza üstünde gösterilecek metin">
                     </div>
                     
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancel-store">İptal</button>
-                        <button type="submit" class="btn-primary">Kaydet</button>
+                        <button type="button" class="btn-secondary" id="cancel-store">Aýyr</button>
+                        <button type="submit" class="btn-primary">Ýatda sakla</button>
                     </div>
                 </form>
             </div>
@@ -366,51 +366,51 @@
         <div id="product-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Yeni Ürün Ekle</h3>
+                    <h3>Täze haryt goş</h3>
                     <span class="close-modal">&times;</span>
                 </div>
                 <div class="modal-body">
                     <form id="product-form">
                         <div class="form-group">
-                            <label>Ürün Adı</label>
+                            <label>Haryt ady</label>
                             <input type="text" id="product-name" required>
                         </div>
                         <div class="form-group">
-                            <label>Mağaza</label>
+                            <label>Magazyn</label>
                             <select id="product-store" required>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Açıklama</label>
+                            <label>Düşündiriş</label>
                             <textarea id="product-description" rows="3"></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Malzeme</label>
+                            <label>Material</label>
                             <input type="text" id="product-material">
                         </div>
                         <div class="form-group">
-                            <label>Kategori</label>
-                            <input type="text" id="product-category" placeholder="Örn: Switerler, Pantolonlar">
+                            <label>Kategoriýa</label>
+                            <input type="text" id="product-category" placeholder="Switer, Balaklar">
                         </div>  
                         <div class="form-group">
-                            <label>Normal Fiyat (TMT)</label>
-                            <input type="text" id="product-price" placeholder="Normal fiyatı girin (örn: 500 TMT)" required>
+                            <label>Baha (TMT)</label>
+                            <input type="text" id="product-price" placeholder="Baha ýazyň" required>
                         </div>
                         <div class="form-group">
-                            <label>İndirimli Fiyat (TMT) (Opsiyonel)</label>
-                            <input type="text" id="product-discounted-price" placeholder="İndirimli fiyatı girin (örn: 400 TMT)">
+                            <label>Arzanladyş bahasy (TMT)</label>
+                            <input type="text" id="product-discounted-price" placeholder="Arzanladyş bahasyny ýazyň">
                         </div>
                         <!-- Eski fiyat alanı artık gizli olacak, sadece hesaplama için kullanılır -->
                         <input type="hidden" id="product-original-price">                               
                         <div class="form-group">
-                            <label>Ürün Görseli</label>
+                            <label>Haryt suraty</label>
                             <input type="file" id="product-image" accept="image/*">
                             <img id="product-image-preview" class="upload-preview" alt="Ürün">
                             <div id="product-image-status" class="upload-status"></div>
                         </div>
                         <div class="form-actions">
-                            <button type="button" class="btn-secondary" id="cancel-product">İptal</button>
-                            <button type="submit" class="btn-primary">Kaydet</button>
+                            <button type="button" class="btn-secondary" id="cancel-product">Aýyr</button>
+                            <button type="submit" class="btn-primary">Ýatda sakla</button>
                         </div>
                     </form>
                 </div>
@@ -421,40 +421,40 @@
         <div id="user-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 id="user-modal-title">Yeni Kullanıcı Ekle</h3>
+                    <h3 id="user-modal-title">Täze ulanyjy goş</h3>
                     <span class="close-modal">&times;</span>
                 </div>
                 <form id="user-form">
                     <div class="form-group">
-                        <label>Kullanıcı Adı</label>
+                        <label>Ulanyjy ady</label>
                         <input type="text" id="user-username" required>
                     </div>
                     <div class="form-group">
-                        <label>Şifre</label>
+                        <label>Kody</label>
                         <input type="password" id="user-password" required>
                     </div>
                     <div class="form-group">
                         <label>Rol</label>
                         <select id="user-role" required>
-                            <option value="admin">Admin (Tüm Yetkiler)</option>
-                            <option value="store_manager">Mağaza Yöneticisi</option>
-                            <option value="product_manager">Ürün Yöneticisi</option>
-                            <option value="order_manager">Sipariş Yöneticisi</option>
+                            <option value="admin">Admin (Hemme rugsatlar)</option>
+                            <option value="store_manager">Magazyn Manager</option>
+                            <option value="product_manager">Haryt Manager</option>
+                            <option value="order_manager">Zakaz Manager</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>İzinler</label>
+                        <label>Rugsatlar</label>
                         <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <label><input type="checkbox" value="dashboard" class="permission-checkbox"> Dashboard</label>
-                            <label><input type="checkbox" value="stores" class="permission-checkbox"> Mağazalar</label>
-                            <label><input type="checkbox" value="products" class="permission-checkbox"> Ürünler</label>
-                            <label><input type="checkbox" value="orders" class="permission-checkbox"> Siparişler</label>
-                            <label><input type="checkbox" value="settings" class="permission-checkbox"> Ayarlar</label>
+                            <label><input type="checkbox" value="dashboard" class="permission-checkbox"> Panel</label>
+                            <label><input type="checkbox" value="stores" class="permission-checkbox"> Magazynlar</label>
+                            <label><input type="checkbox" value="products" class="permission-checkbox"> Harytlar</label>
+                            <label><input type="checkbox" value="orders" class="permission-checkbox"> Zakazlar</label>
+                            <label><input type="checkbox" value="settings" class="permission-checkbox"> Sazlamalar</label>
                         </div>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancel-user">İptal</button>
-                        <button type="submit" class="btn-primary">Kaydet</button>
+                        <button type="button" class="btn-secondary" id="cancel-user">Aýyr</button>
+                        <button type="submit" class="btn-primary">Ýatda sakla</button>
                     </div>
                 </form>
             </div>
@@ -464,7 +464,7 @@
         <div id="loading-overlay" class="loading-overlay" style="display: none;">
         <div class="loading-content">
             <div class="loading-spinner"></div>
-            <div class="loading-text">Veriler yükleniyor...</div>
+            <div class="loading-text">Biraz garaşyň...</div>
         </div>
         </div>
         
