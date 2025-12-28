@@ -132,32 +132,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Mağaza tablosunu güncelle
     const renderStoresTable = async () => {
-        try {
-            const stores = await window.cloudflareAPI.stores.getAll();
-            const products = await window.cloudflareAPI.products.getAll();
-            
-            storesTableBody.innerHTML = '';
+        const stores = await window.showlyDB.getStores();
+        storesTableBody.innerHTML = '';
 
-            for (const store of stores) {
-                const storeProducts = products.filter(p => p.storeId === store.id);
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${store.id}</td>
-                    <td>${store.name}</td>
-                    <td>${storeProducts.length}</td>
-                    <td>
-                        <button class="btn-icon edit-store" data-id="${store.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-                storesTableBody.appendChild(row);
-            }
-
-            attachStoreEventListeners();
-        } catch (error) {
-            console.error('Mağazalar yüklenemedi:', error);
-            showNotification('Mağazalar yüklenemedi!', false);
+        for (const store of stores) {
+            const storeProducts = await window.showlyDB.getProductsByStoreId(store.id);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${store.id}</td>
+                <td>${store.name}</td>
+                <td>${storeProducts.length}</td>
+                <td>
+                    <button class="btn-icon edit-store" data-id="${store.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            storesTableBody.appendChild(row);
         }
+
+        attachStoreEventListeners();
     };
     
     // Google Sheets’e satır ekleme
@@ -202,43 +195,33 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Mağaza düzenle
     const editStore = async (storeId) => {
-        try {
-            const stores = await window.cloudflareAPI.stores.getAll();
-            const store = stores.find(s => s.id === storeId);
-            if (!store) return;
+        const stores = await window.showlyDB.getStores();
+        const store = stores.find(s => s.id === storeId);
+        if (!store) return;
 
-            document.getElementById('store-modal-title').textContent = 'Mağazayı Düzenle';
-            document.getElementById('store-id').value = store.id;
-            document.getElementById('store-name').value = store.name;
-            document.getElementById('store-description').value = store.description || '';
+        document.getElementById('store-modal-title').textContent = 'Mağazayı Düzenle';
+        document.getElementById('store-id').value = store.id;
+        document.getElementById('store-name').value = store.name;
+        document.getElementById('store-description').value = store.description || '';
 
-            // ✅ Yeni: Mağaza Üstü Metin
-            const customBannerInput = document.getElementById('store-custom-banner-text');
-            if (customBannerInput) {
-                customBannerInput.value = store.customBannerText || '';
-            }
-
-            storeModal.style.display = 'block';
-            editingStoreId = storeId;
-        } catch (error) {
-            console.error('Mağaza yüklenemedi:', error);
-            showNotification('Mağaza yüklenemedi!', false);
+        // ✅ Yeni: Mağaza Üstü Metin
+        const customBannerInput = document.getElementById('store-custom-banner-text');
+        if (customBannerInput) {
+            customBannerInput.value = store.customBannerText || '';
         }
+
+        storeModal.style.display = 'block';
+        editingStoreId = storeId;
     };
     
     // Mağaza sil
-    const deleteStore = async (storeId) => {
+    const deleteStore = (storeId) => {
         if (confirm('Bu mağazayı silmek istediğinizden emin misiniz?')) {
-            try {
-                await window.cloudflareAPI.stores.delete(storeId);
-                renderStoresTable();
-                renderProductsTable();
-                updateDashboard();
-                showNotification('Mağaza başarıyla silindi!');
-            } catch (error) {
-                console.error('Mağaza silinemedi:', error);
-                showNotification('Mağaza silinemedi!', false);
-            }
+            window.showlyDB.deleteStore(storeId);
+            renderStoresTable();
+            renderProductsTable();
+            updateDashboard();
+            showNotification('Mağaza başarıyla silindi!');
         }
     };
     
@@ -255,69 +238,57 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
-        
         const name = document.getElementById('store-name').value.trim();
         const desc = document.getElementById('store-description').value.trim();
+
+        // ✅ Yeni: Mağaza Üstü Metin
         const customBannerInput = document.getElementById('store-custom-banner-text');
         const customBannerText = customBannerInput ? customBannerInput.value.trim() : '';
 
-        if (!name) { 
-            showNotification('Mağaza adı gerekli!', false); 
-            isSubmitting = false; 
-            return; 
-        }
-        
+        if (!name) { showNotification('Mağaza adı gerekli!', false); isSubmitting = false; return; }
         try {
-            if (editingStoreId) {
-                // Güncelleme
-                await window.cloudflareAPI.stores.update(editingStoreId, { 
-                    name, 
-                    description: desc, 
-                    customBannerText 
-                });
-                showNotification('Mağaza güncellendi!');
-            } else {
-                // Yeni ekleme
-                await window.cloudflareAPI.stores.create({ 
-                    name, 
-                    description: desc, 
-                    customBannerText 
-                });
-                showNotification('Mağaza eklendi!');
-            }
-            
-            renderStoresTable(); 
-            populateStoreSelect(); 
-            updateDashboard();
+            await window.addStoreToFirebase({ 
+                name, 
+                description: desc, 
+                customBannerText // ✅ Burada kullan
+            });
+            showNotification('Mağaza Firebase’e eklendi!');
+            renderStoresTable(); populateStoreSelect(); updateDashboard();
             closeAllModals();
         } catch (err) {
             console.error(err);
-            showNotification('İşlem başarısız!', false);
-        } finally { 
-            isSubmitting = false; 
-        }
+            showNotification('Mağaza eklenemedi!', false);
+        } finally { isSubmitting = false; }
     };
     
     // Ürün tablosunu güncelle
     async function renderProductsTable() {
         const loadingOverlay = document.getElementById('loading-overlay');
-        loadingOverlay.style.display = 'flex';
+        loadingOverlay.style.display = 'flex'; // Göster
 
         try {
-            const [products, stores] = await Promise.all([
-                window.cloudflareAPI.products.getAll(),
-                window.cloudflareAPI.stores.getAll()
+            // ✅ DÜZELTME: Firebase'den mağazaları ve ürünleri çek
+            const [productsSnapshot, storesSnapshot] = await Promise.all([
+                window.db.collection('products').get(),
+                window.db.collection('stores').get()
             ]);
             
-            // Mağazaları objeye dönüştür
+            // ✅ Mağazaları bir objeye dönüştür (hızlı erişim için)
             const storesMap = {};
-            stores.forEach(store => {
-                storesMap[store.id] = store;
+            storesSnapshot.docs.forEach(doc => {
+                storesMap[doc.id] = { id: doc.id, ...doc.data() };
             });
+            
+            // ✅ Ürünleri işle
+            const products = productsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
             
             productsTableBody.innerHTML = '';
             
             for (const product of products) {
+                // ✅ Mağazayı storesMap'ten al
                 const store = storesMap[product.storeId];
                 const storeName = store ? store.name : 'Mağaza Bulunamadı';
                 
@@ -341,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Ürünler yüklenemedi:', error);
             showNotification('Ürünler yüklenemedi!', false);
         } finally {
-            loadingOverlay.style.display = 'none';
+            loadingOverlay.style.display = 'none'; // Gizle
         }
     }
     
@@ -365,14 +336,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ürün düzenle
     const editProduct = async (productId) => {
         try {
-            const products = await window.cloudflareAPI.products.getAll();
-            const product = products.find(p => p.id === productId);
-            
-            if (!product) {
+            // Firebase'den ürünü ID ile çek
+            const productDoc = await window.db.collection('products').doc(productId).get();
+            if (!productDoc.exists) {
                 showNotification('Ürün bulunamadı!', false);
                 return;
             }
 
+            const product = productDoc.data();
+            product.id = productDoc.id;
+
+            // Modal içeriğini doldur
             document.getElementById('product-name').value = product.title || '';
             document.getElementById('product-store').value = product.storeId || '';
             document.getElementById('product-new-price').value = product.price || '';
@@ -381,6 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('product-material').value = product.material || '';
             document.getElementById('product-category').value = product.category || '';
 
+            // Resim varsa, önizlemeyi göster
             if (product.imageUrl) {
                 productImagePreview.src = product.imageUrl;
                 productImagePreview.classList.add('show');
@@ -390,8 +365,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 uploadedProductImageUrl = null;
             }
 
+            // Modalı aç
             productModal.style.display = 'block';
-            editingProductId = productId;
+            editingProductId = productId; // ✅ Burada ID'yi sakla
         } catch (error) {
             console.error('Ürün düzenlenirken hata oluştu:', error);
             showNotification('Ürün bilgileri yüklenemedi!', false);
@@ -399,17 +375,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // Ürün sil
-    const deleteProduct = async (productId) => {
+    const deleteProduct = (productId) => {
         if (confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
-            try {
-                await window.cloudflareAPI.products.delete(productId);
-                renderProductsTable();
-                updateDashboard();
-                showNotification('Ürün başarıyla silindi!');
-            } catch (error) {
-                console.error('Ürün silinemedi:', error);
-                showNotification('Ürün silinemedi!', false);
-            }
+            window.showlyDB.deleteProduct(productId);
+            renderProductsTable();
+            updateDashboard();
+            showNotification('Ürün başarıyla silindi!');
         }
     };
     
@@ -425,12 +396,11 @@ document.addEventListener('DOMContentLoaded', () => {
         productModal.style.display = 'block';
     };
     
-    // Ürün form submit (CLOUDFLARE KV + Cloudinary)
+    // Ürün form submit (FIREBASE + Cloudinary)
     const handleProductSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
-        
         try {
             const title    = document.getElementById('product-name').value.trim();
             const storeId  = document.getElementById('product-store').value;
@@ -447,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            let imageUrl = uploadedProductImageUrl;
+            let imageUrl = uploadedProductImageUrl; // Mevcut resmi koru
             if (file) {
                 showUploadStatus(productImageStatus, 'Resim yükleniyor...', true);
                 const uploadResult = await uploadToCloudinary(file);
@@ -455,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
             }
 
+            // İndirim hesaplaması
             let isOnSale = false;
             let originalPrice = '';
             if (originalPriceInput) {
@@ -466,23 +437,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            const productData = {
-                storeId, title, 
-                price: newPrice, 
-                description: desc, 
-                material, 
-                category,
-                isOnSale, 
-                originalPrice, 
-                imageUrl
-            };
-
+            // Düzenleme mi, yoksa yeni ekleme mi?
             if (editingProductId) {
-                await window.cloudflareAPI.products.update(editingProductId, productData);
+                // Mevcut ürünü güncelle
+                await window.db.collection('products').doc(editingProductId).update({
+                    storeId, title, price: newPrice, description: desc, material, category,
+                    isOnSale, originalPrice, imageUrl
+                });
                 showNotification('Ürün başarıyla güncellendi!');
             } else {
-                await window.cloudflareAPI.products.create(productData);
-                showNotification('Ürün başarıyla eklendi!');
+                // Yeni ürün ekle
+                await window.addProductToFirebase({
+                    storeId, title, price: newPrice, description: desc, material, category,
+                    isOnSale, originalPrice, imageUrl
+                });
+                showNotification('Ürün Firebase’e eklendi!');
             }
 
             renderProductsTable();
@@ -643,7 +612,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mağaza seçimini doldur
     async function populateStoreSelect() {
         try {
-            const stores = await window.cloudflareAPI.stores.getAll();
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             productStoreSelect.innerHTML = '<option value="">Mağaza Seçin</option>';
             for (const store of stores) {
@@ -949,20 +919,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Dashboard güncelle
-    const updateDashboard = async () => {
-        try {
-            const [stores, products, orders] = await Promise.all([
-                window.cloudflareAPI.stores.getAll(),
-                window.cloudflareAPI.products.getAll(),
-                window.cloudflareAPI.orders.getAll()
-            ]);
-            
-            document.getElementById('total-stores').textContent = stores.length;
-            document.getElementById('total-products').textContent = products.length;
-            document.getElementById('total-orders').textContent = orders.length;
-        } catch (error) {
-            console.error('Dashboard güncellenemedi:', error);
-        }
+    const updateDashboard = () => {
+        const stores = window.showlyDB.getStores();
+        const products = window.showlyDB.getAllProducts();
+        const orders = window.showlyDB.getOrders();
+        
+        document.getElementById('total-stores').textContent = stores.length;
+        document.getElementById('total-products').textContent = products.length;
+        document.getElementById('total-orders').textContent = orders.length;
     };
     
     // Bildirim göster
@@ -1072,14 +1036,72 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Mağaza ekle (Firestore)
+    window.addStoreToFirebase = async function(store) {
+        const slug = store.name.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
+        const doc = await window.db.collection('stores').add({
+            name: store.name,
+            slug: slug,
+            description: store.description || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return { id: doc.id, name: store.name, slug, description: store.description };
+    };
+
+    // Ürün ekle (Firestore)
+    window.addProductToFirebase = async function(product) {
+        const doc = await window.db.collection('products').add({
+            storeId: product.storeId,
+            title: product.title,
+            price: product.price,
+            description: product.description || '',
+            material: product.material || '',
+            category: product.category || '',
+            isOnSale: product.isOnSale || false,
+            originalPrice: product.originalPrice || '',
+            imageUrl: product.imageUrl || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return { id: doc.id, ...product };
+    };
+
+    // Mağaza sil (Firestore)
+    window.deleteStoreFromFirebase = async function(storeId) {
+        const prods = await window.db.collection('products').where('storeId', '==', storeId).get();
+        const batch = window.db.batch();
+        prods.docs.forEach(d => batch.delete(d.ref));
+        batch.delete(window.db.collection('stores').doc(storeId));
+        await batch.commit();
+    };
+
+    // Ürün sil (Firestore)
+    window.deleteProductFromFirebase = async function(productId) {
+        await window.db.collection('products').doc(productId).delete();
+    };
+
+    // Tüm mağazaları getir (Firestore)
+    window.getStoresFromFirebase = async function() {
+        const snap = await window.db.collection('stores').get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    };
+
+    // Tüm ürünleri getir (Firestore)
+    window.getProductsFromFirebase = async function() {
+        const snap = await window.db.collection('products').get();
+        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    };
+
     // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
     processPendingOrders();
     
     updateDashboard();
     renderStoresTable();
     renderProductsTable();
-    populateStoreSelect();
-    populateStoreFilter();
+    (async () => {
+        await renderOrdersTable();
+        await populateStoreSelect();
+        await populateStoreFilter();
+    })();// Sipariş tablosunu da göster
 });
 
 // --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---
