@@ -6,6 +6,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const originalPriceGroup = document.getElementById('original-price-group');
     const productOriginalPrice = document.getElementById('product-original-price');
     const navLinks = document.querySelectorAll('.nav-link');
+    const currentUser = JSON.parse(localStorage.getItem('adminUser'));
+    if (!currentUser) {
+        window.location.href = 'login.html';
+    }
+
+    // Menü elemanlarını yetkiye göre gizle
+    document.querySelectorAll('.nav-link').forEach(link => {
+        const section = link.getAttribute('data-section');
+        if (currentUser.role !== 'admin' && !currentUser.permissions.includes(section)) {
+            link.style.display = 'none';
+        }
+    });
     const contentSections = document.querySelectorAll('.content-section');
     const pageTitle = document.getElementById('page-title');
     const addStoreBtn = document.getElementById('add-store-btn');
@@ -23,6 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const ordersTableBody = document.getElementById('orders-table-body');
     const menuToggle = document.querySelector('.menu-toggle');
     const adminSidebar = document.querySelector('.admin-sidebar');
+    const userModal = document.getElementById('user-modal');
+    const addUserBtn = document.getElementById('add-user-btn');
+    const userForm = document.getElementById('user-form');
+    const usersTableBody = document.getElementById('users-table-body');
+    const cancelUser = document.getElementById('cancel-user');
     
     // Excel export/import
     const exportStoresBtn = document.getElementById('export-stores-btn');
@@ -849,6 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     // Tüm ürünleri göster
                     renderProductsTable();
+                    startAutoRefresh();
                 }
             });
             
@@ -860,6 +878,192 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    // --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---
+    function startAutoRefresh() {
+        const refreshInterval = 5 * 60 * 1000; 
+        setInterval(async () => {
+            console.log('🔄 Veriler 5 dakikada bir otomatik olarak yenileniyor...');
+            try {
+                await renderStoresTable();
+                await renderProductsTable();
+                await renderOrdersTable();
+                updateDashboard();
+            } catch (error) {
+                console.error('Otomatik yenileme sırasında hata oluştu:', error);
+            }
+        }, refreshInterval);
+    }
+
+    // Sayfa yüklendiğinde otomatik yenilemeyi başlat
+    document.addEventListener('DOMContentLoaded', () => {
+        startAutoRefresh();
+    });
+
+    // ✅✅✅ BURAYA EKLE - KULLANICI YÖNETİMİ FONKSİYONLARI (KONUM 3) ✅✅✅
+    // ===========================================================================
+
+    // --- KULLANICI YÖNETİMİ FONKSİYONLARI ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const userModal = document.getElementById('user-modal');
+        const addUserBtn = document.getElementById('add-user-btn');
+        const userForm = document.getElementById('user-form');
+        const usersTableBody = document.getElementById('users-table-body');
+        const cancelUser = document.getElementById('cancel-user');
+
+        // Kullanıcıları listele
+        const renderUsersTable = async () => {
+            try {
+                const usersSnapshot = await window.db.collection('users').get();
+                const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                usersTableBody.innerHTML = '';
+                
+                if (users.length === 0) {
+                    usersTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz kullanıcı eklenmemiş.</td></tr>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.username}</td>
+                        <td><span class="status ${user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
+                        <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
+                        <td>
+                            <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    usersTableBody.appendChild(row);
+                });
+
+                // Silme butonları
+                document.querySelectorAll('.delete-user').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
+                            await window.db.collection('users').doc(btn.getAttribute('data-id')).delete();
+                            renderUsersTable();
+                            showNotification('Kullanıcı silindi!');
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Kullanıcılar yüklenemedi:', error);
+                showNotification('Kullanıcılar yüklenemedi!', false);
+            }
+        };
+
+        // Rol adlarını çevir
+        const getRoleName = (role) => {
+            const roles = {
+                'admin': 'Admin',
+                'store_manager': 'Mağaza Yöneticisi',
+                'product_manager': 'Ürün Yöneticisi',
+                'order_manager': 'Sipariş Yöneticisi'
+            };
+            return roles[role] || role;
+        };
+
+        // Kullanıcı ekle modalı
+        if (addUserBtn) {
+            addUserBtn.addEventListener('click', () => {
+                document.getElementById('user-modal-title').textContent = 'Yeni Kullanıcı Ekle';
+                userForm.reset();
+                document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
+                userModal.style.display = 'block';
+            });
+        }
+
+        // Rol değiştiğinde izinleri otomatik ayarla
+        const userRoleSelect = document.getElementById('user-role');
+        if (userRoleSelect) {
+            userRoleSelect.addEventListener('change', (e) => {
+                const role = e.target.value;
+                const checkboxes = document.querySelectorAll('.permission-checkbox');
+                
+                if (role === 'admin') {
+                    checkboxes.forEach(cb => cb.checked = true);
+                } else if (role === 'store_manager') {
+                    checkboxes.forEach(cb => {
+                        cb.checked = ['dashboard', 'stores'].includes(cb.value);
+                    });
+                } else if (role === 'product_manager') {
+                    checkboxes.forEach(cb => {
+                        cb.checked = ['dashboard', 'products'].includes(cb.value);
+                    });
+                } else if (role === 'order_manager') {
+                    checkboxes.forEach(cb => {
+                        cb.checked = ['dashboard', 'orders'].includes(cb.value);
+                    });
+                }
+            });
+        }
+
+        // Kullanıcı form submit
+        if (userForm) {
+            userForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('user-username').value.trim();
+                const password = document.getElementById('user-password').value.trim();
+                const role = document.getElementById('user-role').value;
+                const permissions = Array.from(document.querySelectorAll('.permission-checkbox:checked')).map(cb => cb.value);
+
+                if (!username || !password) {
+                    showNotification('Kullanıcı adı ve şifre gerekli!', false);
+                    return;
+                }
+
+                try {
+                    await window.db.collection('users').add({
+                        username,
+                        password, // ⚠️ Gerçek projede şifreyi hash'le!
+                        role,
+                        permissions,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    showNotification('Kullanıcı başarıyla eklendi!');
+                    userModal.style.display = 'none';
+                    renderUsersTable();
+                } catch (error) {
+                    console.error('Kullanıcı eklenemedi:', error);
+                    showNotification('Kullanıcı eklenemedi!', false);
+                }
+            });
+        }
+
+        // İptal butonları
+        if (cancelUser) {
+            cancelUser.addEventListener('click', () => {
+                userModal.style.display = 'none';
+            });
+        }
+
+        // Modal kapatma
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modal = btn.closest('.modal');
+                if (modal) modal.style.display = 'none';
+            });
+        });
+
+        // Çıkış butonu güncelle
+        const logoutBtn = document.querySelector('.btn-logout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('adminUser');
+                window.location.href = 'login.html';
+            });
+        }
+
+        // Sayfa yüklendiğinde kullanıcıları göster
+        if (usersTableBody) {
+            renderUsersTable();
+        }
+    });
+
+// ===========================================================================
 
     // Ürünleri filtrele
     async function filterProducts(storeId, category) {
@@ -950,7 +1154,143 @@ document.addEventListener('DOMContentLoaded', () => {
             notification.remove();
         }, 3000);
     };
+
+    // ✅ KULLANICI YÖNETİMİ FONKSİYONLARI - BURAYA EKLE
     
+    // Kullanıcıları listele
+    const renderUsersTable = async () => {
+        if (!usersTableBody) return;
+        
+        try {
+            const usersSnapshot = await window.db.collection('users').get();
+            const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            usersTableBody.innerHTML = '';
+            
+            if (users.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz kullanıcı eklenmemiş.</td></tr>';
+                return;
+            }
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.username}</td>
+                    <td><span class="status ${user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
+                    <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
+                    <td>
+                        <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                usersTableBody.appendChild(row);
+            });
+
+            // Silme butonları
+            document.querySelectorAll('.delete-user').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
+                        await window.db.collection('users').doc(btn.getAttribute('data-id')).delete();
+                        renderUsersTable();
+                        showNotification('Kullanıcı silindi!');
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Kullanıcılar yüklenemedi:', error);
+            showNotification('Kullanıcılar yüklenemedi!', false);
+        }
+    };
+
+    // Rol adlarını çevir
+    const getRoleName = (role) => {
+        const roles = {
+            'admin': 'Admin',
+            'store_manager': 'Mağaza Yöneticisi',
+            'product_manager': 'Ürün Yöneticisi',
+            'order_manager': 'Sipariş Yöneticisi'
+        };
+        return roles[role] || role;
+    };
+
+    // Kullanıcı ekle modalı aç
+    const openUserModal = () => {
+        if (!userModal) return;
+        document.getElementById('user-modal-title').textContent = 'Yeni Kullanıcı Ekle';
+        userForm.reset();
+        document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
+        userModal.style.display = 'block';
+    };
+
+    // Kullanıcı ekle buton event
+    if (addUserBtn) {
+        addUserBtn.addEventListener('click', openUserModal);
+    }
+
+    // Rol değiştiğinde izinleri otomatik ayarla
+    const userRoleSelect = document.getElementById('user-role');
+    if (userRoleSelect) {
+        userRoleSelect.addEventListener('change', (e) => {
+            const role = e.target.value;
+            const checkboxes = document.querySelectorAll('.permission-checkbox');
+            
+            if (role === 'admin') {
+                checkboxes.forEach(cb => cb.checked = true);
+            } else if (role === 'store_manager') {
+                checkboxes.forEach(cb => {
+                    cb.checked = ['dashboard', 'stores'].includes(cb.value);
+                });
+            } else if (role === 'product_manager') {
+                checkboxes.forEach(cb => {
+                    cb.checked = ['dashboard', 'products'].includes(cb.value);
+                });
+            } else if (role === 'order_manager') {
+                checkboxes.forEach(cb => {
+                    cb.checked = ['dashboard', 'orders'].includes(cb.value);
+                });
+            }
+        });
+    }
+
+    // Kullanıcı form submit
+    if (userForm) {
+        userForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('user-username').value.trim();
+            const password = document.getElementById('user-password').value.trim();
+            const role = document.getElementById('user-role').value;
+            const permissions = Array.from(document.querySelectorAll('.permission-checkbox:checked')).map(cb => cb.value);
+
+            if (!username || !password) {
+                showNotification('Kullanıcı adı ve şifre gerekli!', false);
+                return;
+            }
+
+            try {
+                await window.db.collection('users').add({
+                    username,
+                    password,
+                    role,
+                    permissions,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                showNotification('Kullanıcı başarıyla eklendi!');
+                userModal.style.display = 'none';
+                renderUsersTable();
+            } catch (error) {
+                console.error('Kullanıcı eklenemedi:', error);
+                showNotification('Kullanıcı eklenemedi!', false);
+            }
+        });
+    }
+
+    // İptal butonu
+    if (cancelUser) {
+        cancelUser.addEventListener('click', () => {
+            if (userModal) userModal.style.display = 'none';
+        });
+    }
+
     // Tüm modalları kapat
     const closeAllModals = () => {
         storeModal.style.display = 'none';
@@ -1017,7 +1357,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Modal kapatma
     closeModals.forEach(btn => {
-        btn.addEventListener('click', closeAllModals);
+        btn.addEventListener('click', () => {
+            const modal = btn.closest('.modal');
+            if (modal) modal.style.display = 'none';
+        });
     });
     
     cancelStore.addEventListener('click', closeAllModals);
@@ -1097,6 +1440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDashboard();
     renderStoresTable();
     renderProductsTable();
+    renderUsersTable();
     (async () => {
         await renderOrdersTable();
         await populateStoreSelect();

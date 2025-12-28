@@ -2091,3 +2091,22 @@ header {
 #not-found .cta-button {
     margin: 0;
 }
+
+.btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* ✅ SPINNER ANİMASYONU */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fa-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* ✅ BUTON TRANSITION */
+        .btn-login {
+            transition: all 0.3s ease;
+        }
