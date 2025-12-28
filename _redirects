@@ -1,12 +1,8 @@
+# ⚠️ ÖNEMLİ: Sıralama çok önemli! Spesifik kurallar üstte olmalı
 
-# Admin paneli - önce login kontrol et
-/admin /login.html 302
-
-# Login sayfası
-/login /login.html 200
-
-# Admin HTML dosyası (login'den sonra erişilebilir)
+# Admin paneli sayfalarını doğrudan göster (yönlendirme YOK)
 /admin.html /admin.html 200
+/login.html /login.html 200
 
 # Statik dosyalar
 /*.css /:splat 200
