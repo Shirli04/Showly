@@ -5,26 +5,15 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Admin Paneli</title>
         <script>
+            // Sadece oturum kontrolü yap, yönlendirme yapma
             (function() {
-                // ✅ sessionStorage kullan (tarayıcı kapanınca silinir)
                 const adminUser = sessionStorage.getItem('adminUser');
                 
                 if (!adminUser) {
-                    window.location.replace('/login.html');
-                    throw new Error('Unauthorized');
-                }
-                
-                try {
-                    const user = JSON.parse(adminUser);
-                    if (!user.username || !user.role) {
-                        sessionStorage.removeItem('adminUser');
+                    // Sadece login sayfasında değilsek yönlendir
+                    if (!window.location.pathname.includes('login.html')) {
                         window.location.replace('/login.html');
-                        throw new Error('Invalid session');
                     }
-                } catch (e) {
-                    sessionStorage.removeItem('adminUser');
-                    window.location.replace('/login.html');
-                    throw new Error('Session error');
                 }
             })();
         </script>
