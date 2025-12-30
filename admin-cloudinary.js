@@ -1600,7 +1600,36 @@ function startAutoRefresh() {
 }
 
 // Sayfa yüklendiğinde otomatik yenilemeyi başlat
-document.addEventListener('DOMContentLoaded', () => {
-    // ... diğer kodlar ...
-    startAutoRefresh(); // Bu satır eklenmeli
+// ✅ BURAYI admin.js dosyasının EN SONUNA KOPYALA (eski DOMContentLoaded kodunun yerine)
+
+// Sayfa yüklendiğinde tüm verileri yükle
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('📊 Dashboard yükleniyor...');
+    
+    try {
+        // 1️⃣ İstatistikleri güncelle
+        await updateDashboard();
+        
+        // 2️⃣ Ziyaretçi grafiğini oluştur
+        await renderVisitorChart();
+        
+        // 3️⃣ Tabloları yükle
+        await renderStoresTable();
+        await renderProductsTable();
+        await renderOrdersTable();
+        await renderUsersTable();
+        
+        // 4️⃣ Dropdown'ları doldur
+        await populateStoreSelect();
+        await populateStoreFilter();
+        
+        // 5️⃣ Otomatik yenilemeyi başlat
+        startAutoRefresh();
+        
+        console.log('✅ Dashboard başarıyla yüklendi');
+        
+    } catch (error) {
+        console.error('❌ Dashboard yüklenirken hata:', error);
+        showNotification('Veriler yüklenemedi! Sayfayı yenileyin.', false);
+    }
 });
