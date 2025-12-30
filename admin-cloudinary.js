@@ -1566,6 +1566,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
     processPendingOrders();
+    
+    // ✅ Dashboard'u asenkron olarak güncelle
+    (async () => {
+        await updateDashboard(); // Dashboard sayılarını güncelle
+        await renderVisitorChart();
+        await renderStoresTable();
+        await renderProductsTable();
+        await renderOrdersTable();
+        await renderUsersTable();
+        await populateStoreSelect();
+        await populateStoreFilter();
+    })();
 });
 
 // --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---
@@ -1586,300 +1598,46 @@ function startAutoRefresh() {
     }, refreshInterval);
 }
 
-// Sayfa yüklendiğinde bekleyen siparişleri kontrol et
 processPendingOrders();
 
-// ✅ HIZLI PARALEL VERİ ÇEKME VE TOPLU RENDER
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('📊 Admin paneli optimize edilmiş şekilde yükleniyor...');
+// ✅ Sayfa tamamen yüklendiğinde tüm fonksiyonları çalıştır
+window.addEventListener('DOMContentLoaded', async () => {
+    console.log('📊 Admin paneli yükleniyor...');
     
     const loadingOverlay = document.getElementById('loading-overlay');
-    const loadingText = document.querySelector('.loading-text');
-    loadingOverlay.style.display = 'flex';
-
+    loadingOverlay.style.display = 'flex'; // Yükleniyor ekranını göster
+    
     try {
-        // ✅ 1. ADIM: TÜM VERİLERİ PARALEL ÇEK (çok daha hızlı!)
-        loadingText.textContent = 'Veriler yükleniyor...';
+        // 1️⃣ Dashboard istatistiklerini güncelle
+        await updateDashboard();
+        console.log('✅ Dashboard istatistikleri yüklendi');
         
-        const [storesSnapshot, productsSnapshot, ordersSnapshot, usersSnapshot, visitorsSnapshot] = await Promise.all([
-            window.db.collection('stores').get(),
-            window.db.collection('products').get(),
-            window.db.collection('orders').orderBy('date', 'desc').get(),
-            window.db.collection('users').get(),
-            window.db.collection('visitors').get()
-        ]);
-
-        // ✅ 2. ADIM: VERİLERİ HAZIRLA
-        loadingText.textContent = 'Veriler işleniyor...';
+        // 2️⃣ Ziyaretçi grafiğini oluştur
+        await renderVisitorChart();
+        console.log('✅ Ziyaretçi grafiği oluşturuldu');
         
-        const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const visitors = visitorsSnapshot.docs.map(doc => doc.data());
-
-        // ✅ 3. ADIM: DASHBOARD GÜNCELLEMELERİNİ YAP
-        loadingText.textContent = 'Görünüm hazırlanıyor...';
+        // 3️⃣ Tabloları yükle
+        await renderStoresTable();
+        await renderProductsTable();
+        await renderOrdersTable();
+        await renderUsersTable();
+        console.log('✅ Tablolar yüklendi');
         
-        // Dashboard sayılarını güncelle
-        document.getElementById('total-stores').textContent = stores.length;
-        document.getElementById('total-products').textContent = products.length;
-        document.getElementById('total-orders').textContent = orders.length;
-
-        // ✅ 4. ADIM: MAĞAZALARI TOPLU RENDER ET (sıra sıra değil!)
-        const storesTableBody = document.getElementById('stores-table-body');
-        storesTableBody.innerHTML = ''; // Önce temizle
+        // 4️⃣ Dropdown'ları doldur
+        await populateStoreSelect();
+        await populateStoreFilter();
+        console.log('✅ Dropdown\'lar dolduruldu');
         
-        // Tüm mağazaları bir HTML string olarak oluştur
-        let storesHTML = '';
-        for (const store of stores) {
-            const storeProducts = products.filter(p => p.storeId === store.id);
-            storesHTML += `
-                <tr>
-                    <td>${store.id}</td>
-                    <td>${store.name}</td>
-                    <td>${storeProducts.length}</td>
-                    <td>
-                        <button class="btn-icon edit-store" data-id="${store.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        }
-        // Hepsini bir kerede ekle (çok daha hızlı!)
-        storesTableBody.innerHTML = storesHTML;
-        attachStoreEventListeners(); // Event listener'ları ekle
-
-        // ✅ 5. ADIM: ÜRÜNLERİ TOPLU RENDER ET
-        const productsTableBody = document.getElementById('products-table-body');
-        productsTableBody.innerHTML = '';
-        
-        const storesMap = {};
-        stores.forEach(s => storesMap[s.id] = s);
-        
-        let productsHTML = '';
-        for (const product of products) {
-            const storeName = storesMap[product.storeId]?.name || 'Mağaza Bulunamadı';
-            productsHTML += `
-                <tr>
-                    <td>${product.id}</td>
-                    <td>${product.title}</td>
-                    <td>${storeName}</td>
-                    <td>${product.price}</td>
-                    <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
-                    <td>
-                        <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        }
-        productsTableBody.innerHTML = productsHTML;
-        attachProductEventListeners();
-
-        // ✅ 6. ADIM: SİPARİŞLERİ TOPLU RENDER ET
-        const ordersTableBody = document.getElementById('orders-table-body');
-        ordersTableBody.innerHTML = '';
-        
-        if (orders.length === 0) {
-            ordersTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Henüz sipariş bulunmuyor.</td></tr>';
-        } else {
-            let ordersHTML = '';
-            orders.forEach(order => {
-                const storeNames = [...new Set(order.items.map(item => {
-                    const product = products.find(p => p.id === item.id);
-                    return storesMap[product?.storeId]?.name || 'Bilinmiyor';
-                }))].join(', ');
-
-                if (order.status === 'pending') {
-                    ordersHTML += `
-                        <tr>
-                            <td><ul style="list-style: none; padding: 0; margin: 0;">
-                                ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
-                            </ul></td>
-                            <td>${order.customer.name}</td>
-                            <td>${order.customer.phone}</td>
-                            <td>${order.customer.address}</td>
-                            <td>${storeNames}</td>
-                            <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                            <td><span class="status pending">Beklemede</span></td>
-                            <td>
-                                <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
-                                <button class="btn-icon" onclick="assignOrderNumber('${order.id}')" title="Numara Ata ve SMS Gönder">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                } else {
-                    ordersHTML += `
-                        <tr>
-                            <td><ul style="list-style: none; padding: 0; margin: 0;">
-                                ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
-                            </ul></td>
-                            <td>${order.customer.name}</td>
-                            <td>${order.customer.phone}</td>
-                            <td>${order.customer.address}</td>
-                            <td>${storeNames}</td>
-                            <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                            <td><span class="status completed">Onaylandı</span></td>
-                            <td><strong>${order.orderNumber}</strong></td>
-                        </tr>
-                    `;
-                }
-            });
-            ordersTableBody.innerHTML = ordersHTML;
-        }
-
-        // ✅ 7. ADIM: KULLANICILARI TOPLU RENDER ET
-        const usersTableBody = document.getElementById('users-table-body');
-        usersTableBody.innerHTML = '';
-        
-        if (users.length === 0) {
-            usersTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz kullanıcı eklenmemiş.</td></tr>';
-        } else {
-            let usersHTML = '';
-            users.forEach(user => {
-                const getRoleName = (role) => {
-                    const roles = {
-                        'admin': 'Admin',
-                        'store_manager': 'Mağaza Yöneticisi',
-                        'product_manager': 'Ürün Yöneticisi',
-                        'order_manager': 'Sipariş Yöneticisi'
-                    };
-                    return roles[role] || role;
-                };
-
-                usersHTML += `
-                    <tr>
-                        <td>${user.username}</td>
-                        <td><span class="status ${user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
-                        <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
-                        <td>
-                            <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-            usersTableBody.innerHTML = usersHTML;
-            
-            // Event listener'ları ekle
-            document.querySelectorAll('.delete-user').forEach(btn => {
-                btn.addEventListener('click', async () => {
-                    if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-                        await window.db.collection('users').doc(btn.getAttribute('data-id')).delete();
-                        location.reload(); // Sayfayı yenile
-                    }
-                });
-            });
-        }
-
-        // ✅ 8. ADIM: ZİYARETÇİ GRAFİĞİNİ OLUŞTUR
-        const dates = [];
-        const today = new Date();
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            dates.push(date.toISOString().split('T')[0]);
-        }
-        
-        const visitorCounts = dates.map(date => {
-            return visitors.filter(v => v.date === date).length;
-        });
-        
-        const labels = dates.map(date => {
-            const d = new Date(date);
-            return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-        });
-        
-        const chartData = {
-            labels: labels,
-            datasets: [{
-                label: 'Ziyaretçi Sayısı',
-                data: visitorCounts,
-                backgroundColor: 'rgba(108, 92, 231, 0.2)',
-                borderColor: 'rgba(108, 92, 231, 1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                pointBackgroundColor: 'rgba(108, 92, 231, 1)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
-            }]
-        };
-        
-        const chartConfig = {
-            type: 'line',
-            data: chartData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: { size: 14 },
-                        bodyFont: { size: 13 },
-                        displayColors: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1,
-                            callback: function(value) {
-                                return Math.floor(value);
-                            }
-                        },
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                    },
-                    x: { grid: { display: false } }
-                }
-            }
-        };
-        
-        if (window.visitorChartInstance) {
-            window.visitorChartInstance.destroy();
-        }
-        
-        const ctx = document.getElementById('visitorChart').getContext('2d');
-        window.visitorChartInstance = new Chart(ctx, chartConfig);
-
-        // ✅ 9. ADIM: DROPDOWN'LARI DOLDUR
-        const productStoreSelect = document.getElementById('product-store');
-        productStoreSelect.innerHTML = '<option value="">Mağaza Seçin</option>';
-        stores.forEach(store => {
-            const option = document.createElement('option');
-            option.value = store.id;
-            option.textContent = store.name;
-            productStoreSelect.appendChild(option);
-        });
-
-        const filterStoreSelect = document.getElementById('filter-store-select');
-        if (filterStoreSelect) {
-            filterStoreSelect.innerHTML = '<option value="">Tüm Mağazalar</option>';
-            stores.forEach(store => {
-                const option = document.createElement('option');
-                option.value = store.id;
-                option.textContent = store.name;
-                filterStoreSelect.appendChild(option);
-            });
-        }
-
-        // ✅ 10. ADIM: OTOMATİK YENİLEMEYİ BAŞLAT
+        // 5️⃣ Otomatik yenilemeyi başlat
         startAutoRefresh();
-
+        console.log('✅ Otomatik yenileme aktif');
+        
         console.log('🎉 Admin paneli başarıyla yüklendi!');
-        console.log(`📊 ${stores.length} mağaza, ${products.length} ürün, ${orders.length} sipariş`);
         
     } catch (error) {
         console.error('❌ Admin paneli yüklenirken hata:', error);
         showNotification('Veriler yüklenemedi! Sayfayı yenileyin.', false);
     } finally {
-        loadingOverlay.style.display = 'none';
+        loadingOverlay.style.display = 'none'; // Yükleniyor ekranını gizle
     }
 });
