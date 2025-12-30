@@ -936,6 +936,7 @@ ul {
 }
 
 /* ================================ ZİYARETÇİ GRAFİĞİ ================================ */
+/* Ziyaretçi Grafiği */
 .visitor-chart-container {
     background-color: var(--white-color);
     border-radius: 12px;
