@@ -5,13 +5,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Admin Paneli</title>
         <script>
-            // Sadece oturum kontrolü yap, yönlendirme yapma
+            // Oturum kontrolü - sadece sayfa ilk yüklenirken bir kez çalışır
             (function() {
                 const adminUser = sessionStorage.getItem('adminUser');
                 
-                if (!adminUser) {
-                    // Sadece login sayfasında değilsek yönlendir
-                    if (!window.location.pathname.includes('login.html')) {
+                // Eğer oturum yoksa ve login sayfasında değilsek
+                if (!adminUser && !window.location.pathname.includes('login.html')) {
+                    // Sayfanın tamamen yüklenmesini bekle
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', function() {
+                            window.location.replace('/login.html');
+                        });
+                    } else {
                         window.location.replace('/login.html');
                     }
                 }

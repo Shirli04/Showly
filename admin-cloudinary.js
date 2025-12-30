@@ -1,15 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Admin paneli yüklendi...');
     
+    // ✅ sessionStorage'dan kullanıcıyı al (localStorage değil!)
+    const currentUser = JSON.parse(sessionStorage.getItem('adminUser'));
+    
+    // Eğer kullanıcı yoksa login'e yönlendir
+    if (!currentUser) {
+        window.location.replace('/login.html');
+        return; // Kodun devam etmesini engelle
+    }
+    
+    console.log('✅ Giriş yapan kullanıcı:', currentUser.username);
+    
     // DOM elemanları
     const productIsOnSale = document.getElementById('product-is-on-sale');
     const originalPriceGroup = document.getElementById('original-price-group');
     const productOriginalPrice = document.getElementById('product-original-price');
     const navLinks = document.querySelectorAll('.nav-link');
-    const currentUser = JSON.parse(localStorage.getItem('adminUser'));
-    if (!currentUser) {
-        window.location.href = 'login.html';
-    }
 
     // Menü elemanlarını yetkiye göre gizle
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -1052,8 +1059,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                localStorage.removeItem('adminUser');
-                window.location.href = 'login.html';
+                // ✅ sessionStorage'dan temizle (localStorage değil!)
+                sessionStorage.removeItem('adminUser');
+                // ✅ replace kullan (geri tuşuyla dönmeyi engeller)
+                window.location.replace('/login.html');
             });
         }
 
