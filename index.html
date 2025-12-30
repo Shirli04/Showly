@@ -4,6 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Showly</title>
+    <script>
+        (function() {
+            // Tarih bilgisini al (YYYY-MM-DD formatında)
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Firebase'e ziyaretçi kaydet
+            if (window.db) {
+                window.db.collection('visitors').add({
+                    date: today,
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    language: navigator.language
+                }).then(() => {
+                    console.log('✅ Ziyaretçi kaydedildi');
+                }).catch(error => {
+                    console.error('❌ Ziyaretçi kaydedilemedi:', error);
+                });
+            } else {
+                // Firebase henüz yüklenmediyse, sayfa yüklendikten sonra çalıştır
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (window.db) {
+                        window.db.collection('visitors').add({
+                            date: today,
+                            timestamp: new Date().toISOString(),
+                            userAgent: navigator.userAgent,
+                            language: navigator.language
+                        });
+                    }
+                });
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>

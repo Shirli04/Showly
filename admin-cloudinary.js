@@ -68,6 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Form gönderme kontrolü
     let isSubmitting = false;
 
+    let visitorChartInstance = null; // Global değişken
+
     // --- YENİ: BEKLEYEN SİPARİŞLERİ İŞLEME FONKSİYONU ---
     const processPendingOrders = () => {
         const pendingOrders = JSON.parse(localStorage.getItem('showlyPendingOrders')) || [];
@@ -1131,15 +1133,135 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Dashboard güncelle
-    const updateDashboard = () => {
-        const stores = window.showlyDB.getStores();
-        const products = window.showlyDB.getAllProducts();
-        const orders = window.showlyDB.getOrders();
-        
-        document.getElementById('total-stores').textContent = stores.length;
-        document.getElementById('total-products').textContent = products.length;
-        document.getElementById('total-orders').textContent = orders.length;
+    // Dashboard güncelle - Firebase'den verileri çeker
+    const updateDashboard = async () => {
+        try {
+            // Firebase'den mağazaları çek
+            const storesSnapshot = await window.db.collection('stores').get();
+            const storesCount = storesSnapshot.size;
+            
+            // Firebase'den ürünleri çek
+            const productsSnapshot = await window.db.collection('products').get();
+            const productsCount = productsSnapshot.size;
+            
+            // Firebase'den siparişleri çek
+            const ordersSnapshot = await window.db.collection('orders').get();
+            const ordersCount = ordersSnapshot.size;
+            
+            // Sayıları güncelle
+            document.getElementById('total-stores').textContent = storesCount;
+            document.getElementById('total-products').textContent = productsCount;
+            document.getElementById('total-orders').textContent = ordersCount;
+            
+            console.log('✅ Dashboard güncellendi:', { storesCount, productsCount, ordersCount });
+        } catch (error) {
+            console.error('❌ Dashboard güncellenemedi:', error);
+            document.getElementById('total-stores').textContent = '0';
+            document.getElementById('total-products').textContent = '0';
+            document.getElementById('total-orders').textContent = '0';
+        }
+    };
+
+    const renderVisitorChart = async () => {
+        try {
+            // Son 7 günün tarihlerini hazırla
+            const dates = [];
+            const today = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                dates.push(date.toISOString().split('T')[0]);
+            }
+            
+            // Firebase'den ziyaretçi verilerini çek
+            const visitorsSnapshot = await window.db.collection('visitors').get();
+            const visitors = visitorsSnapshot.docs.map(doc => doc.data());
+            
+            // Tarihe göre grupla ve say
+            const visitorCounts = dates.map(date => {
+                return visitors.filter(v => v.date === date).length;
+            });
+            
+            // Tarihleri güzelleştir (30 Ara formatında)
+            const labels = dates.map(date => {
+                const d = new Date(date);
+                return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+            });
+            
+            // Grafik verisi
+            const chartData = {
+                labels: labels,
+                datasets: [{
+                    label: 'Ziyaretçi Sayısı',
+                    data: visitorCounts,
+                    backgroundColor: 'rgba(108, 92, 231, 0.2)',
+                    borderColor: 'rgba(108, 92, 231, 1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4, // Yumuşak eğri
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgba(108, 92, 231, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            };
+            
+            // Grafik ayarları
+            const chartConfig = {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return Math.floor(value); // Tam sayı göster
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            };
+            
+            // Eski grafiği yok et (eğer varsa)
+            if (visitorChartInstance) {
+                visitorChartInstance.destroy();
+            }
+            
+            // Yeni grafiği oluştur
+            const ctx = document.getElementById('visitorChart').getContext('2d');
+            visitorChartInstance = new Chart(ctx, chartConfig);
+            
+            console.log('✅ Ziyaretçi grafiği oluşturuldu:', visitorCounts);
+            
+        } catch (error) {
+            console.error('❌ Ziyaretçi grafiği oluşturulamadı:', error);
+        }
     };
     
     // Bildirim göster
@@ -1446,15 +1568,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
     processPendingOrders();
     
-    updateDashboard();
-    renderStoresTable();
-    renderProductsTable();
-    renderUsersTable();
+    // ✅ Dashboard'u asenkron olarak güncelle
     (async () => {
+        await updateDashboard(); // Dashboard sayılarını güncelle
+        await renderVisitorChart();
+        await renderStoresTable();
+        await renderProductsTable();
         await renderOrdersTable();
+        await renderUsersTable();
         await populateStoreSelect();
         await populateStoreFilter();
-    })();// Sipariş tablosunu da göster
+    })();
 });
 
 // --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---

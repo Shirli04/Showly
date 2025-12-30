@@ -934,3 +934,29 @@ ul {
   50% { transform: scale(1.02); }
   100% { transform: scale(1); }
 }
+
+/* ================================ ZİYARETÇİ GRAFİĞİ ================================ */
+.visitor-chart-container {
+    background-color: var(--white-color);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    margin-top: 25px;
+}
+
+.visitor-chart-container h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: var(--dark-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.visitor-chart-container h3 i {
+    color: var(--primary-color);
+}
+
+#visitorChart {
+    max-height: 350px;
+}
