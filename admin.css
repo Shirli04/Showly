@@ -881,6 +881,12 @@ ul {
     padding-left: 10px;
 }
 
+.status.super-admin {
+    background-color: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    font-weight: 600;
+}
+
 /* Modern ve şık yükleme animasyonu */
 .loading-overlay {
   position: fixed;

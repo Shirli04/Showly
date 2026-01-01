@@ -164,13 +164,16 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const store of stores) {
             const storeProducts = await window.showlyDB.getProductsByStoreId(store.id);
             const row = document.createElement('tr');
+            let statusClass = 'pending';
+            if (user.role === 'superAdmin') statusClass = 'super-admin';
+            else if (user.role === 'admin') statusClass = 'completed';
+
             row.innerHTML = `
-                <td>${store.id}</td>
-                <td>${store.name}</td>
-                <td>${storeProducts.length}</td>
+                <td>${user.username}</td>
+                <td><span class="status ${statusClass}">${getRoleName(user.role)}</span></td>
+                <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
                 <td>
-                    <button class="btn-icon edit-store" data-id="${store.id}"><i class="fas fa-edit"></i></button>
-                    <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
+                    <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
                 </td>
             `;
             storesTableBody.appendChild(row);
@@ -1120,8 +1123,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const role = e.target.value;
                 const checkboxes = document.querySelectorAll('.permission-checkbox');
                 
-                if (role === 'admin') {
+                if (role === 'superAdmin') {
+                    // ✅ Super Admin - Tüm yetkilere erişim
                     checkboxes.forEach(cb => cb.checked = true);
+                } else if (role === 'admin') {
+                    // Admin - Kullanıcılar hariç tüm yetkilere erişim
+                    checkboxes.forEach(cb => {
+                        cb.checked = ['dashboard', 'stores', 'products', 'orders', 'settings'].includes(cb.value);
+                    });
                 } else if (role === 'store_manager') {
                     checkboxes.forEach(cb => {
                         cb.checked = ['dashboard', 'stores'].includes(cb.value);
@@ -1334,6 +1343,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Rol adlarını çevir
     const getRoleName = (role) => {
         const roles = {
+            'superAdmin': 'Super Admin',
             'admin': 'Admin',
             'store_manager': 'Mağaza Yöneticisi',
             'product_manager': 'Ürün Yöneticisi',
