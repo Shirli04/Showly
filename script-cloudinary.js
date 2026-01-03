@@ -44,17 +44,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => reject(new Error('Firebase bağlantısı zaman aşımına uğradı')), 45000);
         });
 
-        // Firebase veri çekme işlemleri
+        // ✅ PARALEL İŞLEMLER: Mağaza ve ürünleri aynı anda çek
         const fetchDataPromise = (async () => {
-            // Mağazaları çek
-            const storesSnapshot = await window.db.collection('stores').get();
+            // Mağaza ve ürünleri paralel çek (Promise.all ile)
+            const [storesSnapshot, productsSnapshot] = await Promise.all([
+                window.db.collection('stores').get(),
+                window.db.collection('products').get()
+            ]);
+            
             const stores = storesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
 
-            // Ürünleri çek
-            const productsSnapshot = await window.db.collection('products').get();
             const products = productsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()

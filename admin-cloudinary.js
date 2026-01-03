@@ -1,11 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Admin paneli yüklendi...');
+    console.log('Admin paneli yükleniyor...');
+    
+    // ✅ LOADING EKRANINI BAŞLANGIÇTA GÖSTER
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+        const loadingText = loadingOverlay.querySelector('.loading-text');
+        if (loadingText) loadingText.textContent = 'Veriler yükleniyor...';
+    }
     
     // ✅ sessionStorage'dan kullanıcıyı al (localStorage değil!)
     const currentUser = JSON.parse(sessionStorage.getItem('adminUser'));
     
     // Eğer kullanıcı yoksa login'e yönlendir
     if (!currentUser) {
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
         window.location.replace('/login.html');
         return; // Kodun devam etmesini engelle
     }
@@ -167,12 +176,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mağaza tablosunu güncelle
     const renderStoresTable = async () => {
         const stores = await window.showlyDB.getStores();
+        
+        // ✅ Tüm ürünleri tek seferde çek (her mağaza için ayrı sorgu yapma)
+        const allProductsSnapshot = await window.db.collection('products').get();
+        const allProducts = allProductsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
         storesTableBody.innerHTML = '';
-
-        for (const store of stores) {
-            const storeProducts = await window.showlyDB.getProductsByStoreId(store.id);
-            const row = document.createElement('tr');
-            row.innerHTML = `
+        
+        // Tüm mağaza satırlarını oluştur (hızlı ve paralel)
+        const rowsHTML = stores.map(store => {
+            const storeProducts = allProducts.filter(p => p.storeId === store.id);
+            return `
                 <td>${store.id}</td>
                 <td>${store.name}</td>
                 <td>${storeProducts.length}</td>
@@ -181,10 +195,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
                 </td>
             `;
-            storesTableBody.appendChild(row);
-        }
-
+        }).map(html => {
+            const row = document.createElement('tr');
+            row.innerHTML = html;
+            return row;
+        });
+        
+        // Tüm satırları tek seferde ekle
+        storesTableBody.append(...rowsHTML);
         attachStoreEventListeners();
+        
+        console.log(`✅ ${stores.length} mağaza tabloya eklendi`);
     };
     
     // Google Sheets’e satır ekleme
@@ -1803,19 +1824,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
     processPendingOrders();
     
-    // ✅ Dashboard'u asenkron olarak güncelle
-    (async () => {
-        await loadCategories(); // ✅ YENİ: İlk olarak kategorileri yükle
-        await updateDashboard();
-        await renderVisitorChart();
-        await renderStoresTable();
-        await renderProductsTable();
-        await renderOrdersTable();
-        await renderUsersTable();
-        await renderCategoriesTable(); // ✅ YENİ
-        await populateStoreSelect();
-        await populateStoreFilter();
-    })();
+    // ✅ Tüm verileri yükleyen fonksiyon (loading ile)
+    const loadAllData = async () => {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = loadingOverlay?.querySelector('.loading-text');
+        
+        try {
+            if (loadingText) loadingText.textContent = 'Veriler yükleniyor...';
+            
+            // ✅ PARALEL İŞLEMLER: Verileri mümkün olduğunca paralel çek
+            await Promise.all([
+                loadCategories(), // Kategorileri yükle
+                updateDashboard(), // Dashboard istatistikleri
+                renderVisitorChart(), // Ziyaretçi grafiği
+                renderStoresTable(), // Mağazalar
+                renderProductsTable(), // Ürünler
+                renderOrdersTable(), // Siparişler
+                renderUsersTable(), // Kullanıcılar
+                renderCategoriesTable(), // Kategori tablosu
+                populateStoreSelect(), // Mağaza dropdown'ı
+                populateStoreFilter() // Mağaza filtresi
+            ]);
+            
+            console.log('✅ Tüm veriler başarıyla yüklendi');
+            
+            // ✅ Otomatik yenilemeyi başlat
+            startAutoRefresh();
+            console.log('✅ Otomatik yenileme aktif');
+            
+        } catch (error) {
+            console.error('❌ Veriler yüklenemedi:', error);
+            showNotification('Veriler yüklenemedi! Sayfayı yenileyin.', false);
+        } finally {
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none'; // Yükleniyor ekranını gizle
+            }
+        }
+    };
+    
+    // ✅ Verileri yükle
+    loadAllData();
 });
 
 // --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---
@@ -1835,47 +1883,3 @@ function startAutoRefresh() {
         }
     }, refreshInterval);
 }
-
-processPendingOrders();
-
-// ✅ Sayfa tamamen yüklendiğinde tüm fonksiyonları çalıştır
-window.addEventListener('DOMContentLoaded', async () => {
-    console.log('📊 Admin paneli yükleniyor...');
-    
-    const loadingOverlay = document.getElementById('loading-overlay');
-    loadingOverlay.style.display = 'flex'; // Yükleniyor ekranını göster
-    
-    try {
-        // 1️⃣ Dashboard istatistiklerini güncelle
-        await updateDashboard();
-        console.log('✅ Dashboard istatistikleri yüklendi');
-        
-        // 2️⃣ Ziyaretçi grafiğini oluştur
-        await renderVisitorChart();
-        console.log('✅ Ziyaretçi grafiği oluşturuldu');
-        
-        // 3️⃣ Tabloları yükle
-        await renderStoresTable();
-        await renderProductsTable();
-        await renderOrdersTable();
-        await renderUsersTable();
-        console.log('✅ Tablolar yüklendi');
-        
-        // 4️⃣ Dropdown'ları doldur
-        await populateStoreSelect();
-        await populateStoreFilter();
-        console.log('✅ Dropdown\'lar dolduruldu');
-        
-        // 5️⃣ Otomatik yenilemeyi başlat
-        startAutoRefresh();
-        console.log('✅ Otomatik yenileme aktif');
-        
-        console.log('🎉 Admin paneli başarıyla yüklendi!');
-        
-    } catch (error) {
-        console.error('❌ Admin paneli yüklenirken hata:', error);
-        showNotification('Veriler yüklenemedi! Sayfayı yenileyin.', false);
-    } finally {
-        loadingOverlay.style.display = 'none'; // Yükleniyor ekranını gizle
-    }
-});
