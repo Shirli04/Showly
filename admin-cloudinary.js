@@ -54,13 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+    const contentSections = document.querySelectorAll('.content-section');
+    const pageTitle = document.getElementById('page-title');
+    
     // ✅ YENİ: SuperAdmin ekleme butonunu sadece SuperAdmin'a göster
     const addSuperAdminBtn = document.getElementById('add-superadmin-btn');
     if (addSuperAdminBtn) {
         addSuperAdminBtn.style.display = currentUser.role === 'superadmin' ? 'flex' : 'none';
     }
-    const contentSections = document.querySelectorAll('.content-section');
-    const pageTitle = document.getElementById('page-title');
+    
     const addStoreBtn = document.getElementById('add-store-btn');
     const addProductBtn = document.getElementById('add-product-btn');
     const storeModal = document.getElementById('store-modal');
@@ -1728,22 +1730,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const superadminOption = document.querySelector('option[value="superadmin"]');
                     if (superadminOption) superadminOption.style.display = 'none';
                 }
-                
-                userModal.style.display = 'block';
-            });
-        }
-        
-        // ✅ YENİ: SuperAdmin ekle modalı açma
-        const addSuperAdminBtn = document.getElementById('add-superadmin-btn');
-        if (addSuperAdminBtn) {
-            addSuperAdminBtn.addEventListener('click', () => {
-                document.getElementById('user-modal-title').textContent = 'Yeni SuperAdmin Ekle';
-                userForm.reset();
-                document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = true);
-                
-                // SuperAdmin seçili yap
-                const roleSelect = document.getElementById('user-role');
-                if (roleSelect) roleSelect.value = 'superadmin';
                 
                 userModal.style.display = 'block';
             });
