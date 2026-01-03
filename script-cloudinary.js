@@ -121,6 +121,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
+    const router = async () => {
+        const path = window.location.pathname.replace('/', '');
+        const heroSection = document.querySelector('.hero-section');
+        const infoSection = document.querySelector('.info-section');
+        const storeBanner = document.getElementById('store-banner');
+        
+        if (!path) { // Ana sayfaysak
+            if (heroSection) heroSection.style.display = 'block';
+            if (infoSection) infoSection.style.display = 'grid';
+            if (storeBanner) storeBanner.style.display = 'none';
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
+            if (productsGrid) productsGrid.style.display = 'none';
+            if (notFoundSection) notFoundSection.style.display = 'none';
+            document.title = 'Showly - Online Katalog Platformasy';
+            return;
+        }
+
+        // Ana sayfa elemanlarını gizle
+        if (heroSection) heroSection.style.display = 'none';
+        if (infoSection) infoSection.style.display = 'none';
+        if (notFoundSection) notFoundSection.style.display = 'none';
+
+        const store = allStores.find(s => s.slug === path);
+
+        if (store) {
+            renderStorePage(store.id);
+            document.title = `${store.name} - Showly`;
+        } else {
+            if (storeBanner) storeBanner.style.display = 'none';
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
+            if (productsGrid) productsGrid.style.display = 'none';
+            if (notFoundSection) notFoundSection.style.display = 'block';
+            document.title = '404 - Sahypa Tapylmady';
+        }
+    };
+
     // --- KATEGORİ FİLTRELERİNİ OLUŞTURAN FONKSİYON ---
     const renderCategories = (storeId, activeFilter) => {
         const container = document.getElementById('category-buttons-container');
