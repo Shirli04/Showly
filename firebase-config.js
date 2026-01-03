@@ -206,20 +206,20 @@ window.addStoreToFirebase = async function(store) {
     const doc = await window.db.collection('stores').add({
         name: store.name,
         slug: slug,
-        description: store.description || '',
-        category: store.category || '', // ✅ YENİ: Kategori alanı
-        customBannerText: store.customBannerText || '',
+        category: store.category || '',
+        tiktok: store.tiktok || '',
+        instagram: store.instagram || '',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     
     console.log('✅ Mağaza Firebase\'e eklendi, ID:', doc.id);
-    return { 
-        id: doc.id, 
-        name: store.name, 
-        slug, 
-        description: store.description,
-        category: store.category, // ✅ YENİ
-        customBannerText: store.customBannerText
+    return {
+        id: doc.id,
+        name: store.name,
+        slug,
+        category: store.category,
+        tiktok: store.tiktok,
+        instagram: store.instagram
     };
 };
 

@@ -257,13 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('store-modal-title').textContent = 'Mağazayı Düzenle';
         document.getElementById('store-id').value = store.id;
         document.getElementById('store-name').value = store.name;
-        document.getElementById('store-description').value = store.description || '';
-
-        // ✅ Yeni: Mağaza Üstü Metin
-        const customBannerInput = document.getElementById('store-custom-banner-text');
-        if (customBannerInput) {
-            customBannerInput.value = store.customBannerText || '';
-        }
+        
+        // ✅ Yeni: TikTok ve Instagram
+        const tiktokInput = document.getElementById('store-tiktok');
+        const instagramInput = document.getElementById('store-instagram');
+        if (tiktokInput) tiktokInput.value = store.tiktok || '';
+        if (instagramInput) instagramInput.value = store.instagram || '';
+        
         // ✅ Kategori seç
         const categorySelect = document.getElementById('store-category');
         if (categorySelect && store.category) {
@@ -561,11 +561,11 @@ document.addEventListener('DOMContentLoaded', () => {
         isSubmitting = true;
         
         const name = document.getElementById('store-name').value.trim();
-        const desc = document.getElementById('store-description').value.trim();
-        const customBannerText = document.getElementById('store-custom-banner-text')?.value.trim() || '';
-        const category = document.getElementById('store-category').value; // ✅ YENİ
+        const category = document.getElementById('store-category').value;
+        const tiktok = document.getElementById('store-tiktok')?.value.trim() || '';
+        const instagram = document.getElementById('store-instagram')?.value.trim() || '';
 
-        if (!name || !category) { // ✅ Kategori kontrolü
+        if (!name || !category) {
             showNotification('Mağaza adı ve kategori gerekli!', false);
             isSubmitting = false;
             return;
@@ -576,18 +576,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ✅ Mağaza güncelleme
                 await window.db.collection('stores').doc(editingStoreId).update({
                     name,
-                    description: desc,
-                    customBannerText,
-                    category // ✅ YENİ
+                    category,
+                    tiktok,
+                    instagram
                 });
                 showNotification('Mağaza güncellendi!');
             } else {
                 // ✅ Yeni mağaza ekleme
-                await window.addStoreToFirebase({ 
-                    name, 
-                    description: desc, 
-                    customBannerText,
-                    category // ✅ YENİ
+                await window.addStoreToFirebase({
+                    name,
+                    category,
+                    tiktok,
+                    instagram
                 });
                 showNotification('Mağaza Firebase\'e eklendi!');
             }

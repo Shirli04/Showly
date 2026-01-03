@@ -320,11 +320,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         const storeBanner = document.getElementById('store-banner');
         storeBanner.style.display = 'block';
 
+        // ✅ YENİ: TikTok ve Instagram butonları
+        let socialButtonsHTML = '';
+        if (store.tiktok || store.instagram) {
+            socialButtonsHTML = '<div class="store-social-buttons">';
+            if (store.tiktok) {
+                socialButtonsHTML += `<a href="${store.tiktok}" target="_blank" class="social-button tiktok-button"><i class="fab fa-tiktok"></i></a>`;
+            }
+            if (store.instagram) {
+                socialButtonsHTML += `<a href="${store.instagram}" target="_blank" class="social-button instagram-button"><i class="fab fa-instagram"></i></a>`;
+            }
+            socialButtonsHTML += '</div>';
+        }
+
         storeBanner.innerHTML = `
-            <h2>${store.name}</h2>
-            <p>${store.customBannerText || 'Bu magazynda iň gowy harytlar bar'}</p>
+            <div class="store-banner-content">
+                <div class="store-info">
+                    <h2>${store.name}</h2>
+                </div>
+                ${socialButtonsHTML}
+            </div>
         `;
-        
+
         // ✅ BURAYI EKLEYİN - Kategori ve filtreleri göster
         categoryFiltersSection.style.display = 'block';
         mainFiltersSection.style.display = 'block';
