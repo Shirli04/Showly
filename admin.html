@@ -328,14 +328,19 @@
                         </div>
                     </section>
 
-                    <!-- Users Section -->
-                    <section id="users" class="content-section">
-                        <div class="section-header">
-                            <h2>Admin kontrol</h2>
-                            <button class="btn-primary" id="add-user-btn">
-                                <i class="fas fa-user-plus"></i> Täze ulanyjy goş
-                            </button>
-                        </div>
+                     <!-- Users Section -->
+                     <section id="users" class="content-section">
+                         <div class="section-header">
+                             <h2>Admin kontrol</h2>
+                             <div class="header-buttons">
+                                 <button class="btn-primary" id="add-user-btn">
+                                     <i class="fas fa-user-plus"></i> Täze ulanyjy goş
+                                 </button>
+                                 <button class="btn-primary btn-superadmin" id="add-superadmin-btn" style="background-color: #ffd700; color: #000;">
+                                     <i class="fas fa-crown"></i> SuperAdmin goş
+                                 </button>
+                             </div>
+                         </div>
                         <div class="table-container">
                             <table class="admin-table">
                                 <thead>
@@ -533,7 +538,8 @@
                     <div class="form-group">
                         <label>Rol</label>
                         <select id="user-role" required>
-                            <option value="admin">Admin (Hemme rugsatlar)</option>
+                            <option value="superadmin">SuperAdmin (Hemme seyler)</option>
+                            <option value="admin">Admin (Diñ admin ulanyjylaryna girer)</option>
                             <option value="store_manager">Magazyn Manager</option>
                             <option value="product_manager">Haryt Manager</option>
                             <option value="order_manager">Zakaz Manager</option>

@@ -211,6 +211,11 @@ body {
 }
 
 /* Buttons */
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
 .btn-primary {
     background-color: var(--primary-color);
     color: var(--white-color);
@@ -230,6 +235,31 @@ body {
 }
 
 .btn-primary i {
+    margin-right: 8px;
+}
+
+.btn-superadmin {
+    background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+    color: #000000;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+}
+
+.btn-superadmin:hover {
+    background: linear-gradient(135deg, #ff8c00 0%, #ffd700 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.btn-superadmin i {
     margin-right: 8px;
 }
 
