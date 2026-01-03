@@ -399,6 +399,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('category-name').value = category.name;
             document.getElementById('category-order').value = category.order;
             
+            // İkonu seç
+            if (category.icon) {
+                selectCategoryIcon(category.icon);
+            }
+            
             categoryModal.style.display = 'block';
             
         } catch (error) {
@@ -427,6 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const categoryId = document.getElementById('category-id').value;
         const name = document.getElementById('category-name').value.trim();
+        const icon = document.getElementById('category-icon').value || 'fa-tag';
         const order = parseInt(document.getElementById('category-order').value) || 1;
         
         if (!name) {
@@ -451,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Güncelle
                 await window.db.collection('categories').doc(categoryId).update({
                     name: name,
+                    icon: icon,
                     order: order
                 });
                 showNotification('Kategori güncellendi!');
@@ -458,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Yeni ekle
                 await window.db.collection('categories').doc(id).set({
                     name: name,
+                    icon: icon,
                     order: order
                 });
                 showNotification('Kategori eklendi!');
@@ -479,6 +487,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goş';
         categoryForm.reset();
         document.getElementById('category-id').value = '';
+        document.getElementById('category-icon').value = 'fa-tag';
+        selectCategoryIcon('fa-tag'); // Varsayılan ikon
         categoryModal.style.display = 'block';
     });
 
@@ -486,6 +496,64 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryModal.style.display = 'none';
         categoryForm.reset();
     });
+    
+    // ✅ KATEGORİ İKONLARI
+    const categoryIcons = [
+        'fa-tag', 'fa-tshirt', 'fa-shirt', 'fa-user-tie', 'fa-user-ninja',
+        'fa-user-astronaut', 'fa-vest', 'fa-socks', 'fa-hat-cowboy', 'fa-hat-wizard',
+        'fa-glasses', 'fa-gem', 'fa-gift', 'fa-bag-shopping', 'fa-basket-shopping',
+        'fa-box', 'fa-box-open', 'fa-boxes-stacked', 'fa-boxes-packing', 'fa-cubes',
+        'fa-heart', 'fa-star', 'fa-bolt', 'fa-fire', 'fa-sun',
+        'fa-moon', 'fa-cloud', 'fa-snowflake', 'fa-wind', 'fa-umbrella',
+        'fa-tree', 'fa-leaf', 'fa-seedling', 'fa-flower', 'fa-paw',
+        'fa-cat', 'fa-dog', 'fa-fish', 'fa-dragon', 'fa-crow',
+        'fa-car', 'fa-bus', 'fa-train', 'fa-plane', 'fa-ship',
+        'fa-bicycle', 'fa-motorcycle', 'fa-truck', 'fa-rocket', 'fa-bus-simple',
+        'fa-home', 'fa-building', 'fa-city', 'fa-landmark', 'fa-warehouse',
+        'fa-store', 'fa-shop', 'fa-market', 'fa-shopping-bag', 'fa-shopping-cart',
+        'fa-wallet', 'fa-credit-card', 'fa-money-bill', 'fa-coins', 'fa-globe',
+        'fa-mobile-screen', 'fa-laptop', 'fa-tablet-screen-button', 'fa-desktop', 'fa-tv',
+        'fa-camera', 'fa-music', 'fa-film', 'fa-video', 'fa-gamepad',
+        'fa-book', 'fa-newspaper', 'fa-pen', 'fa-paintbrush', 'fa-palette',
+        'fa-utensils', 'fa-mug-hot', 'fa-ice-cream', 'fa-pizza-slice', 'fa-burger'
+    ];
+    
+    // İkonları grid'e yükle
+    function loadCategoryIcons() {
+        const iconGrid = document.getElementById('category-icon-grid');
+        if (!iconGrid) return;
+        
+        iconGrid.innerHTML = categoryIcons.map(icon => `
+            <div class="icon-item" data-icon="${icon}" onclick="selectCategoryIcon('${icon}')">
+                <i class="fas ${icon}"></i>
+            </div>
+        `).join('');
+        
+        console.log(`✅ ${categoryIcons.length} kategori ikonu yüklendi`);
+    }
+    
+    // İkon seçme fonksiyonu
+    window.selectCategoryIcon = function(icon) {
+        // Hidden input'u güncelle
+        const iconInput = document.getElementById('category-icon');
+        if (iconInput) iconInput.value = icon;
+        
+        // Display'i güncelle
+        const display = document.getElementById('selected-icon-display');
+        if (display) {
+            display.innerHTML = `<i class="fas ${icon}"></i>`;
+        }
+        
+        // Seçili özelliğini güncelle
+        document.querySelectorAll('.icon-item').forEach(item => {
+            item.classList.toggle('selected', item.getAttribute('data-icon') === icon);
+        });
+        
+        console.log('Seçilen ikon:', icon);
+    };
+    
+    // Sayfa yüklendiğinde ikonları yükle
+    loadCategoryIcons();
     
     const handleStoreSubmit = async (e) => {
         e.preventDefault();

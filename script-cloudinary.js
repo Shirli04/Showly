@@ -180,12 +180,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (categoryStores.length === 0) return; // Boş kategorileri gösterme
                 
+                // Kategori ikonu (varsa), yoksa varsayılan
+                const categoryIcon = category.icon || 'fa-tag';
+                
                 // Kategori başlığı
                 const categoryItem = document.createElement('div');
                 categoryItem.className = 'category-item';
                 categoryItem.innerHTML = `
                     <div class="category-header" data-category="${category.id}">
-                        <i class="fas fa-chevron-right category-icon"></i>
+                        <i class="fas fa-chevron-right chevron-icon"></i>
+                        <i class="fas ${categoryIcon} category-logo-icon"></i>
                         <span>${category.name}</span>
                     </div>
                     <ul class="category-stores" id="stores-${category.id}" style="display: none;">
@@ -207,14 +211,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 header.addEventListener('click', () => {
                     const categoryId = header.getAttribute('data-category');
                     const storesList = document.getElementById(`stores-${categoryId}`);
-                    const icon = header.querySelector('.category-icon');
+                    const chevronIcon = header.querySelector('.chevron-icon');
                     
                     if (storesList.style.display === 'none') {
                         storesList.style.display = 'block';
-                        icon.style.transform = 'rotate(90deg)';
+                        chevronIcon.style.transform = 'rotate(90deg)';
                     } else {
                         storesList.style.display = 'none';
-                        icon.style.transform = 'rotate(0deg)';
+                        chevronIcon.style.transform = 'rotate(0deg)';
                     }
                 });
             });

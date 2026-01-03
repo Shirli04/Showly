@@ -328,11 +328,19 @@ header {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.category-icon {
+.category-header .chevron-icon {
     font-size: 12px;
     margin-right: 12px;
     transition: transform 0.3s ease;
     color: rgba(255, 255, 255, 0.6);
+}
+
+.category-header .category-logo-icon {
+    font-size: 18px;
+    margin-right: 12px;
+    color: #ffd700; /* Altın rengi */
+    width: 24px;
+    text-align: center;
 }
 
 .category-header span {
