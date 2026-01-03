@@ -338,7 +338,7 @@ header {
 .category-header .category-logo-icon {
     font-size: 18px;
     margin-right: 12px;
-    color: #ffd700; /* Altın rengi */
+    color: rgba(255, 255, 255, 0.9); /* Beyaz - VIP tarzı */
     width: 24px;
     text-align: center;
 }
