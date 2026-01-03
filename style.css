@@ -428,6 +428,15 @@ header {
     align-items: center;
     flex-wrap: wrap;
     gap: 20px;
+    width: 100%;
+}
+
+.store-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .store-info h2 {
@@ -438,6 +447,13 @@ header {
     font-family: var(--vip-font), serif;
 }
 
+.store-banner p {
+    color: #666;
+    font-size: 16px;
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
 /* ================================ SOCIAL MEDIA BUTTONS ================================ */
 .store-social-buttons {
     display: flex;
@@ -445,37 +461,32 @@ header {
 }
 
 .social-button {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    font-size: 24px;
+    font-size: 20px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-}
-
-.tiktok-button {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: #ffffff;
+    color: #000000;
 }
 
 .tiktok-button:hover {
-    background-color: #ff0050;
+    background-color: #000000;
+    color: #ffffff;
     transform: scale(1.15) rotate(-10deg);
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
 
-.instagram-button {
-    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-    color: #ffffff;
-}
-
 .instagram-button:hover {
+    background-color: #000000;
+    color: #ffffff;
     transform: scale(1.15) rotate(10deg);
-    box-shadow: 0 5px 20px rgba(188, 24, 136, 0.4);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive */
@@ -483,6 +494,11 @@ header {
     .store-banner-content {
         flex-direction: column;
         text-align: center;
+    }
+
+    .store-info {
+        text-align: center;
+        width: 100%;
     }
 
     .store-social-buttons {

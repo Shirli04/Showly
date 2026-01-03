@@ -257,6 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('store-modal-title').textContent = 'Mağazayı Düzenle';
         document.getElementById('store-id').value = store.id;
         document.getElementById('store-name').value = store.name;
+        document.getElementById('store-description').value = store.description || '';
+        document.getElementById('store-custom-banner-text').value = store.customBannerText || '';
         
         // ✅ Yeni: TikTok ve Instagram
         const tiktokInput = document.getElementById('store-tiktok');
@@ -561,6 +563,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isSubmitting = true;
         
         const name = document.getElementById('store-name').value.trim();
+        const desc = document.getElementById('store-description').value.trim();
+        const customBannerText = document.getElementById('store-custom-banner-text')?.value.trim() || '';
         const category = document.getElementById('store-category').value;
         const tiktok = document.getElementById('store-tiktok')?.value.trim() || '';
         const instagram = document.getElementById('store-instagram')?.value.trim() || '';
@@ -576,6 +580,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ✅ Mağaza güncelleme
                 await window.db.collection('stores').doc(editingStoreId).update({
                     name,
+                    description: desc,
+                    customBannerText,
                     category,
                     tiktok,
                     instagram
@@ -585,6 +591,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ✅ Yeni mağaza ekleme
                 await window.addStoreToFirebase({
                     name,
+                    description: desc,
+                    customBannerText,
                     category,
                     tiktok,
                     instagram

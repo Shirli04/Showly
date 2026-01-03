@@ -206,7 +206,9 @@ window.addStoreToFirebase = async function(store) {
     const doc = await window.db.collection('stores').add({
         name: store.name,
         slug: slug,
+        description: store.description || '',
         category: store.category || '',
+        customBannerText: store.customBannerText || '',
         tiktok: store.tiktok || '',
         instagram: store.instagram || '',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -217,7 +219,9 @@ window.addStoreToFirebase = async function(store) {
         id: doc.id,
         name: store.name,
         slug,
+        description: store.description,
         category: store.category,
+        customBannerText: store.customBannerText,
         tiktok: store.tiktok,
         instagram: store.instagram
     };
