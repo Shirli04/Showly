@@ -603,8 +603,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Modal içeriğini doldur
             document.getElementById('product-name').value = product.title || '';
             document.getElementById('product-store').value = product.storeId || '';
-            document.getElementById('product-new-price').value = product.price || '';
-            document.getElementById('product-original-price').value = product.originalPrice || '';
+            document.getElementById('product-price').value = product.price || ''; // ✅ DÜZELTME
+            document.getElementById('product-discounted-price').value = product.originalPrice || ''; // ✅ DÜZELTME
             document.getElementById('product-description').value = product.description || '';
             document.getElementById('product-material').value = product.material || '';
             document.getElementById('product-category').value = product.category || '';
@@ -621,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Modalı aç
             productModal.style.display = 'block';
-            editingProductId = productId; // ✅ Burada ID'yi sakla
+            editingProductId = productId;
         } catch (error) {
             console.error('Ürün düzenlenirken hata oluştu:', error);
             showNotification('Ürün bilgileri yüklenemedi!', false);
@@ -655,11 +655,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
+        
         try {
             const title    = document.getElementById('product-name').value.trim();
             const storeId  = document.getElementById('product-store').value;
-            const newPrice = document.getElementById('product-new-price').value.trim();
-            const originalPriceInput = document.getElementById('product-original-price').value.trim();
+            const newPrice = document.getElementById('product-price').value.trim(); // ✅ DÜZELTME
+            const discountedPriceInput = document.getElementById('product-discounted-price')?.value.trim() || ''; // ✅ DÜZELTME
             const desc     = document.getElementById('product-description').value.trim();
             const material = document.getElementById('product-material').value.trim();
             const category = document.getElementById('product-category').value.trim();
@@ -679,15 +680,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
             }
 
-            // İndirim hesaplaması
+            // ✅ DÜZELTME: İndirim hesaplaması
             let isOnSale = false;
             let originalPrice = '';
-            if (originalPriceInput) {
-                const original = parseFloat(originalPriceInput.replace(' TMT', ''));
-                const current = parseFloat(newPrice.replace(' TMT', ''));
-                if (!isNaN(original) && !isNaN(current) && original > current) {
+
+            if (discountedPriceInput) {
+                const normalPrice = parseFloat(newPrice.replace(' TMT', ''));
+                const discountedPrice = parseFloat(discountedPriceInput.replace(' TMT', ''));
+                
+                // Eğer indirimli fiyat normal fiyattan küçükse
+                if (!isNaN(normalPrice) && !isNaN(discountedPrice) && discountedPrice < normalPrice) {
                     isOnSale = true;
-                    originalPrice = originalPriceInput;
+                    originalPrice = discountedPriceInput; // İndirimli fiyatı sakla
                 }
             }
 
@@ -695,17 +699,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (editingProductId) {
                 // Mevcut ürünü güncelle
                 await window.db.collection('products').doc(editingProductId).update({
-                    storeId, title, price: newPrice, description: desc, material, category,
-                    isOnSale, originalPrice, imageUrl
+                    storeId, 
+                    title, 
+                    price: newPrice, 
+                    description: desc, 
+                    material, 
+                    category,
+                    isOnSale, 
+                    originalPrice, 
+                    imageUrl
                 });
                 showNotification('Ürün başarıyla güncellendi!');
             } else {
                 // Yeni ürün ekle
                 await window.addProductToFirebase({
-                    storeId, title, price: newPrice, description: desc, material, category,
-                    isOnSale, originalPrice, imageUrl
+                    storeId, 
+                    title, 
+                    price: newPrice, 
+                    description: desc, 
+                    material, 
+                    category,
+                    isOnSale, 
+                    originalPrice, 
+                    imageUrl
                 });
-                showNotification('Ürün Firebase’e eklendi!');
+                showNotification('Ürün Firebase\'e eklendi!');
             }
 
             renderProductsTable();
