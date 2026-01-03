@@ -339,7 +339,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h2>${store.name}</h2>
                     <p>${store.customBannerText || ''}</p>
                 </div>
-                ${socialButtonsHTML}
+                <div class="store-social-buttons-container">
+                    ${socialButtonsHTML}
+                </div>
             </div>
         `;
 
