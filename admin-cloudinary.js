@@ -47,6 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const userForm = document.getElementById('user-form');
     const usersTableBody = document.getElementById('users-table-body');
     const cancelUser = document.getElementById('cancel-user');
+
+    // Kategori elemanları
+    const categoryModal = document.getElementById('category-modal');
+    const addCategoryBtn = document.getElementById('add-category-btn');
+    const categoryForm = document.getElementById('category-form');
+    const categoriesTableBody = document.getElementById('categories-table-body');
+    const cancelCategory = document.getElementById('cancel-category');
+    const storeCategorySelect = document.getElementById('store-category');
     
     // Excel export/import
     const exportStoresBtn = document.getElementById('export-stores-btn');
@@ -235,6 +243,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (customBannerInput) {
             customBannerInput.value = store.customBannerText || '';
         }
+        // ✅ Kategori seç
+        const categorySelect = document.getElementById('store-category');
+        if (categorySelect && store.category) {
+            categorySelect.value = store.category;
+        }
 
         storeModal.style.display = 'block';
         editingStoreId = storeId;
@@ -259,32 +272,247 @@ document.addEventListener('DOMContentLoaded', () => {
         isSubmitting = false;
         storeModal.style.display = 'block';
     };
+
+        // ==================== KATEGORİ FONKSİYONLARI ====================
+
+    // Kategorileri yükle ve dropdown'u doldur
+    async function loadCategories() {
+        try {
+            const categoriesSnapshot = await window.db.collection('categories')
+                .orderBy('order', 'asc')
+                .get();
+            
+            const categories = categoriesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            // Dropdown'u doldur
+            storeCategorySelect.innerHTML = '<option value="">Kategoriýa saýlaň</option>';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                storeCategorySelect.appendChild(option);
+            });
+            
+            return categories;
+        } catch (error) {
+            console.error('Kategoriler yüklenemedi:', error);
+            return [];
+        }
+    }
+
+    // Kategori tablosunu güncelle
+    async function renderCategoriesTable() {
+        try {
+            const categoriesSnapshot = await window.db.collection('categories')
+                .orderBy('order', 'asc')
+                .get();
+            
+            const categories = categoriesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            // Her kategori için mağaza sayısını say
+            const storesSnapshot = await window.db.collection('stores').get();
+            const stores = storesSnapshot.docs.map(doc => doc.data());
+            
+            categoriesTableBody.innerHTML = '';
+            
+            if (categories.length === 0) {
+                categoriesTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Henüz kategori eklenmemiş.</td></tr>';
+                return;
+            }
+            
+            categories.forEach(category => {
+                const storeCount = stores.filter(s => s.category === category.id).length;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${category.id}</td>
+                    <td>${category.name}</td>
+                    <td>${category.order}</td>
+                    <td>${storeCount}</td>
+                    <td>
+                        <button class="btn-icon edit-category" data-id="${category.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon danger delete-category" data-id="${category.id}" ${storeCount > 0 ? 'disabled title="Bu kategoride mağaza var"' : ''}>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                categoriesTableBody.appendChild(row);
+            });
+            
+            // Buton event'lerini bağla
+            document.querySelectorAll('.edit-category').forEach(btn => {
+                btn.addEventListener('click', () => editCategory(btn.getAttribute('data-id')));
+            });
+            
+            document.querySelectorAll('.delete-category').forEach(btn => {
+                if (!btn.disabled) {
+                    btn.addEventListener('click', () => deleteCategory(btn.getAttribute('data-id')));
+                }
+            });
+            
+        } catch (error) {
+            console.error('Kategori tablosu yüklenemedi:', error);
+        }
+    }
+
+    // Kategori düzenle
+    async function editCategory(categoryId) {
+        try {
+            const doc = await window.db.collection('categories').doc(categoryId).get();
+            
+            if (!doc.exists) {
+                showNotification('Kategori bulunamadı!', false);
+                return;
+            }
+            
+            const category = doc.data();
+            
+            document.getElementById('category-modal-title').textContent = 'Kategoriýany düzenle';
+            document.getElementById('category-id').value = categoryId;
+            document.getElementById('category-name').value = category.name;
+            document.getElementById('category-order').value = category.order;
+            
+            categoryModal.style.display = 'block';
+            
+        } catch (error) {
+            console.error('Kategori düzenlenemedi:', error);
+            showNotification('Bir hata oluştu!', false);
+        }
+    }
+
+    // Kategori sil
+    async function deleteCategory(categoryId) {
+        if (!confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) return;
+        
+        try {
+            await window.db.collection('categories').doc(categoryId).delete();
+            showNotification('Kategori silindi!');
+            renderCategoriesTable();
+        } catch (error) {
+            console.error('Kategori silinemedi:', error);
+            showNotification('Kategori silinemedi!', false);
+        }
+    }
+
+    // Kategori ekle/düzenle form submit
+    categoryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const categoryId = document.getElementById('category-id').value;
+        const name = document.getElementById('category-name').value.trim();
+        const order = parseInt(document.getElementById('category-order').value) || 1;
+        
+        if (!name) {
+            showNotification('Kategori adı gerekli!', false);
+            return;
+        }
+        
+        // ID oluştur (Türkçe karakterleri temizle)
+        const id = categoryId || name
+            .toLowerCase()
+            .replace(/ç/g, 'c')
+            .replace(/ğ/g, 'g')
+            .replace(/ı/g, 'i')
+            .replace(/ö/g, 'o')
+            .replace(/ş/g, 's')
+            .replace(/ü/g, 'u')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        
+        try {
+            if (categoryId) {
+                // Güncelle
+                await window.db.collection('categories').doc(categoryId).update({
+                    name: name,
+                    order: order
+                });
+                showNotification('Kategori güncellendi!');
+            } else {
+                // Yeni ekle
+                await window.db.collection('categories').doc(id).set({
+                    name: name,
+                    order: order
+                });
+                showNotification('Kategori eklendi!');
+            }
+            
+            categoryModal.style.display = 'none';
+            categoryForm.reset();
+            renderCategoriesTable();
+            loadCategories(); // Dropdown'u güncelle
+            
+        } catch (error) {
+            console.error('Kategori kaydedilemedi:', error);
+            showNotification('Bir hata oluştu!', false);
+        }
+    });
+
+    // Kategori modal kontrolleri
+    addCategoryBtn?.addEventListener('click', () => {
+        document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goş';
+        categoryForm.reset();
+        document.getElementById('category-id').value = '';
+        categoryModal.style.display = 'block';
+    });
+
+    cancelCategory?.addEventListener('click', () => {
+        categoryModal.style.display = 'none';
+        categoryForm.reset();
+    });
     
     const handleStoreSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
+        
         const name = document.getElementById('store-name').value.trim();
         const desc = document.getElementById('store-description').value.trim();
+        const customBannerText = document.getElementById('store-custom-banner-text')?.value.trim() || '';
+        const category = document.getElementById('store-category').value; // ✅ YENİ
 
-        // ✅ Yeni: Mağaza Üstü Metin
-        const customBannerInput = document.getElementById('store-custom-banner-text');
-        const customBannerText = customBannerInput ? customBannerInput.value.trim() : '';
-
-        if (!name) { showNotification('Mağaza adı gerekli!', false); isSubmitting = false; return; }
+        if (!name || !category) { // ✅ Kategori kontrolü
+            showNotification('Mağaza adı ve kategori gerekli!', false);
+            isSubmitting = false;
+            return;
+        }
+        
         try {
-            await window.addStoreToFirebase({ 
-                name, 
-                description: desc, 
-                customBannerText // ✅ Burada kullan
-            });
-            showNotification('Mağaza Firebase’e eklendi!');
-            renderStoresTable(); populateStoreSelect(); updateDashboard();
+            if (editingStoreId) {
+                // ✅ Mağaza güncelleme
+                await window.db.collection('stores').doc(editingStoreId).update({
+                    name,
+                    description: desc,
+                    customBannerText,
+                    category // ✅ YENİ
+                });
+                showNotification('Mağaza güncellendi!');
+            } else {
+                // ✅ Yeni mağaza ekleme
+                await window.addStoreToFirebase({ 
+                    name, 
+                    description: desc, 
+                    customBannerText,
+                    category // ✅ YENİ
+                });
+                showNotification('Mağaza Firebase\'e eklendi!');
+            }
+            
+            renderStoresTable();
+            populateStoreSelect();
+            updateDashboard();
             closeAllModals();
         } catch (err) {
             console.error(err);
-            showNotification('Mağaza eklenemedi!', false);
-        } finally { isSubmitting = false; }
+            showNotification('Mağaza işlemi başarısız!', false);
+        } finally {
+            isSubmitting = false;
+        }
     };
     
     // Ürün tablosunu güncelle
@@ -1509,17 +1737,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mağaza ekle (Firestore)
-    window.addStoreToFirebase = async function(store) {
-        const slug = store.name.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
-        const doc = await window.db.collection('stores').add({
-            name: store.name,
-            slug: slug,
-            description: store.description || '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        return { id: doc.id, name: store.name, slug, description: store.description };
-    };
+
 
     // Ürün ekle (Firestore)
     window.addProductToFirebase = async function(product) {
@@ -1569,12 +1787,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ✅ Dashboard'u asenkron olarak güncelle
     (async () => {
-        await updateDashboard(); // Dashboard sayılarını güncelle
+        await loadCategories(); // ✅ YENİ: İlk olarak kategorileri yükle
+        await updateDashboard();
         await renderVisitorChart();
         await renderStoresTable();
         await renderProductsTable();
         await renderOrdersTable();
         await renderUsersTable();
+        await renderCategoriesTable(); // ✅ YENİ
         await populateStoreSelect();
         await populateStoreFilter();
     })();

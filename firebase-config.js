@@ -19,11 +19,8 @@ window.db = db;
 db.settings({
     cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
     experimentalForceLongPolling: true,
-    ignoreUndefinedProperties: true, // ✅ Tanımsız alanları yok say
+    ignoreUndefinedProperties: true,
 });
-
-// ✅ YENİ: Firestore için özel timeout ayarları
-// Not: Firebase SDK'nın kendi timeout'u 60 saniye, ama biz 30 saniyede müdahale ediyoruz
 
 // localStorage ve Firebase senkronizasyonu
 class ShowlyDB {
@@ -50,6 +47,8 @@ class ShowlyDB {
             name: store.name,
             slug: slug,
             description: store.description,
+            category: store.category || '', // ✅ YENİ
+            customBannerText: store.customBannerText || '',
             createdAt: new Date().toISOString()
         };
         
@@ -162,5 +161,119 @@ class ShowlyDB {
     }
 }
 
+// ✅ YENİ: Varsayılan kategorileri ekle (ilk kurulumda)
+async function initializeCategories() {
+    const categoriesSnapshot = await db.collection('categories').get();
+    
+    if (categoriesSnapshot.empty) {
+        console.log('🔧 Varsayılan kategoriler oluşturuluyor...');
+        
+        const defaultCategories = [
+            { id: 'erkek-giyim', name: 'Erkek Giyim', order: 1 },
+            { id: 'kadin-giyim', name: 'Kadın Giyim', order: 2 },
+            { id: 'cocuk-giyim', name: 'Çocuk Giyim', order: 3 }
+        ];
+        
+        for (const cat of defaultCategories) {
+            await db.collection('categories').doc(cat.id).set(cat);
+        }
+        
+        console.log('✅ Kategoriler oluşturuldu');
+    }
+}
+
+// Sayfa yüklenince kategorileri kontrol et
+initializeCategories();
+
 // Global DB instance'ını oluştur
 window.showlyDB = new ShowlyDB();
+
+// ==================== MAĞAZA VE ÜRÜN EKLEMİ FONKSİYONLARI ====================
+
+// Mağaza ekle (Firestore)
+window.addStoreToFirebase = async function(store) {
+    const slug = store.name
+        .toLowerCase()
+        .replace(/ç/g, 'c')
+        .replace(/ğ/g, 'g')
+        .replace(/ı/g, 'i')
+        .replace(/ö/g, 'o')
+        .replace(/ş/g, 's')
+        .replace(/ü/g, 'u')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    
+    const doc = await window.db.collection('stores').add({
+        name: store.name,
+        slug: slug,
+        description: store.description || '',
+        category: store.category || '', // ✅ YENİ: Kategori alanı
+        customBannerText: store.customBannerText || '',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    console.log('✅ Mağaza Firebase\'e eklendi, ID:', doc.id);
+    return { 
+        id: doc.id, 
+        name: store.name, 
+        slug, 
+        description: store.description,
+        category: store.category, // ✅ YENİ
+        customBannerText: store.customBannerText
+    };
+};
+
+// Ürün ekle (Firestore)
+window.addProductToFirebase = async function(product) {
+    const doc = await window.db.collection('products').add({
+        storeId: product.storeId,
+        title: product.title,
+        price: product.price,
+        description: product.description || '',
+        material: product.material || '',
+        category: product.category || '',
+        isOnSale: product.isOnSale || false,
+        originalPrice: product.originalPrice || '',
+        imageUrl: product.imageUrl || '',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    console.log('✅ Ürün Firebase\'e eklendi, ID:', doc.id);
+    return { id: doc.id, ...product };
+};
+
+// Mağaza sil (Firestore)
+window.deleteStoreFromFirebase = async function(storeId) {
+    const batch = window.db.batch();
+    
+    // Önce o mağazaya ait ürünleri sil
+    const productsSnapshot = await window.db.collection('products')
+        .where('storeId', '==', storeId)
+        .get();
+    
+    productsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    
+    // Mağazayı sil
+    batch.delete(window.db.collection('stores').doc(storeId));
+    
+    await batch.commit();
+    console.log('✅ Mağaza ve ürünleri silindi:', storeId);
+};
+
+// Ürün sil (Firestore)
+window.deleteProductFromFirebase = async function(productId) {
+    await window.db.collection('products').doc(productId).delete();
+    console.log('✅ Ürün silindi:', productId);
+};
+
+// Tüm mağazaları getir (Firestore)
+window.getStoresFromFirebase = async function() {
+    const snapshot = await window.db.collection('stores').get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+// Tüm ürünleri getir (Firestore)
+window.getProductsFromFirebase = async function() {
+    const snapshot = await window.db.collection('products').get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};

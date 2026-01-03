@@ -302,6 +302,88 @@ header {
     color: #ffd700;
 }
 
+/* ================================ KATEGORİ MENÜSÜ STİLLERİ ================================ */
+#category-menu {
+    padding: 0;
+}
+
+.category-item {
+    margin-bottom: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.category-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.category-icon {
+    font-size: 12px;
+    margin-right: 12px;
+    transition: transform 0.3s ease;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.category-header span {
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.store-count {
+    margin-left: auto;
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-weight: normal !important;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.category-stores {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.category-stores li {
+    margin: 0;
+}
+
+.category-stores a {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px 12px 50px; /* Sol tarafta girinti */
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 13px;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.category-stores a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-left-color: #ffd700;
+    padding-left: 55px;
+}
+
+.category-stores a i {
+    margin-right: 10px;
+    font-size: 14px;
+}
+
 /* Scroll bar stilini güzelleştir */
 .store-menu::-webkit-scrollbar {
     width: 6px;

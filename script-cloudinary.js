@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
 
         // Sidebar'ı güncelle
-        renderStores();
+        renderCategoryMenu();
 
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
@@ -135,17 +135,76 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     
-    // --- MAĞAZA LİSTELEME FONKSİYONU ---
-    function renderStores() {
-        storeList.innerHTML = '';
-
-        allStores.forEach(store => {
-            const li = document.createElement('li');
-            li.innerHTML = `<a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
-                <i class="fas fa-store"></i> ${store.name}
-            </a>`;
-            storeList.appendChild(li);
-        });
+    // ✅ YENİ: Kategorili menü yapısı
+    async function renderCategoryMenu() {
+        try {
+            // Kategorileri çek
+            const categoriesSnapshot = await window.db.collection('categories')
+                .orderBy('order', 'asc')
+                .get();
+            
+            const categories = categoriesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            const categoryMenu = document.getElementById('category-menu');
+            categoryMenu.innerHTML = '';
+            
+            if (categories.length === 0 || allStores.length === 0) {
+                categoryMenu.innerHTML = '<p style="padding: 20px; color: #999;">Henüz mağaza eklenmemiş.</p>';
+                return;
+            }
+            
+            categories.forEach(category => {
+                // Bu kategoriye ait mağazaları filtrele
+                const categoryStores = allStores.filter(s => s.category === category.id);
+                
+                if (categoryStores.length === 0) return; // Boş kategorileri gösterme
+                
+                // Kategori başlığı
+                const categoryItem = document.createElement('div');
+                categoryItem.className = 'category-item';
+                categoryItem.innerHTML = `
+                    <div class="category-header" data-category="${category.id}">
+                        <i class="fas fa-chevron-right category-icon"></i>
+                        <span>${category.name}</span>
+                        <span class="store-count">(${categoryStores.length})</span>
+                    </div>
+                    <ul class="category-stores" id="stores-${category.id}" style="display: none;">
+                        ${categoryStores.map(store => `
+                            <li>
+                                <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
+                                    <i class="fas fa-store"></i> ${store.name}
+                                </a>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+                
+                categoryMenu.appendChild(categoryItem);
+            });
+            
+            // Açılır/kapanır menü event'i
+            document.querySelectorAll('.category-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const categoryId = header.getAttribute('data-category');
+                    const storesList = document.getElementById(`stores-${categoryId}`);
+                    const icon = header.querySelector('.category-icon');
+                    
+                    if (storesList.style.display === 'none') {
+                        storesList.style.display = 'block';
+                        icon.style.transform = 'rotate(90deg)';
+                    } else {
+                        storesList.style.display = 'none';
+                        icon.style.transform = 'rotate(0deg)';
+                    }
+                });
+            });
+            
+        } catch (error) {
+            console.error('Kategori menüsü oluşturulamadı:', error);
+        }
     }
 
     // --- KATEGORİ FİLTRELERİNİ OLUŞTURAN FONKSİYON ---

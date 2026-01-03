@@ -125,6 +125,7 @@
                         <li><a href="#" class="nav-link" data-section="orders"><i class="fas fa-shopping-cart"></i> Zakazlar</a></li>
                         <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Sazlamalar</a></li>
                         <li><a href="#" class="nav-link" data-section="users"><i class="fas fa-users"></i> Admin ulanyjylar</a></li>
+                        <li><a href="#" class="nav-link" data-section="categories"><i class="fas fa-tags"></i> Kategoriyalar</a></li>
                     </ul>
                 </nav>
                 <div class="sidebar-footer">
@@ -350,6 +351,55 @@
                             </table>
                         </div>
                     </section>
+
+                    <!-- Kategori Yönetimi Section -->
+                    <section id="categories" class="content-section">
+                        <div class="section-header">
+                            <h2>Kategoriýa dolandyryş</h2>
+                            <button class="btn-primary" id="add-category-btn">
+                                <i class="fas fa-plus"></i> Täze kategoriýa goş
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Ady</th>
+                                        <th>Sıra</th>
+                                        <th>Magazyn sany</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categories-table-body"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Kategori Ekleme Modalı -->
+                    <div id="category-modal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 id="category-modal-title">Täze kategoriýa goş</h3>
+                                <span class="close-modal">&times;</span>
+                            </div>
+                            <form id="category-form">
+                                <input type="hidden" id="category-id">
+                                <div class="form-group">
+                                    <label>Kategoriýa ady *</label>
+                                    <input type="text" id="category-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Sıra (görüneceği sıra)</label>
+                                    <input type="number" id="category-order" min="1" value="1">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" id="cancel-category">Aýyr</button>
+                                    <button type="submit" class="btn-primary">Ýatda sakla</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -370,6 +420,13 @@
                     <div class="form-group">
                         <label>Magazyn düşündirilişi</label>
                         <textarea id="store-description" rows="3"></textarea>
+                    </div>
+                    <!-- ✅ YENİ: Kategori Seçimi -->
+                    <div class="form-group">
+                        <label>Kategoriýa *</label>
+                        <select id="store-category" required>
+                            <option value="">Kategoriýa saýlaň</option>
+                        </select>
                     </div>
                     
                     <!-- ✅ BURAYA EKLE -->
