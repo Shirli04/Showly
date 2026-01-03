@@ -28,6 +28,115 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mainFiltersContainer = document.getElementById('main-filters-container');
     
     
+    // --- DURUM DEĞİŞKENLERİ (STATE) ---
+    let cart = [];
+    let favorites = [];
+    let currentStoreId = null;
+    let allStores = [];
+    let allProducts = [];
+    loadingOverlay.style.display = 'flex'; // Yükleniyor animasyonunu göster
+
+    console.log('🔄 Firebase\'den veriler yükleniyor...');
+
+    try {
+        // ✅ YENİ: 45 saniye timeout ekle
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Firebase bağlantısı zaman aşımına uğradı')), 45000);
+        });
+
+        // ✅ PARALEL İŞLEMLER: Mağaza ve ürünleri aynı anda çek
+        const fetchDataPromise = (async () => {
+            // Mağaza ve ürünleri paralel çek (Promise.all ile)
+            const [storesSnapshot, productsSnapshot] = await Promise.all([
+                window.db.collection('stores').get(),
+                window.db.collection('products').get()
+            ]);
+            
+            const stores = storesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            const products = productsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            return { stores, products };
+        })();
+
+        // ✅ Timeout ile yarış: Hangisi önce biterse onu al
+        const { stores, products } = await Promise.race([fetchDataPromise, timeoutPromise]);
+
+        allStores = stores;
+        allProducts = products;
+
+        console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
+
+        // ✅ Kategorili menüyü oluştur
+        await renderCategoryMenu();
+
+    } catch (error) {
+        console.error('❌ Firebase hatası:', error);
+        
+        // ✅ YENİ: Hata mesajını 404 sayfasında göster
+        const notFoundSection = document.getElementById('not-found');
+        const heroSection = document.querySelector('.hero-section');
+        const infoSection = document.querySelector('.info-section');
+        const errorTitle = document.getElementById('error-title');
+        const errorMessage = document.getElementById('error-message');
+        
+        if (heroSection) heroSection.style.display = 'none';
+        if (infoSection) infoSection.style.display = 'none';
+        
+        errorTitle.textContent = 'Baglanyşyk Ýok';
+        errorMessage.textContent = 'Firebase bilen baglanyşyk guralyp bilinmedi. Sahypany täzeleň.';
+        notFoundSection.style.display = 'block';
+        
+        showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
+    } finally {
+        loadingOverlay.style.display = 'none'; // Animasyonu gizle
+    }
+    
+    // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
+    const router = async () => {
+        const path = window.location.pathname.replace('/', '');
+        const heroSection = document.querySelector('.hero-section');
+        const infoSection = document.querySelector('.info-section');
+        const storeBanner = document.getElementById('store-banner');
+        
+        if (!path) { // Ana sayfaysak
+            if (heroSection) heroSection.style.display = 'block';
+            if (infoSection) infoSection.style.display = 'grid';
+            if (storeBanner) storeBanner.style.display = 'none';
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
+            if (productsGrid) productsGrid.style.display = 'none';
+            if (notFoundSection) notFoundSection.style.display = 'none';
+            document.title = 'Showly - Online Katalog Platformasy';
+            return;
+        }
+
+        // Ana sayfa elemanlarını gizle
+        if (heroSection) heroSection.style.display = 'none';
+        if (infoSection) infoSection.style.display = 'none';
+        if (notFoundSection) notFoundSection.style.display = 'none';
+
+        const store = allStores.find(s => s.slug === path);
+
+        if (store) {
+            renderStorePage(store.id);
+            document.title = `${store.name} - Showly`;
+        } else {
+            if (storeBanner) storeBanner.style.display = 'none';
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
+            if (productsGrid) productsGrid.style.display = 'none';
+            if (notFoundSection) notFoundSection.style.display = 'block';
+            document.title = 'Sayfa Bulunamadı - Showly';
+        }
+    };
+    
     // ✅ YENİ: Kategorili menü yapısı
     async function renderCategoryMenu() {
         try {
@@ -71,8 +180,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (categoryStores.length === 0) return; // Boş kategorileri gösterme
                 
-                // Kategori ikonu (SVG), yoksa varsayılan
-                const categoryIconSVG = luxuryIcons[category.icon] || luxuryIcons['luxury-diamond'];
+                // Kategori ikonu (varsa), yoksa varsayılan
+                const categoryIcon = category.icon || 'fa-tag';
                 
                 // Kategori başlığı
                 const categoryItem = document.createElement('div');
@@ -80,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 categoryItem.innerHTML = `
                     <div class="category-header" data-category="${category.id}">
                         <i class="fas fa-chevron-right chevron-icon"></i>
-                        <div class="category-logo-icon">${categoryIconSVG}</div>
+                        <i class="fas ${categoryIcon} category-logo-icon"></i>
                         <span>${category.name}</span>
                     </div>
                     <ul class="category-stores" id="stores-${category.id}" style="display: none;">
@@ -120,45 +229,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('❌ Kategori menüsü oluşturulamadı:', error);
         }
     }
-
-    // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
-    const router = async () => {
-        const path = window.location.pathname.replace('/', '');
-        const heroSection = document.querySelector('.hero-section');
-        const infoSection = document.querySelector('.info-section');
-        const storeBanner = document.getElementById('store-banner');
-        
-        if (!path) { // Ana sayfaysak
-            if (heroSection) heroSection.style.display = 'block';
-            if (infoSection) infoSection.style.display = 'grid';
-            if (storeBanner) storeBanner.style.display = 'none';
-            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
-            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
-            if (productsGrid) productsGrid.style.display = 'none';
-            if (notFoundSection) notFoundSection.style.display = 'none';
-            document.title = 'Showly - Online Katalog Platformasy';
-            return;
-        }
-
-        // Ana sayfa elemanlarını gizle
-        if (heroSection) heroSection.style.display = 'none';
-        if (infoSection) infoSection.style.display = 'none';
-        if (notFoundSection) notFoundSection.style.display = 'none';
-
-        const store = allStores.find(s => s.slug === path);
-
-        if (store) {
-            renderStorePage(store.id);
-            document.title = `${store.name} - Showly`;
-        } else {
-            if (storeBanner) storeBanner.style.display = 'none';
-            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
-            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
-            if (productsGrid) productsGrid.style.display = 'none';
-            if (notFoundSection) notFoundSection.style.display = 'block';
-            document.title = '404 - Sahypa Tapylmady';
-        }
-    };
 
     // --- KATEGORİ FİLTRELERİNİ OLUŞTURAN FONKSİYON ---
     const renderCategories = (storeId, activeFilter) => {
