@@ -185,13 +185,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="category-header" data-category="${category.id}">
                         <i class="fas fa-chevron-right category-icon"></i>
                         <span>${category.name}</span>
-                        <span class="store-count">(${categoryStores.length})</span>
                     </div>
                     <ul class="category-stores" id="stores-${category.id}" style="display: none;">
                         ${categoryStores.map(store => `
                             <li>
                                 <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
-                                    <i class="fas fa-store"></i> ${store.name}
+                                    ${store.name}
                                 </a>
                             </li>
                         `).join('')}
