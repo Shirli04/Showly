@@ -137,6 +137,169 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     
+    // ✅ LÜKS SVG KATEGORİ İKONLARI (VIP TARZI)
+    const luxuryIcons = {
+        'men-fashion': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v2"/>
+            <path d="M12 21v-2"/>
+            <path d="M3 12h2"/>
+            <path d="M21 12h-2"/>
+            <path d="M5.5 5.5l1.5 1.5"/>
+            <path d="M17 17l1.5 1.5"/>
+            <path d="M17 7l1.5-1.5"/>
+            <path d="M5.5 18.5l1.5-1.5"/>
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M8 12h8"/>
+            <path d="M12 8v8"/>
+        </svg>`,
+        'women-fashion': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v2"/>
+            <path d="M12 21v-2"/>
+            <path d="M3 12h2"/>
+            <path d="M21 12h-2"/>
+            <path d="M5.5 5.5l1.5 1.5"/>
+            <path d="M17 17l1.5 1.5"/>
+            <path d="M17 7l1.5-1.5"/>
+            <path d="M5.5 18.5l1.5-1.5"/>
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M10 10l2 2 2-2"/>
+            <path d="M10 14l2-2 2 2"/>
+        </svg>`,
+        'shoes': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14h16v5H4z"/>
+            <path d="M4 14l2-8h8l2 8"/>
+            <path d="M16 14l-2-8"/>
+            <path d="M8 14l-2-8"/>
+            <path d="M12 6V3"/>
+            <path d="M12 10V7"/>
+        </svg>`,
+        'accessories': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18"/>
+            <path d="M3 12h18"/>
+            <path d="M5 5l14 14"/>
+            <path d="M19 5L5 19"/>
+            <circle cx="12" cy="12" r="8"/>
+            <path d="M12 4v16"/>
+            <path d="M4 12h16"/>
+        </svg>`,
+        'boutique': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21h18"/>
+            <path d="M3 21v-2"/>
+            <path d="M21 21v-2"/>
+            <path d="M3 19l3-16h12l3 16"/>
+            <path d="M6 3v4"/>
+            <path d="M9 3v4"/>
+            <path d="M12 3v4"/>
+            <path d="M15 3v4"/>
+            <path d="M18 3v4"/>
+            <path d="M4 12h16"/>
+            <rect x="7" y="15" width="4" height="3"/>
+            <rect x="13" y="15" width="4" height="3"/>
+        </svg>`,
+        'luxury-diamond': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l2 3h4l-2 3-4 3-4-3-2-3h4z"/>
+            <path d="M12 12v9"/>
+            <path d="M8 12l4 9"/>
+            <path d="M16 12l-4 9"/>
+            <path d="M6 6l6 6"/>
+            <path d="M18 6l-6 6"/>
+        </svg>`,
+        'crown': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18h18"/>
+            <path d="M3 18l3-8 4 6 4-12 4 12 4-6 3 8"/>
+            <path d="M3 6l3 4"/>
+            <path d="M21 6l-3 4"/>
+            <path d="M12 3v3"/>
+        </svg>`,
+        'star-luxury': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l2.5 7.5H22l-6 4.5 2.5 7.5-6.5-5-6.5 5 2.5-7.5-6-4.5h7.5z"/>
+            <path d="M12 7v10"/>
+            <path d="M9 12h6"/>
+        </svg>`,
+        'tie': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v2"/>
+            <path d="M12 19v2"/>
+            <path d="M8 5h8"/>
+            <path d="M8 19h8"/>
+            <path d="M12 5l2 7-2 7-2-7z"/>
+            <path d="M10 7h4"/>
+            <path d="M10 17h4"/>
+        </svg>`,
+        'handbag': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 10v8a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-8"/>
+            <path d="M7 10h10"/>
+            <path d="M10 7V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v2"/>
+            <path d="M7 14h10"/>
+            <path d="M9 14v4"/>
+            <path d="M15 14v4"/>
+        </svg>`,
+        'watch': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8"/>
+            <path d="M12 7v5l3 3"/>
+            <path d="M12 21v2"/>
+            <path d="M12 1v2"/>
+            <path d="M21 12h2"/>
+            <path d="M1 12h2"/>
+        </svg>`,
+        'perfume': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 8h8"/>
+            <path d="M8 8v12h8V8"/>
+            <path d="M6 8h12v3H6z"/>
+            <path d="M10 5h4v3h-4z"/>
+            <path d="M12 3v2"/>
+        </svg>`,
+        'glasses': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="10" r="4"/>
+            <circle cx="16" cy="10" r="4"/>
+            <path d="M4 10h4"/>
+            <path d="M16 10h4"/>
+            <path d="M12 10v5"/>
+            <path d="M10 12l2 3"/>
+            <path d="M14 12l-2 3"/>
+        </svg>`,
+        'scarf': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 8v8h18V8z"/>
+            <path d="M3 12h18"/>
+            <path d="M6 8v8"/>
+            <path d="M10 8v8"/>
+            <path d="M14 8v8"/>
+            <path d="M18 8v8"/>
+            <path d="M3 8l3-4h12l3 4"/>
+            <path d="M3 16l3 4h12l3 4"/>
+        </svg>`,
+        'belt': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9h18v6H3z"/>
+            <rect x="10" y="10" width="4" height="4"/>
+            <path d="M3 12h7"/>
+            <path d="M14 12h7"/>
+            <path d="M10 10v4"/>
+            <path d="M14 10v4"/>
+        </svg>`,
+        'jewelry': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l3 4h6l-3 4-6 4-6-4-3-4h6z"/>
+            <path d="M12 11v8"/>
+            <path d="M9 11l3 8"/>
+            <path d="M15 11l-3 8"/>
+        </svg>`,
+        'umbrella': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12c0-5 4-9 9-9s9 4 9 9"/>
+            <path d="M3 12c0 0 2-1 2-1"/>
+            <path d="M7 12c0 0 2-1 2-1"/>
+            <path d="M11 12c0 0 2-1 2-1"/>
+            <path d="M15 12c0 0 2-1 2-1"/>
+            <path d="M19 12c0 0 2-1 2-1"/>
+            <path d="M12 21v-6"/>
+        </svg>`,
+        'hat': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12h16v3H4z"/>
+            <path d="M4 12c0-5 4-8 8-8s8 3 8 8"/>
+            <path d="M6 12v3"/>
+            <path d="M10 12v3"/>
+            <path d="M14 12v3"/>
+            <path d="M18 12v3"/>
+        </svg>`
+    };
+
     // ✅ YENİ: Kategorili menü yapısı
     async function renderCategoryMenu() {
         try {
@@ -180,8 +343,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (categoryStores.length === 0) return; // Boş kategorileri gösterme
                 
-                // Kategori ikonu (varsa), yoksa varsayılan
-                const categoryIcon = category.icon || 'fa-tag';
+                // Kategori ikonu (SVG), yoksa varsayılan
+                const categoryIconSVG = luxuryIcons[category.icon] || luxuryIcons['luxury-diamond'];
                 
                 // Kategori başlığı
                 const categoryItem = document.createElement('div');
@@ -189,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 categoryItem.innerHTML = `
                     <div class="category-header" data-category="${category.id}">
                         <i class="fas fa-chevron-right chevron-icon"></i>
-                        <i class="fas ${categoryIcon} category-logo-icon"></i>
+                        <div class="category-logo-icon">${categoryIconSVG}</div>
                         <span>${category.name}</span>
                     </div>
                     <ul class="category-stores" id="stores-${category.id}" style="display: none;">
