@@ -71,8 +71,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
 
-        // Sidebar'ı güncelle
-        renderCategoryMenu();
+        // ✅ Kategorili menüyü oluştur
+        await renderCategoryMenu();
 
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
@@ -138,6 +138,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ✅ YENİ: Kategorili menü yapısı
     async function renderCategoryMenu() {
         try {
+            const categoryMenu = document.getElementById('category-menu');
+            
+            // ✅ Element kontrolü
+            if (!categoryMenu) {
+                console.error('❌ category-menu elementi bulunamadı!');
+                return;
+            }
+            
             // Kategorileri çek
             const categoriesSnapshot = await window.db.collection('categories')
                 .orderBy('order', 'asc')
@@ -148,17 +156,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ...doc.data()
             }));
             
-            const categoryMenu = document.getElementById('category-menu');
+            console.log('📂 Kategoriler:', categories);
+            
             categoryMenu.innerHTML = '';
             
-            if (categories.length === 0 || allStores.length === 0) {
-                categoryMenu.innerHTML = '<p style="padding: 20px; color: #999;">Henüz mağaza eklenmemiş.</p>';
+            if (categories.length === 0) {
+                categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
+                return;
+            }
+            
+            if (allStores.length === 0) {
+                categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz mağaza eklenmemiş.</p>';
                 return;
             }
             
             categories.forEach(category => {
                 // Bu kategoriye ait mağazaları filtrele
                 const categoryStores = allStores.filter(s => s.category === category.id);
+                
+                console.log(`📁 ${category.name}: ${categoryStores.length} mağaza`);
                 
                 if (categoryStores.length === 0) return; // Boş kategorileri gösterme
                 
@@ -202,8 +218,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
             
+            console.log('✅ Kategori menüsü oluşturuldu');
+            
         } catch (error) {
-            console.error('Kategori menüsü oluşturulamadı:', error);
+            console.error('❌ Kategori menüsü oluşturulamadı:', error);
         }
     }
 
