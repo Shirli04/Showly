@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${storeCount}</td>
                     <td>
                         <button class="btn-icon edit-category" data-id="${category.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon danger delete-category" data-id="${category.id}" ${storeCount > 0 ? 'disabled title="Bu kategoride mağaza var"' : ''}>
+                        <button class="btn-icon danger delete-category" data-id="${category.id}" ${storeCount > 0 ? 'disabled title="Bu kategoride mağaza var, önce mağazaları silin"' : ''}>
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -422,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await window.db.collection('categories').doc(categoryId).delete();
             showNotification('Kategori silindi!');
             renderCategoriesTable();
+            loadCategories(); // Dropdown'u güncelle
         } catch (error) {
             console.error('Kategori silinemedi:', error);
             showNotification('Kategori silinemedi!', false);
@@ -505,34 +506,21 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 'men-fashion',
             name: 'Erkek Giyim',
             svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v2"/>
-                <path d="M12 21v-2"/>
-                <path d="M3 12h2"/>
-                <path d="M21 12h-2"/>
-                <path d="M5.5 5.5l1.5 1.5"/>
-                <path d="M17 17l1.5 1.5"/>
-                <path d="M17 7l1.5-1.5"/>
-                <path d="M5.5 18.5l1.5-1.5"/>
-                <circle cx="12" cy="12" r="5"/>
-                <path d="M8 12h8"/>
-                <path d="M12 8v8"/>
+                <circle cx="12" cy="6" r="3"/>
+                <path d="M12 9v2"/>
+                <path d="M8 11l-2 4h3l2 7 2-7h3l-2-4"/>
+                <path d="M10 15h4"/>
             </svg>`
         },
         {
             id: 'women-fashion',
             name: 'Kadın Giyim',
             svg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3v2"/>
-                <path d="M12 21v-2"/>
-                <path d="M3 12h2"/>
-                <path d="M21 12h-2"/>
-                <path d="M5.5 5.5l1.5 1.5"/>
-                <path d="M17 17l1.5 1.5"/>
-                <path d="M17 7l1.5-1.5"/>
-                <path d="M5.5 18.5l1.5-1.5"/>
-                <circle cx="12" cy="12" r="5"/>
-                <path d="M10 10l2 2 2-2"/>
-                <path d="M10 14l2-2 2 2"/>
+                <circle cx="12" cy="6" r="3"/>
+                <path d="M12 9v2"/>
+                <path d="M8 11l-1 5 5 4 5-4-1-5"/>
+                <path d="M10 11l2 3 2-3"/>
+                <path d="M12 16v4"/>
             </svg>`
         },
         {
