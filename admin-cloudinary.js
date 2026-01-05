@@ -1977,6 +1977,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // Sidebar kapatma butonu
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+    if (sidebarCloseBtn) {
+        sidebarCloseBtn.addEventListener('click', () => {
+            closeSidebar();
+        });
+    }
+    
     // Pencere boyutu değişince menüyü düzelt
     window.addEventListener('resize', () => {
         if (window.innerWidth > 768) {
