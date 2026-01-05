@@ -1766,8 +1766,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-        });
-    }
 
     // Kullanıcı form submit
     if (userForm) {

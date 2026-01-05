@@ -16,11 +16,15 @@ const db = firebase.firestore();
 
 // Veritabanını (db) diğer scriptlerin kullanabileceği yap
 window.db = db;
-db.settings({
-    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-    experimentalForceLongPolling: true,
-    ignoreUndefinedProperties: true,
-});
+try {
+    db.settings({
+        cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+        experimentalForceLongPolling: true,
+        ignoreUndefinedProperties: true
+    });
+} catch (e) {
+    console.log('Settings zaten yapılandırılmış, devam ediliyor...');
+}
 
 // localStorage ve Firebase senkronizasyonu
 class ShowlyDB {
