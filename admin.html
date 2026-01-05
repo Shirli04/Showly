@@ -111,8 +111,11 @@
     </head>
     <body>
         <div class="admin-container">
+            <!-- Sidebar Overlay (Mobil için) -->
+            <div class="sidebar-overlay" id="sidebar-overlay"></div>
+            
             <!-- Sidebar -->
-            <aside class="admin-sidebar">
+            <aside class="admin-sidebar" id="admin-sidebar">
                 <div class="sidebar-header">
                     <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765385200/logo_e_background_removal_b_rgb_FFFFFF_f_png_vjwprg.png" alt="Showly Logo" class="admin-header-logo">
                     <span class="admin-sidebar-text">Showlytm</span>
@@ -190,9 +193,14 @@
                     <section id="stores" class="content-section">
                         <div class="section-header">
                             <h2>Magazynlar</h2>
-                            <button class="btn-primary" id="add-store-btn">
-                                <i class="fas fa-plus"></i> Täze magazyn goş
-                            </button>
+                            <div class="header-buttons">
+                                <button class="btn-primary" id="add-store-btn">
+                                    <i class="fas fa-plus"></i> Täze magazyn goş
+                                </button>
+                                <button class="btn-mobile" id="add-store-btn-mobile">
+                                    <i class="fas fa-plus"></i> Täze magazyn
+                                </button>
+                            </div>
                         </div>
                         <div class="export-buttons">
                             <button class="btn-export" id="export-stores-btn">
@@ -223,9 +231,14 @@
                     <section id="products" class="content-section">
                         <div class="section-header">
                             <h2>Harytlar</h2>
-                            <button class="btn-primary" id="add-product-btn">
-                                <i class="fas fa-plus"></i> Täze haryt goş
-                            </button>
+                            <div class="header-buttons">
+                                <button class="btn-primary" id="add-product-btn">
+                                    <i class="fas fa-plus"></i> Täze haryt goş
+                                </button>
+                                <button class="btn-mobile" id="add-product-btn-mobile">
+                                    <i class="fas fa-plus"></i> Täze haryt
+                                </button>
+                            </div>
                         </div>
                         <div class="product-filters">
                             <div class="form-group">
@@ -332,9 +345,14 @@
                     <section id="users" class="content-section">
                         <div class="section-header">
                             <h2>Admin kontrol</h2>
-                            <button class="btn-primary" id="add-user-btn">
-                                <i class="fas fa-user-plus"></i> Täze ulanyjy goş
-                            </button>
+                            <div class="header-buttons">
+                                <button class="btn-primary" id="add-user-btn">
+                                    <i class="fas fa-user-plus"></i> Täze ulanyjy goš
+                                </button>
+                                <button class="btn-mobile" id="add-user-btn-mobile">
+                                    <i class="fas fa-user-plus"></i> Täze ulanyjy
+                                </button>
+                            </div>
                         </div>
                         <div class="table-container">
                             <table class="admin-table">
@@ -356,9 +374,15 @@
                     <section id="categories" class="content-section">
                         <div class="section-header">
                             <h2>Kategoriýa dolandyryş</h2>
-                            <button class="btn-primary" id="add-category-btn">
-                                <i class="fas fa-plus"></i> Täze kategoriýa goş
-                            </button>
+                            <div class="header-buttons">
+                                <button class="btn-primary" id="add-category-btn">
+                                    <i class="fas fa-plus"></i> Täze kategoriýa goš
+                                </button>
+                                <button class="btn-mobile" id="add-category-btn-mobile">
+                                    <i class="fas fa-plus"></i> Täze kategoriýa
+                                </button>
+                            </div>
+                        </div>
                         </div>
                         <div class="table-container">
                             <table class="admin-table">

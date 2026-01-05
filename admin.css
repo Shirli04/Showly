@@ -42,7 +42,15 @@ body {
     left: 0;
     top: 0;
     z-index: 100;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobilde başlangıçta kapalı */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(-100%) !important;
+    }
 }
 
 .sidebar-header {
@@ -209,6 +217,19 @@ body {
     font-weight: 600;
     color: var(--dark-color);
 }
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .header-buttons {
+        width: 100%;
+        flex-direction: column;
+    }
+}
+
 
 /* Buttons */
 .btn-primary {
@@ -743,10 +764,6 @@ body {
 }
 
 @media (max-width: 768px) {
-    .admin-sidebar {
-        transform: translateX(-100%);
-    }
-    
     .admin-sidebar.active {
         transform: translateX(0);
     }
@@ -1230,6 +1247,589 @@ ul {
     
     .permission-card span {
         font-size: 11px;
+    }
+}
+
+/* ================================ MOBİL MENÜ OVERLAY ================================ */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(3px);
+}
+
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .sidebar-overlay {
+        display: none;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+}
+
+/* ================================ MOBİL BUTONLAR ================================ */
+.btn-mobile {
+    display: none;
+    padding: 10px 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-mobile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4);
+}
+
+.btn-mobile:active {
+    transform: translateY(0);
+}
+
+.btn-mobile i {
+    font-size: 16px;
+}
+
+@media (max-width: 768px) {
+    .btn-mobile {
+        display: flex;
+        width: 100%;
+    }
+    
+    .btn-primary {
+        display: none;
+    }
+}
+
+/* ================================ MOBİL TABLE ================================ */
+@media (max-width: 768px) {
+    .admin-table thead {
+        display: none;
+    }
+    
+    .admin-table tbody tr {
+        display: block;
+        margin-bottom: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        padding: 15px;
+        animation: fadeInUp 0.5s ease;
+    }
+    
+    .admin-table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .admin-table tbody td:last-child {
+        border-bottom: none;
+    }
+    
+    .admin-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #333;
+        margin-right: 15px;
+    }
+    
+    .table-container {
+        padding: 10px;
+    }
+}
+
+/* ================================ MOBİL STAT CARDS ================================ */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .stat-info h3 {
+        font-size: 28px;
+    }
+    
+    .stat-info p {
+        font-size: 14px;
+    }
+}
+
+/* ================================ MOBİL MODAL ================================ */
+@media (max-width: 768px) {
+    .modal {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+        height: 100vh;
+        max-height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .modal-content {
+        height: 100%;
+        border-radius: 0;
+        padding: 20px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .permissions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .permission-card {
+        padding: 12px 8px;
+    }
+    
+    .permission-card i {
+        font-size: 20px;
+    }
+    
+    .permission-card span {
+        font-size: 11px;
+    }
+    
+    .form-actions {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        padding: 15px 20px;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        margin: -20px -20px 0 -20px;
+    }
+}
+
+/* ================================ ANİMASYONLAR ================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOutLeft {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+    }
+}
+
+/* ================================ STAT CARD ANİMASYONLARI ================================ */
+.stat-card {
+    animation: fadeInUp 0.6s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card:active {
+    transform: translateY(-3px) scale(0.98);
+}
+
+.stat-icon {
+    animation: pulse 2s infinite;
+}
+
+/* ================================ BUTON ANİMASYONLARI ================================ */
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-mobile {
+    animation: fadeInUp 0.5s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-danger:hover,
+.btn-mobile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:active,
+.btn-secondary:active,
+.btn-danger:active,
+.btn-mobile:active {
+    transform: translateY(0);
+}
+
+/* ================================ MODAL ANİMASYONLARI ================================ */
+.modal {
+    animation: scaleIn 0.3s ease;
+}
+
+.modal-content {
+    animation: fadeInDown 0.3s ease;
+}
+
+/* ================================ TABLE ANİMASYONLARI ================================ */
+.admin-table tbody tr {
+    animation: fadeInUp 0.4s ease;
+    transition: all 0.3s ease;
+}
+
+.admin-table tbody tr:nth-child(odd) {
+    animation-delay: 0.05s;
+}
+
+.admin-table tbody tr:hover {
+    transform: scale(1.01);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: #f8f9fa;
+}
+
+/* ================================ SIDEBAR ANİMASYONLARI ================================ */
+.admin-sidebar {
+    animation: fadeInLeft 0.4s ease;
+}
+
+.admin-sidebar.active {
+    animation: fadeInLeft 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .admin-sidebar.active {
+        animation: slideInLeft 0.3s ease;
+    }
+}
+
+.sidebar-nav a {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.sidebar-nav a::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background-color: var(--primary-color);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.sidebar-nav a.active::before,
+.sidebar-nav a:hover::before {
+    transform: scaleY(1);
+}
+
+/* ================================ FORM ANİMASYONLARI ================================ */
+.form-group {
+    animation: fadeInUp 0.4s ease;
+    transition: all 0.3s ease;
+}
+
+.form-group:focus-within {
+    transform: translateY(-2px);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    transform: scale(1.01);
+}
+
+/* ================================ NOTIFICATION ANİMASYONLARI ================================ */
+.notification {
+    animation: fadeInRight 0.4s ease, fadeOut 0.4s ease 2.6s;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* =================--------------- CONTENT SECTION ANİMASYONLARI --------------------------------- */
+.content-section {
+    animation: fadeIn 0.5s ease;
+}
+
+.content-section.active {
+    animation: fadeIn 0.5s ease;
+}
+
+/* ================================ LOADING ANİMASYONLARI ================================ */
+.loading-overlay {
+    animation: fadeIn 0.3s ease;
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ================================ İKON ANİMASYONLARI ================================ */
+.btn-icon {
+    transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.btn-icon:active {
+    transform: scale(0.9);
+}
+
+/* ================================ HEADER ANİMASYONLARI ================================ */
+.admin-header {
+    animation: fadeInDown 0.5s ease;
+}
+
+.admin-info {
+    transition: all 0.3s ease;
+}
+
+.admin-info:hover {
+    transform: scale(1.05);
+}
+
+/* ================================ VISITOR CHART ANİMASYONLARI ================================ */
+.visitor-chart-container {
+    animation: fadeInUp 0.6s ease;
+    animation-delay: 0.4s;
+    opacity: 0;
+}
+
+.visitor-chart-container.active {
+    opacity: 1;
+}
+
+/* ================================ EXPORT BUTTONS ANİMASYONLARI ================================ */
+.export-buttons {
+    animation: fadeInUp 0.5s ease;
+    animation-delay: 0.3s;
+}
+
+.btn-export {
+    transition: all 0.3s ease;
+}
+
+.btn-export:hover {
+    transform: translateY(-2px);
+}
+
+/* =================--------------- PERMISSION CARD ANİMASYONLARI --------------------------------- */
+.permission-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.permission-item input[type="checkbox"]:checked + .permission-card {
+    animation: bounce 0.5s ease;
+}
+
+/* ================================ STATUS BADGE ANİMASYONLARI ================================ */
+.status {
+    animation: fadeIn 0.3s ease;
+}
+
+.status.superadmin {
+    animation: pulse 2s infinite;
+}
+
+.status.admin {
+    animation: pulse 2s infinite 0.5s;
+}
+
+/* ================================ SCROLL ANİMASYONLARI ================================ */
+.admin-main {
+    scroll-behavior: smooth;
+}
+
+/* ================================ ZOOM ANİMASYONLARI (MOBİL İÇİN) ================================ */
+@media (max-width: 768px) {
+    .stat-card,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        transition: transform 0.2s ease;
+    }
+    
+    .stat-card:active,
+    .btn-primary:active,
+    .btn-secondary:active,
+    .btn-danger:active {
+        transform: scale(0.95);
     }
 }
 }

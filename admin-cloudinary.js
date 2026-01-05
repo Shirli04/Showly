@@ -202,10 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const rowsHTML = stores.map(store => {
             const storeProducts = allProducts.filter(p => p.storeId === store.id);
             return `
-                <td>${store.id}</td>
-                <td>${store.name}</td>
-                <td>${storeProducts.length}</td>
-                <td>
+                <td data-label="ID">${store.id}</td>
+                <td data-label="Magazyn Ady">${store.name}</td>
+                <td data-label="Haryt Sany">${storeProducts.length}</td>
+                <td data-label="Etmekler">
                     <button class="btn-icon edit-store" data-id="${store.id}"><i class="fas fa-edit"></i></button>
                     <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
                 </td>
@@ -369,11 +369,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${category.id}</td>
-                    <td>${category.name}</td>
-                    <td>${category.order}</td>
-                    <td>${storeCount}</td>
-                    <td>
+                    <td data-label="ID">${category.id}</td>
+                    <td data-label="Kategoriýa Ady">${category.name}</td>
+                    <td data-label="Tertip">${category.order}</td>
+                    <td data-label="Magazyn Sany">${storeCount}</td>
+                    <td data-label="Etmekler">
                         <button class="btn-icon edit-category" data-id="${category.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon danger delete-category" data-id="${category.id}" ${storeCount > 0 ? 'disabled title="Bu kategoride mağaza var"' : ''}>
                             <i class="fas fa-trash"></i>
@@ -501,13 +501,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Kategori modal kontrolleri
     addCategoryBtn?.addEventListener('click', () => {
-        document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goş';
+        document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goš';
         categoryForm.reset();
         document.getElementById('category-id').value = '';
         document.getElementById('category-icon').value = 'fa-tag';
         selectCategoryIcon('fa-tag'); // Varsayılan ikon
         categoryModal.style.display = 'block';
     });
+    
+    // Mobil kategori butonu
+    const addCategoryBtnMobile = document.getElementById('add-category-btn-mobile');
+    if (addCategoryBtnMobile) {
+        addCategoryBtnMobile.addEventListener('click', () => {
+            document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goš';
+            categoryForm.reset();
+            document.getElementById('category-id').value = '';
+            document.getElementById('category-icon').value = 'fa-tag';
+            selectCategoryIcon('fa-tag'); // Varsayılan ikon
+            categoryModal.style.display = 'block';
+        });
+    }
+
 
     cancelCategory?.addEventListener('click', () => {
         categoryModal.style.display = 'none';
@@ -660,12 +674,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${product.id}</td>
-                    <td>${product.title}</td>
-                    <td>${storeName}</td>
-                    <td>${product.price}</td>
-                    <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
-                    <td>
+                    <td data-label="ID">${product.id}</td>
+                    <td data-label="Haryt Ady">${product.title}</td>
+                    <td data-label="Magazyn">${storeName}</td>
+                    <td data-label="Bahasy">${product.price}</td>
+                    <td data-label="Surat">${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
+                    <td data-label="Etmekler">
                         <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
                     </td>
@@ -887,18 +901,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const row = document.createElement('tr');
                 if (order.status === 'pending') {
                     row.innerHTML = `
-                        <td>
+                        <td data-label="Harytlar">
                             <ul style="list-style: none; padding: 0; margin: 0;">
                                 ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
                             </ul>
                         </td>
-                        <td>${order.customer.name}</td>
-                        <td>${order.customer.phone}</td>
-                        <td>${order.customer.address}</td>
-                        <td>${storeNames}</td>
-                        <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                        <td><span class="status pending">Beklemede</span></td>
-                        <td>
+                        <td data-label="Ady">${order.customer.name}</td>
+                        <td data-label="Telefony">${order.customer.phone}</td>
+                        <td data-label="Salgysy">${order.customer.address}</td>
+                        <td data-label="Magazynlar">${storeNames}</td>
+                        <td data-label="Taryhy">${new Date(order.date).toLocaleString('tr-TR')}</td>
+                        <td data-label="Durum"><span class="status pending">Beklemede</span></td>
+                        <td data-label="Etmekler">
                             <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
                             <button class="btn-icon" onclick="assignOrderNumber('${order.id}')" title="Numara Ata ve SMS Gönder">
                                 <i class="fas fa-check"></i>
@@ -907,18 +921,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 } else {
                     row.innerHTML = `
-                        <td>
+                        <td data-label="Harytlar">
                             <ul style="list-style: none; padding: 0; margin: 0;">
                                 ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
                             </ul>
                         </td>
-                        <td>${order.customer.name}</td>
-                        <td>${order.customer.phone}</td>
-                        <td>${order.customer.address}</td>
-                        <td>${storeNames}</td>
-                        <td>${new Date(order.date).toLocaleString('tr-TR')}</td>
-                        <td><span class="status completed">Onaylandı</span></td>
-                        <td><strong>${order.orderNumber}</strong></td>
+                        <td data-label="Ady">${order.customer.name}</td>
+                        <td data-label="Telefony">${order.customer.phone}</td>
+                        <td data-label="Salgysy">${order.customer.address}</td>
+                        <td data-label="Magazynlar">${storeNames}</td>
+                        <td data-label="Taryhy">${new Date(order.date).toLocaleString('tr-TR')}</td>
+                        <td data-label="Durum"><span class="status completed">Onaylandı</span></td>
+                        <td data-label="Zakaz No"><strong>${order.orderNumber}</strong></td>
                     `;
                 }
                 ordersTableBody.appendChild(row);
@@ -1052,6 +1066,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Yeni grafiği oluştur
             const ctx = document.getElementById('visitorChart').getContext('2d');
             visitorChartInstance = new Chart(ctx, chartConfig);
+            
+            // Animasyon için active class'ı ekle
+            const chartContainer = document.querySelector('.visitor-chart-container');
+            if (chartContainer) {
+                chartContainer.classList.add('active');
+            }
             
             console.log('✅ Ziyaretçi grafiği oluşturuldu:', visitorCounts);
             
@@ -1424,10 +1444,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 users.forEach(user => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${user.username}</td>
-                        <td><span class="status ${user.role}">${getRoleName(user.role)}</span></td>
-                        <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
-                        <td>
+                        <td data-label="Ulanyjy Ady">${user.username}</td>
+                        <td data-label="Rol"><span class="status ${user.role}">${getRoleName(user.role)}</span></td>
+                        <td data-label="Rugsatlar">${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
+                        <td data-label="Etmekler">
                             <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
                         </td>
                     `;
@@ -1737,6 +1757,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (addUserBtn) {
         addUserBtn.addEventListener('click', openUserModal);
     }
+    
+    // Mobil kullanıcı ekle butonu
+    const addUserBtnMobile = document.getElementById('add-user-btn-mobile');
+    if (addUserBtnMobile) {
+        addUserBtnMobile.addEventListener('click', openUserModal);
+    }
+
 
     // Rol değiştiğinde izinleri otomatik ayarla
     const userRoleSelect = document.getElementById('user-role');
@@ -1840,6 +1867,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             pageTitle.textContent = link.textContent.trim();
+            
+            // Mobilde menüyü kapat
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
         });
     });
     
@@ -1853,6 +1885,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } else {
         console.error('Mağaza Ekle butonu bulunamadı!');
+    }
+    
+    // Mobil mağaza butonu
+    const addStoreBtnMobile = document.getElementById('add-store-btn-mobile');
+    if (addStoreBtnMobile) {
+        addStoreBtnMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            openStoreModal();
+        });
     }
     
     storeForm.addEventListener('submit', handleStoreSubmit);
@@ -1869,6 +1910,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Ürün Ekle butonu bulunamadı!');
     }
     
+    // Mobil ürün butonu
+    const addProductBtnMobile = document.getElementById('add-product-btn-mobile');
+    if (addProductBtnMobile) {
+        addProductBtnMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            openProductModal();
+        });
+    }
+
     productForm.addEventListener('submit', handleProductSubmit);
     
     // Modal kapatma
@@ -1892,8 +1942,51 @@ document.addEventListener('DOMContentLoaded', () => {
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             adminSidebar.classList.toggle('active');
+            
+            // Overlay'i göster/gizle
+            const overlay = document.getElementById('sidebar-overlay');
+            if (overlay) {
+                overlay.classList.toggle('active');
+            }
         });
     }
+    
+    // Sidebar overlay tıklanınca kapat
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            closeSidebar();
+        });
+    }
+    
+    // Sidebar'ı kapatma fonksiyonu
+    function closeSidebar() {
+        adminSidebar.classList.remove('active');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+    }
+    
+    // Mobilde sayfa yüklenince menüyü kapat
+    if (window.innerWidth <= 768) {
+        adminSidebar.classList.remove('active');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+    }
+    
+    // Pencere boyutu değişince menüyü düzelt
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            adminSidebar.classList.remove('active');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+        }
+    });
 
 
 
