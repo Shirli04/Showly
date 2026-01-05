@@ -31,7 +31,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Menü elemanlarını yetkiye göre gizle
     document.querySelectorAll('.nav-link').forEach(link => {
         const section = link.getAttribute('data-section');
-        if (currentUser.role !== 'admin' && !currentUser.permissions.includes(section)) {
+        
+        // Superadmin: Her şeyi görür
+        if (currentUser.role === 'superadmin') {
+            link.style.display = 'flex';
+        }
+        // Admin: Users hariç her şeyi görür
+        else if (currentUser.role === 'admin') {
+            if (section === 'users') {
+                link.style.display = 'none';
+            } else {
+                link.style.display = 'flex';
+            }
+        }
+        // Diğer roller: Sadece permissions içindekileri görür
+        else if (!currentUser.permissions.includes(section)) {
             link.style.display = 'none';
         }
     });
@@ -1411,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${user.username}</td>
-                        <td><span class="status ${user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
+                        <td><span class="status ${user.role === 'superadmin' || user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
                         <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
                         <td>
                             <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
@@ -1423,8 +1437,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Silme butonları
                 document.querySelectorAll('.delete-user').forEach(btn => {
                     btn.addEventListener('click', async () => {
+                        const userId = btn.getAttribute('data-id');
+                        const user = users.find(u => u.id === userId);
+                        
+                        if (user.role === 'superadmin') {
+                            showNotification('Super Admin silinemez!', false);
+                            return;
+                        }
+                        
                         if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-                            await window.db.collection('users').doc(btn.getAttribute('data-id')).delete();
+                            await window.db.collection('users').doc(userId).delete();
                             renderUsersTable();
                             showNotification('Kullanıcı silindi!');
                         }
@@ -1439,6 +1461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Rol adlarını çevir
         const getRoleName = (role) => {
             const roles = {
+                'superadmin': 'Super Admin',
                 'admin': 'Admin',
                 'store_manager': 'Mağaza Yöneticisi',
                 'product_manager': 'Ürün Yöneticisi',
@@ -1464,8 +1487,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const role = e.target.value;
                 const checkboxes = document.querySelectorAll('.permission-checkbox');
                 
-                if (role === 'admin') {
+                if (role === 'superadmin') {
                     checkboxes.forEach(cb => cb.checked = true);
+                } else if (role === 'admin') {
+                    checkboxes.forEach(cb => {
+                        cb.checked = cb.value !== 'users';
+                    });
                 } else if (role === 'store_manager') {
                     checkboxes.forEach(cb => {
                         cb.checked = ['dashboard', 'stores'].includes(cb.value);
@@ -1474,13 +1501,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkboxes.forEach(cb => {
                         cb.checked = ['dashboard', 'products'].includes(cb.value);
                     });
-                } else if (role === 'order_manager') {
-                    checkboxes.forEach(cb => {
-                        cb.checked = ['dashboard', 'orders'].includes(cb.value);
-                    });
-                }
-            });
-        }
+            } else if (role === 'order_manager') {
+                checkboxes.forEach(cb => {
+                    cb.checked = ['dashboard', 'orders'].includes(cb.value);
+                });
+            } else if (role === 'superadmin') {
+                checkboxes.forEach(cb => cb.checked = true);
+            }
+        });
+    }
 
         // Kullanıcı form submit
         if (userForm) {
@@ -1650,7 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${user.username}</td>
-                    <td><span class="status ${user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
+                    <td><span class="status ${user.role === 'superadmin' || user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
                     <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
                     <td>
                         <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
@@ -1662,8 +1691,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Silme butonları
             document.querySelectorAll('.delete-user').forEach(btn => {
                 btn.addEventListener('click', async () => {
+                    const userId = btn.getAttribute('data-id');
+                    const user = users.find(u => u.id === userId);
+                    
+                    if (user.role === 'superadmin') {
+                        showNotification('Super Admin silinemez!', false);
+                        return;
+                    }
+                    
                     if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-                        await window.db.collection('users').doc(btn.getAttribute('data-id')).delete();
+                        await window.db.collection('users').doc(userId).delete();
                         renderUsersTable();
                         showNotification('Kullanıcı silindi!');
                     }
@@ -1678,6 +1715,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Rol adlarını çevir
     const getRoleName = (role) => {
         const roles = {
+            'superadmin': 'Super Admin',
             'admin': 'Admin',
             'store_manager': 'Mağaza Yöneticisi',
             'product_manager': 'Ürün Yöneticisi',
@@ -1707,8 +1745,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const role = e.target.value;
             const checkboxes = document.querySelectorAll('.permission-checkbox');
             
-            if (role === 'admin') {
+            if (role === 'superadmin') {
                 checkboxes.forEach(cb => cb.checked = true);
+            } else if (role === 'admin') {
+                checkboxes.forEach(cb => {
+                    cb.checked = cb.value !== 'users';
+                });
             } else if (role === 'store_manager') {
                 checkboxes.forEach(cb => {
                     cb.checked = ['dashboard', 'stores'].includes(cb.value);
@@ -1722,6 +1764,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     cb.checked = ['dashboard', 'orders'].includes(cb.value);
                 });
             }
+        });
+    }
         });
     }
 
