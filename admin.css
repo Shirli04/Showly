@@ -532,8 +532,21 @@ body {
     color: var(--success-color);
 }
 
+.status.superadmin {
+    background-color: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+.status.admin {
+    background-color: rgba(78, 205, 196, 0.2);
+    color: #4ecdc4;
+    font-weight: 600;
+}
+
 .status.active {
     background-color: rgba(108, 92, 231, 0.2);
+
     color: var(--primary-color);
 }
 
@@ -1046,4 +1059,177 @@ ul {
 .icon-item.selected .icon-label {
     color: #000000;
     font-weight: 600;
+}
+
+/* User Modal Styles */
+.user-modal-content {
+    max-width: 700px;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-header-left i {
+    font-size: 24px;
+    color: #6c5ce7;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-group label i {
+    margin-right: 8px;
+    color: #6c5ce7;
+    font-size: 14px;
+}
+
+.role-select {
+    font-size: 15px;
+    padding: 14px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background-color: #fff;
+    color: #333;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.role-select:focus {
+    outline: none;
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
+}
+
+.role-select option[data-color="#ff6b6b"] {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+.role-select option[data-color="#4ecdc4"] {
+    color: #4ecdc4;
+    font-weight: 600;
+}
+
+.role-select option[data-color="#45b7d1"] {
+    color: #45b7d1;
+    font-weight: 600;
+}
+
+.role-select option[data-color="#96ceb4"] {
+    color: #96ceb4;
+    font-weight: 600;
+}
+
+.role-select option[data-color="#dfe6e9"] {
+    color: #dfe6e9;
+    font-weight: 600;
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.permission-item {
+    cursor: pointer;
+    position: relative;
+}
+
+.permission-item input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.permission-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    background: #fff;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 8px;
+}
+
+.permission-card i {
+    font-size: 24px;
+    color: #999;
+    transition: all 0.3s ease;
+}
+
+.permission-card span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.permission-item:hover .permission-card {
+    border-color: #6c5ce7;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(108, 92, 231, 0.2);
+}
+
+.permission-item:hover .permission-card i {
+    color: #6c5ce7;
+    transform: scale(1.1);
+}
+
+.permission-item:hover .permission-card span {
+    color: #6c5ce7;
+}
+
+.permission-item input[type="checkbox"]:checked + .permission-card {
+    border-color: #6c5ce7;
+    background: rgba(108, 92, 231, 0.05);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+}
+
+.permission-item input[type="checkbox"]:checked + .permission-card i {
+    color: #6c5ce7;
+    transform: scale(1.1);
+}
+
+.permission-item input[type="checkbox"]:checked + .permission-card span {
+    color: #6c5ce7;
+}
+
+@media (max-width: 600px) {
+    .permissions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .permission-card {
+        padding: 16px 8px;
+    }
+    
+    .permission-card i {
+        font-size: 20px;
+    }
+    
+    .permission-card span {
+        font-size: 11px;
+    }
+}
 }

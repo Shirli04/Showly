@@ -1425,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${user.username}</td>
-                        <td><span class="status ${user.role === 'superadmin' || user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
+                        <td><span class="status ${user.role}">${getRoleName(user.role)}</span></td>
                         <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
                         <td>
                             <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
@@ -1679,7 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${user.username}</td>
-                    <td><span class="status ${user.role === 'superadmin' || user.role === 'admin' ? 'completed' : 'pending'}">${getRoleName(user.role)}</span></td>
+                    <td><span class="status ${user.role}">${getRoleName(user.role)}</span></td>
                     <td>${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
                     <td>
                         <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
@@ -1727,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Kullanıcı ekle modalı aç
     const openUserModal = () => {
         if (!userModal) return;
-        document.getElementById('user-modal-title').textContent = 'Yeni Kullanıcı Ekle';
+        document.getElementById('user-modal-title').textContent = 'Täze ulanyjy goş';
         userForm.reset();
         document.querySelectorAll('.permission-checkbox').forEach(cb => cb.checked = false);
         userModal.style.display = 'block';

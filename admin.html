@@ -516,43 +516,100 @@
 
         <!-- Kullanıcı Ekleme Modalı -->
         <div id="user-modal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content user-modal-content">
                 <div class="modal-header">
-                    <h3 id="user-modal-title">Täze ulanyjy goş</h3>
+                    <div class="modal-header-left">
+                        <i class="fas fa-user-plus"></i>
+                        <h3 id="user-modal-title">Täze ulanyjy goş</h3>
+                    </div>
                     <span class="close-modal">&times;</span>
                 </div>
                 <form id="user-form">
-                    <div class="form-group">
-                        <label>Ulanyjy ady</label>
-                        <input type="text" id="user-username" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Kody</label>
-                        <input type="password" id="user-password" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Rol</label>
-                        <select id="user-role" required>
-                            <option value="superadmin">Super Admin (Ähli rugsatlar)</option>
-                            <option value="admin">Admin (User dişinde)</option>
-                            <option value="store_manager">Magazyn Manager</option>
-                            <option value="product_manager">Haryt Manager</option>
-                            <option value="order_manager">Zakaz Manager</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Rugsatlar</label>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <label><input type="checkbox" value="dashboard" class="permission-checkbox"> Panel</label>
-                            <label><input type="checkbox" value="stores" class="permission-checkbox"> Magazynlar</label>
-                            <label><input type="checkbox" value="products" class="permission-checkbox"> Harytlar</label>
-                            <label><input type="checkbox" value="orders" class="permission-checkbox"> Zakazlar</label>
-                            <label><input type="checkbox" value="settings" class="permission-checkbox"> Sazlamalar</label>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-user"></i> Ulanyjy ady</label>
+                            <input type="text" id="user-username" placeholder="Ulanyjy adyny giriziň" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-lock"></i> Kody</label>
+                            <input type="password" id="user-password" placeholder="Kody giriziň" required>
                         </div>
                     </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-crown"></i> Rol</label>
+                        <select id="user-role" required class="role-select">
+                            <option value="">Rol saýlaň</option>
+                            <option value="superadmin" data-color="#ff6b6b">Super Admin (Ähli rugsatlar)</option>
+                            <option value="admin" data-color="#4ecdc4">Admin (User dişinde)</option>
+                            <option value="store_manager" data-color="#45b7d1">Magazyn Manager</option>
+                            <option value="product_manager" data-color="#96ceb4">Haryt Manager</option>
+                            <option value="order_manager" data-color="#dfe6e9">Zakaz Manager</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-key"></i> Rugsatlar</label>
+                        <div class="permissions-grid">
+                            <label class="permission-item">
+                                <input type="checkbox" value="dashboard" class="permission-checkbox">
+                                <div class="permission-card">
+                                    <i class="fas fa-tachometer-alt"></i>
+                                    <span>Panel</span>
+                                </div>
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="stores" class="permission-checkbox">
+                                <div class="permission-card">
+                                    <i class="fas fa-store"></i>
+                                    <span>Magazynlar</span>
+                                </div>
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="products" class="permission-checkbox">
+                                <div class="permission-card">
+                                    <i class="fas fa-box"></i>
+                                    <span>Harytlar</span>
+                                </div>
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="orders" class="permission-checkbox">
+                                <div class="permission-card">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <span>Zakazlar</span>
+                                </div>
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="settings" class="permission-checkbox">
+                                <div class="permission-card">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Sazlamalar</span>
+                                </div>
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="users" class="permission-checkbox">
+                                <div class="permission-card">
+                                    <i class="fas fa-users-cog"></i>
+                                    <span>Ulanyjylar</span>
+                                </div>
+                            </label>
+                            <label class="permission-item">
+                                <input type="checkbox" value="categories" class="permission-checkbox">
+                                <div class="permission-card">
+                                    <i class="fas fa-tags"></i>
+                                    <span>Kategoriýalar</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancel-user">Aýyr</button>
-                        <button type="submit" class="btn-primary">Ýatda sakla</button>
+                        <button type="button" class="btn-secondary" id="cancel-user">
+                            <i class="fas fa-times"></i> Aýyr
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Ýatda sakla
+                        </button>
                     </div>
                 </form>
             </div>
