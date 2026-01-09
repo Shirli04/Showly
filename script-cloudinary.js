@@ -322,13 +322,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // ✅ YENİ: TikTok ve Instagram butonları
         let socialButtonsHTML = '';
-        if (store.tiktok || store.instagram) {
+        if (store.tiktok || store.instagram || store.phone || store.location) {
             socialButtonsHTML = '<div class="store-social-buttons">';
             if (store.tiktok) {
                 socialButtonsHTML += `<a href="${store.tiktok}" target="_blank" class="social-button tiktok-button"><i class="fab fa-tiktok"></i></a>`;
             }
             if (store.instagram) {
                 socialButtonsHTML += `<a href="${store.instagram}" target="_blank" class="social-button instagram-button"><i class="fab fa-instagram"></i></a>`;
+            }
+            if (store.phone) {
+                socialButtonsHTML += `<a href="tel:${store.phone}" class="social-button phone-button"><i class="fas fa-phone"></i></a>`;
+            }
+            if (store.location) {
+                socialButtonsHTML += `<a href="https://maps.google.com/?q=${encodeURIComponent(store.location)}" target="_blank" class="social-button location-button"><i class="fas fa-map-marker-alt"></i></a>`;
             }
             socialButtonsHTML += '</div>';
         }

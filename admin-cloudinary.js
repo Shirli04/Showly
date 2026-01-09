@@ -274,13 +274,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('store-name').value = store.name;
         document.getElementById('store-description').value = store.description || '';
         document.getElementById('store-custom-banner-text').value = store.customBannerText || '';
-        
+
         // ✅ Yeni: TikTok ve Instagram
         const tiktokInput = document.getElementById('store-tiktok');
         const instagramInput = document.getElementById('store-instagram');
         if (tiktokInput) tiktokInput.value = store.tiktok || '';
         if (instagramInput) instagramInput.value = store.instagram || '';
-        
+
+        // ✅ Yeni: Phone ve Location
+        const phoneInput = document.getElementById('store-phone');
+        const locationInput = document.getElementById('store-location');
+        if (phoneInput) phoneInput.value = store.phone || '';
+        if (locationInput) locationInput.value = store.location || '';
+
         // ✅ Kategori seç
         const categorySelect = document.getElementById('store-category');
         if (categorySelect && store.category) {
@@ -589,20 +595,22 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
-        
+
         const name = document.getElementById('store-name').value.trim();
         const desc = document.getElementById('store-description').value.trim();
         const customBannerText = document.getElementById('store-custom-banner-text')?.value.trim() || '';
         const category = document.getElementById('store-category').value;
         const tiktok = document.getElementById('store-tiktok')?.value.trim() || '';
         const instagram = document.getElementById('store-instagram')?.value.trim() || '';
+        const phone = document.getElementById('store-phone')?.value.trim() || '';
+        const location = document.getElementById('store-location')?.value.trim() || '';
 
         if (!name || !category) {
             showNotification('Mağaza adı ve kategori gerekli!', false);
             isSubmitting = false;
             return;
         }
-        
+
         try {
             if (editingStoreId) {
                 // ✅ Mağaza güncelleme
@@ -612,7 +620,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     customBannerText,
                     category,
                     tiktok,
-                    instagram
+                    instagram,
+                    phone,
+                    location
                 });
                 showNotification('Mağaza güncellendi!');
             } else {
@@ -623,11 +633,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     customBannerText,
                     category,
                     tiktok,
-                    instagram
+                    instagram,
+                    phone,
+                    location
                 });
                 showNotification('Mağaza Firebase\'e eklendi!');
             }
-            
+
             renderStoresTable();
             populateStoreSelect();
             updateDashboard();

@@ -495,6 +495,20 @@ header {
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
 
+.phone-button:hover {
+    background-color: #000000;
+    color: #ffffff;
+    transform: scale(1.15) rotate(-5deg);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.location-button:hover {
+    background-color: #000000;
+    color: #ffffff;
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .store-banner-content {
@@ -509,6 +523,13 @@ header {
 
     .store-social-buttons {
         justify-content: center;
+        gap: 15px;
+    }
+
+    .social-button {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
     }
 
     .store-social-buttons-container {
