@@ -169,21 +169,8 @@ class ShowlyDB {
 async function initializeCategories() {
     const categoriesSnapshot = await db.collection('categories').get();
     
-    if (categoriesSnapshot.empty) {
-        console.log('🔧 Varsayılan kategoriler oluşturuluyor...');
-        
-        const defaultCategories = [
-            { id: 'erkek-giyim', name: 'Erkek Giyim', order: 1 },
-            { id: 'kadin-giyim', name: 'Kadın Giyim', order: 2 },
-            { id: 'cocuk-giyim', name: 'Çocuk Giyim', order: 3 }
-        ];
-        
-        for (const cat of defaultCategories) {
-            await db.collection('categories').doc(cat.id).set(cat);
-        }
-        
-        console.log('✅ Kategoriler oluşturuldu');
-    }
+    // Varsayılan kategoriler oluşturma kaldırıldı
+    console.log('✅ Kategori sistemi hazır');
 }
 
 // Sayfa yüklenince kategorileri kontrol et
