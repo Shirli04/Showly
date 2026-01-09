@@ -1069,6 +1069,37 @@ header {
     color: var(--text-color);
 }
 
+.delivery-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #f8f9fa;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    color: #666;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.delivery-notice:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.delivery-icon {
+    color: var(--primary-color);
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.delivery-notice:hover .delivery-icon {
+    transform: scale(1.2);
+}
+
 .checkout-button {
     width: 100%;
     background-color: var(--primary-color);
@@ -1353,6 +1384,18 @@ header {
         width: 100%;
     }
 
+    .delivery-notice {
+        flex-direction: column;
+        text-align: center;
+        padding: 10px 12px;
+        font-size: 12px;
+        gap: 6px;
+    }
+
+    .delivery-icon {
+        font-size: 18px;
+    }
+
     .hero-section {
         padding: 40px 20px;
         border-radius: 0;
@@ -1461,6 +1504,16 @@ header {
 
     .content {
         padding: 12px;
+    }
+
+    .delivery-notice {
+        padding: 8px 10px;
+        font-size: 11px;
+        gap: 5px;
+    }
+
+    .delivery-icon {
+        font-size: 16px;
     }
 
     .hero-section {
