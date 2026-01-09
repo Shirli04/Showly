@@ -932,8 +932,7 @@ header {
     margin-top: 20px;
 }
 
-.btn-add-cart,
-.btn-share-detail {
+.btn-add-cart {
     padding: 15px 20px;
     border: none;
     border-radius: 6px;
@@ -941,12 +940,10 @@ header {
     font-size: 16px;
     font-weight: 600;
     transition: all 0.3s ease;
-}
-
-.btn-add-cart {
     background-color: var(--primary-color);
     color: var(--white-color);
     flex: 1;
+    width: 100%;
 }
 
 .btn-add-cart:hover {
@@ -955,15 +952,6 @@ header {
 
 .btn-add-cart:active {
     transform: scale(0.98);
-}
-
-.btn-share-detail {
-    background-color: var(--light-gray);
-    color: var(--text-color);
-}
-
-.btn-share-detail:hover {
-    background-color: #e0e0e0;
 }
 
 /* ================================ SEPET MODALI ================================ */
@@ -1585,8 +1573,7 @@ header {
         gap: 8px;
     }
 
-    .btn-add-cart,
-    .btn-share-detail {
+    .btn-add-cart {
         padding: 12px 15px;
         font-size: 14px;
     }
