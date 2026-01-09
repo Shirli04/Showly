@@ -423,6 +423,49 @@ body {
         gap: 12px;
         padding: 15px 0;
     }
+
+    .section-header h2 {
+        font-size: 22px;
+    }
+
+    .header-buttons {
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+        display: flex;
+    }
+
+    .header-buttons .btn-primary {
+        display: none;
+    }
+
+    .header-buttons .btn-mobile {
+        display: flex;
+        width: 100%;
+        min-height: 48px;
+        font-size: 15px;
+        justify-content: center;
+    }
+}
+
+.section-header h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 15px 0;
+    }
     
     .section-header h2 {
         font-size: 22px;
@@ -527,6 +570,49 @@ body {
     background-color: #f0f0f0;
     color: inherit;
 }
+
+/* ================================ MOBİL BUTONLAR ================================ */
+.btn-mobile {
+    display: none;
+    padding: 12px 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+    transition: all 0.3s ease;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px) {
+    .btn-mobile {
+        display: inline-flex;
+        width: 100%;
+        min-height: 48px;
+        font-size: 15px;
+    }
+}
+
+.btn-mobile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(108, 92, 231, 0.4);
+}
+
+.btn-mobile:active {
+    transform: scale(0.98);
+}
+
+.btn-mobile i {
+    font-size: 16px;
+}
+
 
 /* Dashboard Stats */
 .stats-grid {
@@ -1903,21 +1989,24 @@ ul {
 /* ================================ BUTON ANİMASYONLARI ================================ */
 .btn-primary,
 .btn-secondary,
-.btn-danger {
+.btn-danger,
+.btn-mobile {
     animation: fadeInUp 0.5s ease;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-primary:hover,
 .btn-secondary:hover,
-.btn-danger:hover {
+.btn-danger:hover,
+.btn-mobile:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary:active,
 .btn-secondary:active,
-.btn-danger:active {
+.btn-danger:active,
+.btn-mobile:active {
     transform: translateY(0);
 }
 
@@ -2069,22 +2158,38 @@ ul {
 }
 
 @media (max-width: 768px) {
-    .header-buttons {
-        width: 100%;
+    .export-buttons {
+        gap: 8px;
         flex-direction: column;
+        display: flex;
     }
-    
-    .header-buttons .btn-primary {
-        display: none;
-    }
-}
-    
+
     .export-buttons .btn-export {
         width: 100%;
         justify-content: center;
         min-height: 48px;
         font-size: 15px;
+        display: flex;
     }
+}
+
+/* ================================ EXPORT BUTTONS ANİMASYONLARI ================================ */
+.export-buttons {
+    animation: fadeInUp 0.5s ease;
+    animation-delay: 0.3s;
+}
+
+.btn-export {
+    transition: all 0.3s ease;
+    min-height: 44px;
+}
+
+.btn-export:hover {
+    transform: translateY(-2px);
+}
+
+.btn-export:active {
+    transform: scale(0.98);
 }
 
 /* ================================ EXPORT BUTTONS ANİMASYONLARI ================================ */

@@ -508,7 +508,19 @@ document.addEventListener('DOMContentLoaded', () => {
         selectCategoryIcon('fa-tag'); // Varsayılan ikon
         categoryModal.style.display = 'block';
     });
-    
+
+    // Mobil kategori butonu
+    const addCategoryBtnMobile = document.getElementById('add-category-btn-mobile');
+    if (addCategoryBtnMobile) {
+        addCategoryBtnMobile.addEventListener('click', () => {
+            document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goš';
+            categoryForm.reset();
+            document.getElementById('category-id').value = '';
+            document.getElementById('category-icon').value = 'fa-tag';
+            selectCategoryIcon('fa-tag'); // Varsayılan ikon
+            categoryModal.style.display = 'block';
+        });
+    }
 
     cancelCategory?.addEventListener('click', () => {
         categoryModal.style.display = 'none';
@@ -1745,6 +1757,12 @@ document.addEventListener('DOMContentLoaded', () => {
         addUserBtn.addEventListener('click', openUserModal);
     }
 
+    // Mobil kullanıcı ekle butonu
+    const addUserBtnMobile = document.getElementById('add-user-btn-mobile');
+    if (addUserBtnMobile) {
+        addUserBtnMobile.addEventListener('click', openUserModal);
+    }
+
     // Rol değiştiğinde izinleri otomatik ayarla
     const userRoleSelect = document.getElementById('user-role');
     if (userRoleSelect) {
@@ -1866,9 +1884,18 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error('Mağaza Ekle butonu bulunamadı!');
     }
-    
+
+    // Mobil mağaza butonu
+    const addStoreBtnMobile = document.getElementById('add-store-btn-mobile');
+    if (addStoreBtnMobile) {
+        addStoreBtnMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            openStoreModal();
+        });
+    }
+
     storeForm.addEventListener('submit', handleStoreSubmit);
-    
+
     // Ürün butonları
     if (addProductBtn) {
         console.log('Ürün Ekle butonu bulundu');
@@ -1879,6 +1906,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } else {
         console.error('Ürün Ekle butonu bulunamadı!');
+    }
+
+    // Mobil ürün butonu
+    const addProductBtnMobile = document.getElementById('add-product-btn-mobile');
+    if (addProductBtnMobile) {
+        addProductBtnMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            openProductModal();
+        });
     }
 
     productForm.addEventListener('submit', handleProductSubmit);
