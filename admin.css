@@ -45,6 +45,8 @@ body {
     transform: translateX(0);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 768px) {
@@ -53,10 +55,13 @@ body {
         width: 280px;
         max-width: 85vw;
         box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3);
+        right: 0;
+        left: auto;
     }
     
     .admin-sidebar.active {
         transform: translateX(0);
+        left: 0;
     }
 }
 
@@ -143,6 +148,20 @@ body {
     border-left: 3px solid transparent;
     position: relative;
     overflow: hidden;
+    min-height: 50px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px) {
+    .sidebar-nav a {
+        padding: 16px 20px;
+        min-height: 55px;
+    }
+    
+    .sidebar-nav i {
+        font-size: 18px;
+        margin-right: 14px;
+    }
 }
 
 .sidebar-nav a::before {
@@ -238,6 +257,13 @@ body {
     display: flex;
     flex-direction: column;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+    .admin-main {
+        margin-left: 0;
+    }
 }
 
 /* Header */
@@ -254,22 +280,54 @@ body {
     z-index: 50;
 }
 
+@media (max-width: 768px) {
+    .admin-header {
+        padding: 0 15px;
+        height: 60px;
+    }
+    
+    .header-left h1 {
+        font-size: 18px;
+    }
+    
+    .admin-info {
+        display: none;
+    }
+}
+
 .header-left {
     display: flex;
     align-items: center;
 }
 
 .menu-toggle {
-    display: none;
     background: none;
     border: none;
     font-size: 24px;
     color: var(--dark-color);
     margin-right: 15px;
     cursor: pointer;
-    padding: 8px;
+    padding: 10px;
     border-radius: 8px;
     transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: flex;
+    }
+}
+
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: flex;
+    }
 }
 
 .menu-toggle:hover {
@@ -279,21 +337,6 @@ body {
 
 .menu-toggle:active {
     transform: scale(0.95);
-}
-
-@media (max-width: 768px) {
-    .admin-header {
-        padding: 0 15px;
-        height: 60px;
-    }
-    
-    .header-left h1 {
-        font-size: 20px;
-    }
-    
-    .admin-info {
-        display: none;
-    }
 }
 
 .header-left h1 {
@@ -327,6 +370,13 @@ body {
 .admin-content {
     flex: 1;
     padding: 30px;
+    overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+    .admin-content {
+        padding: 15px;
+    }
 }
 
 .content-section {
@@ -345,6 +395,8 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .section-header h2 {
@@ -359,9 +411,27 @@ body {
 }
 
 @media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 15px 0;
+    }
+    
+    .section-header h2 {
+        font-size: 22px;
+    }
+    
     .header-buttons {
         width: 100%;
         flex-direction: column;
+        gap: 10px;
+    }
+    
+    .header-buttons .btn-primary,
+    .header-buttons .btn-mobile {
+        width: 100%;
+        min-height: 48px;
     }
 }
 
@@ -379,10 +449,24 @@ body {
     transition: background-color 0.3s ease;
     display: inline-flex;
     align-items: center;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px) {
+    .btn-primary {
+        font-size: 15px;
+        padding: 14px 20px;
+        min-height: 48px;
+    }
 }
 
 .btn-primary:hover {
     background-color: #5f4dd8;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
 }
 
 .btn-primary i {
@@ -865,6 +949,14 @@ body {
     font-size: 14px;
 }
 
+@media (max-width: 768px) {
+    .form-group input[type="number"] {
+        font-size: 16px;
+        padding: 14px 16px;
+        min-height: 50px;
+    }
+}
+
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -873,6 +965,16 @@ body {
     border: 1px solid var(--light-color);
     border-radius: 8px;
     font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px;
+        padding: 14px 16px;
+        min-height: 50px;
+    }
 }
 
 .form-group input:focus,
@@ -1120,6 +1222,21 @@ ul {
 
 #visitorChart {
     max-height: 350px;
+    width: 100% !important;
+}
+
+@media (max-width: 768px) {
+    #visitorChart {
+        max-height: 300px;
+    }
+    
+    .visitor-chart-container {
+        padding: 15px;
+    }
+    
+    .visitor-chart-container h3 {
+        font-size: 18px;
+    }
 }
 
 /* ================================ KATEGORİ İKON GRID ================================ */
@@ -1383,6 +1500,7 @@ ul {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
+    -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-overlay.active {
@@ -1410,6 +1528,21 @@ ul {
     gap: 8px;
     box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
     transition: all 0.3s ease;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px) {
+    .btn-mobile {
+        display: flex;
+        width: 100%;
+        min-height: 48px;
+        font-size: 15px;
+    }
+    
+    .btn-primary {
+        display: none;
+    }
 }
 
 .btn-mobile:hover {
@@ -1418,22 +1551,11 @@ ul {
 }
 
 .btn-mobile:active {
-    transform: translateY(0);
+    transform: scale(0.98);
 }
 
 .btn-mobile i {
     font-size: 16px;
-}
-
-@media (max-width: 768px) {
-    .btn-mobile {
-        display: flex;
-        width: 100%;
-    }
-    
-    .btn-primary {
-        display: none;
-    }
 }
 
 /* ================================ MOBİL TABLE ================================ */
@@ -1452,6 +1574,7 @@ ul {
         animation: fadeInUp 0.5s ease;
         border: 1px solid #e0e0e0;
         transition: all 0.3s ease;
+        -webkit-tap-highlight-color: transparent;
     }
     
     .admin-table tbody tr:hover {
@@ -1463,14 +1586,17 @@ ul {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 0;
+        padding: 10px 0;
         border-bottom: 1px solid #f0f0f0;
+        flex-wrap: wrap;
+        gap: 8px;
     }
     
     .admin-table tbody td:last-child {
         border-bottom: none;
         padding-bottom: 0;
-        padding-top: 15px;
+        padding-top: 12px;
+        margin-top: 8px;
     }
     
     .admin-table tbody td::before {
@@ -1480,6 +1606,7 @@ ul {
         margin-right: 10px;
         font-size: 13px;
         white-space: nowrap;
+        flex-shrink: 0;
     }
     
     .admin-table tbody td {
@@ -1488,7 +1615,7 @@ ul {
     }
     
     .table-container {
-        padding: 0;
+        padding: 5px;
         overflow-x: hidden;
     }
     
@@ -1496,78 +1623,20 @@ ul {
         min-width: 100%;
         border: none;
     }
-}
     
-    .admin-table tbody tr {
-        display: block;
-        margin-bottom: 15px;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        padding: 15px;
-        animation: fadeInUp 0.5s ease;
-        border: 1px solid #e0e0e0;
+    /* Touch-friendly button sizes */
+    .btn-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
     }
     
-    .admin-table tbody td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .admin-table tbody td:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-        padding-top: 15px;
-    }
-    
-    .admin-table tbody td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: #333;
-        margin-right: 10px;
-        font-size: 13px;
-        white-space: nowrap;
-    }
-    
-    .admin-table tbody td {
-        font-size: 14px;
-        color: #666;
-    }
-    
-    .table-container {
-        padding: 10px;
-    }
-    
-    .table-container table {
-        min-width: 100%;
-    }
-}
-
-/* ================================ MOBİL STAT CARDS ================================ */
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .stat-card {
-        padding: 20px;
-    }
-    
-    .stat-icon {
+    /* Image thumbnails in table */
+    .admin-table tbody td img {
         width: 50px;
         height: 50px;
-    }
-    
-    .stat-info h3 {
-        font-size: 28px;
-    }
-    
-    .stat-info p {
-        font-size: 14px;
+        object-fit: cover;
+        border-radius: 8px;
     }
 }
 
@@ -1579,9 +1648,10 @@ ul {
     }
     
     .stat-card {
-        padding: 18px;
+        padding: 16px;
         flex-direction: row;
         align-items: center;
+        min-height: 80px;
     }
     
     .stat-icon {
@@ -1589,10 +1659,12 @@ ul {
         height: 50px;
         font-size: 20px;
         margin-right: 15px;
+        flex-shrink: 0;
     }
     
     .stat-info h3 {
         font-size: 24px;
+        margin-bottom: 2px;
     }
     
     .stat-info p {
@@ -1610,30 +1682,48 @@ ul {
         height: 100vh;
         max-height: 100vh;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .modal-content {
         height: 100%;
         border-radius: 0;
-        padding: 15px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
     }
     
     .modal-header {
-        padding: 15px;
+        padding: 15px 20px;
         position: sticky;
         top: 0;
         background: white;
         z-index: 10;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
     }
     
     .modal-body {
-        padding: 15px;
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
     }
     
     .form-row {
         grid-template-columns: 1fr;
         gap: 12px;
+    }
+    
+    .form-group {
+        margin-bottom: 18px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px;
+        padding: 14px 16px;
+        min-height: 50px;
     }
     
     .permissions-grid {
@@ -1642,29 +1732,55 @@ ul {
     }
     
     .permission-card {
-        padding: 12px 8px;
+        padding: 16px 12px;
+        min-height: 90px;
     }
     
     .permission-card i {
-        font-size: 18px;
+        font-size: 20px;
     }
     
     .permission-card span {
         font-size: 11px;
+        line-height: 1.3;
     }
     
     .form-actions {
         position: sticky;
         bottom: 0;
         background: white;
-        padding: 15px;
+        padding: 15px 20px;
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-        margin: 0 -15px 0 -15px;
-        gap: 10px;
+        margin: 0;
+        gap: 12px;
+        flex-shrink: 0;
     }
     
     .form-actions button {
         flex: 1;
+        padding: 14px 20px;
+        font-size: 16px;
+        min-height: 50px;
+    }
+    
+    /* Icon grid */
+    .icon-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        padding: 12px;
+    }
+    
+    .icon-item {
+        padding: 12px 8px;
+    }
+    
+    .icon-wrapper {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .icon-label {
+        font-size: 10px;
     }
 }
 
@@ -1982,6 +2098,21 @@ ul {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .export-buttons {
+        gap: 8px;
+        flex-direction: column;
+    }
+    
+    .export-buttons .btn-export {
+        width: 100%;
+        justify-content: center;
+        min-height: 48px;
+        font-size: 15px;
+    }
 }
 
 /* ================================ EXPORT BUTTONS ANİMASYONLARI ================================ */
@@ -1992,10 +2123,15 @@ ul {
 
 .btn-export {
     transition: all 0.3s ease;
+    min-height: 44px;
 }
 
 .btn-export:hover {
     transform: translateY(-2px);
+}
+
+.btn-export:active {
+    transform: scale(0.98);
 }
 
 /* =================--------------- PERMISSION CARD ANİMASYONLARI --------------------------------- */
