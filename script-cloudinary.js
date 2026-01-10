@@ -83,11 +83,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
 
+        console.log('📂 Kategori menüsü oluşturuluyor...');
         // ✅ Kategorili menüyü oluştur
         await renderCategoryMenu();
+    console.log('✅ Kategori menüsü tamamlandı');
+    
+    console.log('🔄 Loading kapatılıyor...');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+        console.log('✅ Loading kapatıldı');
+    } else {
+        console.warn('⚠️ loadingOverlay elementi bulunamadı!');
+    }
 
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
+        
+        // ✅ Loading'i gizle
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
         
         // ✅ YENİ: Hata mesajını 404 sayfasında göster
         const notFoundSection = document.getElementById('not-found');
@@ -104,10 +119,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         notFoundSection.style.display = 'block';
         
         showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
-    } finally {
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-        }
     }
     
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
@@ -320,6 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         storesList.style.display = 'none';
                         chevronIcon.style.transform = 'rotate(0deg)';
                     }
+                });
             });
             
             // Alt kategori açılır/kapanır menü event'i
