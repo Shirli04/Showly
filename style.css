@@ -2339,3 +2339,58 @@ header {
         .btn-login {
             transition: all 0.3s ease;
         }
+
+/* ================================ ALT KATEGORİ STİLLERİ ===================== */
+.subcategory-item {
+    padding: 10px 0 5px 0;
+}
+
+.subcategory-name {
+    display: block;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    border-left: 3px solid rgba(102, 126, 234, 0.6);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.subcategory-stores {
+    list-style: none;
+    padding: 0 0 0 20px;
+}
+
+.subcategory-stores li a {
+    display: block;
+    padding: 8px 20px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.subcategory-stores li a:hover {
+    background-color: rgba(102, 126, 234, 0.15);
+    color: #fff;
+    border-left-color: rgba(102, 126, 234, 0.8);
+    padding-left: 28px;
+}
+
+@media (max-width: 768px) {
+    .subcategory-name {
+        font-size: 13px;
+        padding: 6px 15px;
+    }
+
+    .subcategory-stores {
+        padding: 0 0 0 15px;
+    }
+
+    .subcategory-stores li a {
+        font-size: 12px;
+        padding: 6px 15px;
+    }
+}

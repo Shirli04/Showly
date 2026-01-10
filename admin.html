@@ -378,38 +378,120 @@
                     <section id="categories" class="content-section">
                         <div class="section-header">
                             <h2>Kategoriýa dolandyryş</h2>
-                            <div class="header-buttons">
-                                <button class="btn-primary" id="add-category-btn">
-                                    <i class="fas fa-plus"></i> Täze kategoriýa goš
-                                </button>
-                                <button class="btn-mobile" id="add-category-btn-mobile">
-                                    <i class="fas fa-plus"></i> Täze kategoriýa
-                                </button>
-                            </div>
                         </div>
-                        <div class="table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Ady</th>
-                                        <th>Sıra</th>
-                                        <th>Magazyn sany</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="categories-table-body"></tbody>
-                            </table>
+                        
+                        <div class="categories-wrapper">
+                            <!-- Sol Taraf: Ana Kategoriler -->
+                            <div class="category-column">
+                                <div class="category-column-header">
+                                    <h3><i class="fas fa-folder"></i> Ana Kategoriler</h3>
+                                    <button class="btn-primary btn-sm" id="add-parent-category-btn">
+                                        <i class="fas fa-plus"></i> Täze goş
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ady</th>
+                                                <th>Icon</th>
+                                                <th>Sıra</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="parent-categories-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Sağ Taraf: Alt Kategoriler -->
+                            <div class="category-column">
+                                <div class="category-column-header">
+                                    <h3><i class="fas fa-folder-open"></i> Alt Kategoriler</h3>
+                                    <button class="btn-primary btn-sm" id="add-subcategory-btn">
+                                        <i class="fas fa-plus"></i> Täze goš
+                                    </button>
+                                </div>
+                                <div class="table-container">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ady</th>
+                                                <th>Ana Kategori</th>
+                                                <th>Sıra</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="subcategories-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
-                    <!-- Kategori Ekleme Modalı -->
-                    <div id="category-modal" class="modal">
-                        <div class="modal-content" style="max-width: 700px;">
+                     <!-- Ana Kategori Modalı -->
+                    <div id="parent-category-modal" class="modal">
+                        <div class="modal-content" style="max-width: 500px;">
                             <div class="modal-header">
-                                <h3 id="category-modal-title">Täze kategoriýa goş</h3>
+                                <h3 id="parent-category-modal-title">Ana Kategori Ekle</h3>
                                 <span class="close-modal">&times;</span>
                             </div>
+                            <form id="parent-category-form">
+                                <input type="hidden" id="parent-category-id">
+                                <div class="form-group">
+                                    <label>Ana Kategori Ady *</label>
+                                    <input type="text" id="parent-category-name" required placeholder="Örn: Giyim, Yemek, Elektronik">
+                                </div>
+                                <div class="form-group">
+                                    <label>İkon *</label>
+                                    <div class="icon-grid" id="parent-category-icon-grid">
+                                        <!-- İkonlar JavaScript ile buraya eklenecek -->
+                                    </div>
+                                    <input type="hidden" id="parent-category-icon" required value="fa-tag">
+                                    <p class="selected-icon-display">Seçilen: <span id="parent-selected-icon-display"><i class="fas fa-tag"></i></span></p>
+                                </div>
+                                <div class="form-group">
+                                    <label>Sıra</label>
+                                    <input type="number" id="parent-category-order" min="1" value="1">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" id="cancel-parent-category">Aýyr</button>
+                                    <button type="submit" class="btn-primary">Ýatda sakla</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Alt Kategori Modalı -->
+                    <div id="subcategory-modal" class="modal">
+                        <div class="modal-content" style="max-width: 500px;">
+                            <div class="modal-header">
+                                <h3 id="subcategory-modal-title">Alt Kategori Ekle</h3>
+                                <span class="close-modal">&times;</span>
+                            </div>
+                            <form id="subcategory-form">
+                                <input type="hidden" id="subcategory-id">
+                                <div class="form-group">
+                                    <label>Alt Kategori Ady *</label>
+                                    <input type="text" id="subcategory-name" required placeholder="Örn: Erkek, Kadın, Çocuk">
+                                </div>
+                                <div class="form-group">
+                                    <label>Ana Kategori *</label>
+                                    <select id="subcategory-parent" required>
+                                        <option value="">Ana kategori seçin</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Sıra</label>
+                                    <input type="number" id="subcategory-order" min="1" value="1">
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-secondary" id="cancel-subcategory">Aýyr</button>
+                                    <button type="submit" class="btn-primary">Ýatda sakla</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                             <form id="category-form">
                                 <input type="hidden" id="category-id">
                                 <div class="form-group">

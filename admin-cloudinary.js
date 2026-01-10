@@ -72,12 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const usersTableBody = document.getElementById('users-table-body');
     const cancelUser = document.getElementById('cancel-user');
 
-    // Kategori elemanları
-    const categoryModal = document.getElementById('category-modal');
-    const addCategoryBtn = document.getElementById('add-category-btn');
-    const categoryForm = document.getElementById('category-form');
-    const categoriesTableBody = document.getElementById('categories-table-body');
-    const cancelCategory = document.getElementById('cancel-category');
+    // Kategori elemanları (iki seviyeli sistem)
     const storeCategorySelect = document.getElementById('store-category');
     
     // Excel export/import
@@ -318,11 +313,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
         // ==================== KATEGORİ FONKSİYONLARI ====================
-
-    // Kategorileri yükle ve dropdown'u doldur
-    async function loadCategories() {
+ 
+    // ==================== İKİ SEVİYELİ KATEGORİ SİSTEMİ ====================
+    
+    // Ana kategori tablosunu güncelle
+    async function renderParentCategoriesTable() {
         try {
-            const categoriesSnapshot = await window.db.collection('categories')
+            const categoriesSnapshot = await window.db.collection('parentCategories')
                 .orderBy('order', 'asc')
                 .get();
             
@@ -331,85 +328,141 @@ document.addEventListener('DOMContentLoaded', () => {
                 ...doc.data()
             }));
             
-            // Dropdown'u doldur
-            storeCategorySelect.innerHTML = '<option value="">Kategoriýa saýlaň</option>';
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.id;
-                option.textContent = cat.name;
-                storeCategorySelect.appendChild(option);
+            const tableBody = document.getElementById('parent-categories-table-body');
+            tableBody.innerHTML = '';
+            
+            if (categories.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz ana kategori eklenmemiş.</td></tr>';
+                return;
+            }
+            
+            categories.forEach(category => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td data-label="Ady">${category.name}</td>
+                    <td data-label="Icon"><i class="fas ${category.icon || 'fa-tag'}"></i></td>
+                    <td data-label="Tertip">${category.order}</td>
+                    <td data-label="Etmekler">
+                        <button class="btn-icon edit-parent-category" data-id="${category.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon danger delete-parent-category" data-id="${category.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
             });
             
-            return categories;
+            // Event listeners
+            document.querySelectorAll('.edit-parent-category').forEach(btn => {
+                btn.addEventListener('click', () => editParentCategory(btn.getAttribute('data-id')));
+            });
+            
+            document.querySelectorAll('.delete-parent-category').forEach(btn => {
+                btn.addEventListener('click', () => deleteParentCategory(btn.getAttribute('data-id')));
+            });
+            
+        } catch (error) {
+            console.error('Ana kategori tablosu yüklenemedi:', error);
+        }
+    }
+
+    // Alt kategori tablosunu güncelle
+    async function renderSubcategoriesTable() {
+        try {
+            const subcategoriesSnapshot = await window.db.collection('subcategories')
+                .orderBy('order', 'asc')
+                .get();
+            
+            const subcategories = subcategoriesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            const parentsSnapshot = await window.db.collection('parentCategories').get();
+            const parentCategories = parentsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            const tableBody = document.getElementById('subcategories-table-body');
+            tableBody.innerHTML = '';
+            
+            if (subcategories.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz alt kategori eklenmemiş.</td></tr>';
+                return;
+            }
+            
+            subcategories.forEach(subcategory => {
+                const parent = parentCategories.find(p => p.id === subcategory.parentId);
+                const parentName = parent ? parent.name : 'Bilinmiyor';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td data-label="Ady">${subcategory.name}</td>
+                    <td data-label="Ana Kategori">${parentName}</td>
+                    <td data-label="Tertip">${subcategory.order}</td>
+                    <td data-label="Etmekler">
+                        <button class="btn-icon edit-subcategory" data-id="${subcategory.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon danger delete-subcategory" data-id="${subcategory.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Event listeners
+            document.querySelectorAll('.edit-subcategory').forEach(btn => {
+                btn.addEventListener('click', () => editSubcategory(btn.getAttribute('data-id')));
+            });
+            
+            document.querySelectorAll('.delete-subcategory').forEach(btn => {
+                btn.addEventListener('click', () => deleteSubcategory(btn.getAttribute('data-id')));
+            });
+            
+        } catch (error) {
+            console.error('Alt kategori tablosu yüklenemedi:', error);
+        }
+    }
+
+    // Kategorileri mağaza dropdown'una yükle
+    async function loadCategories() {
+        try {
+            const subcategoriesSnapshot = await window.db.collection('subcategories')
+                .orderBy('order', 'asc')
+                .get();
+            
+            const parentsSnapshot = await window.db.collection('parentCategories').get();
+            const parentCategories = parentsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            const subcategories = subcategoriesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            // Dropdown'u doldur (format: Parent > Subcategory)
+            storeCategorySelect.innerHTML = '<option value="">Kategoriýa saýlaň</option>';
+            
+            subcategories.forEach(sub => {
+                const parent = parentCategories.find(p => p.id === sub.parentId);
+                if (parent) {
+                    const option = document.createElement('option');
+                    option.value = sub.id;
+                    option.textContent = `${parent.name} > ${sub.name}`;
+                    storeCategorySelect.appendChild(option);
+                }
+            });
+            
+            return subcategories;
         } catch (error) {
             console.error('Kategoriler yüklenemedi:', error);
             return [];
         }
     }
 
-    // Kategori tablosunu güncelle
-    async function renderCategoriesTable() {
+    // Ana kategori ekle/düzenle
+    async function editParentCategory(categoryId) {
         try {
-            const categoriesSnapshot = await window.db.collection('categories')
-                .orderBy('order', 'asc')
-                .get();
-            
-            const categories = categoriesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            
-            // Her kategori için mağaza sayısını say
-            const storesSnapshot = await window.db.collection('stores').get();
-            const stores = storesSnapshot.docs.map(doc => doc.data());
-            
-            categoriesTableBody.innerHTML = '';
-            
-            if (categories.length === 0) {
-                categoriesTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Henüz kategori eklenmemiş.</td></tr>';
-                return;
-            }
-            
-            categories.forEach(category => {
-                const storeCount = stores.filter(s => s.category === category.id).length;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td data-label="ID">${category.id}</td>
-                    <td data-label="Kategoriýa Ady">${category.name}</td>
-                    <td data-label="Tertip">${category.order}</td>
-                    <td data-label="Magazyn Sany">${storeCount}</td>
-                    <td data-label="Etmekler">
-                        <button class="btn-icon edit-category" data-id="${category.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon danger delete-category" data-id="${category.id}" ${storeCount > 0 ? 'disabled title="Bu kategoride mağaza var"' : ''}>
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                categoriesTableBody.appendChild(row);
-            });
-            
-            // Buton event'lerini bağla
-            document.querySelectorAll('.edit-category').forEach(btn => {
-                btn.addEventListener('click', () => editCategory(btn.getAttribute('data-id')));
-            });
-            
-            document.querySelectorAll('.delete-category').forEach(btn => {
-                if (!btn.disabled) {
-                    btn.addEventListener('click', () => deleteCategory(btn.getAttribute('data-id')));
-                }
-            });
-            
-        } catch (error) {
-            console.error('Kategori tablosu yüklenemedi:', error);
-        }
-    }
-
-    // Kategori düzenle
-    async function editCategory(categoryId) {
-        try {
-            const doc = await window.db.collection('categories').doc(categoryId).get();
-            
+            const doc = await window.db.collection('parentCategories').doc(categoryId).get();
             if (!doc.exists) {
                 showNotification('Kategori bulunamadı!', false);
                 return;
@@ -417,17 +470,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const category = doc.data();
             
-            document.getElementById('category-modal-title').textContent = 'Kategoriýany düzenle';
-            document.getElementById('category-id').value = categoryId;
-            document.getElementById('category-name').value = category.name;
-            document.getElementById('category-order').value = category.order;
+            document.getElementById('parent-category-modal-title').textContent = 'Ana Kategori Düzenle';
+            document.getElementById('parent-category-id').value = categoryId;
+            document.getElementById('parent-category-name').value = category.name;
+            document.getElementById('parent-category-order').value = category.order;
+            selectParentCategoryIcon(category.icon || 'fa-tag');
             
-            // İkonu seç
-            if (category.icon) {
-                selectCategoryIcon(category.icon);
-            }
-            
-            categoryModal.style.display = 'block';
+            document.getElementById('parent-category-modal').style.display = 'block';
             
         } catch (error) {
             console.error('Kategori düzenlenemedi:', error);
@@ -435,35 +484,92 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Kategori sil
-    async function deleteCategory(categoryId) {
-        if (!confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) return;
+    async function deleteParentCategory(categoryId) {
+        // Önce alt kategorileri kontrol et
+        const subcategoriesSnapshot = await window.db.collection('subcategories')
+            .where('parentId', '==', categoryId)
+            .get();
+        
+        if (!subcategoriesSnapshot.empty) {
+            showNotification('Bu ana kategorinin alt kategorileri var, önce silmelisiniz!', false);
+            return;
+        }
+        
+        if (!confirm('Bu ana kategoriyi silmek istediğinizden emin misiniz?')) return;
         
         try {
-            await window.db.collection('categories').doc(categoryId).delete();
-            showNotification('Kategori silindi!');
-            renderCategoriesTable();
+            await window.db.collection('parentCategories').doc(categoryId).delete();
+            showNotification('Ana kategori silindi!');
+            renderParentCategoriesTable();
         } catch (error) {
-            console.error('Kategori silinemedi:', error);
-            showNotification('Kategori silinemedi!', false);
+            console.error('Ana kategori silinemedi:', error);
+            showNotification('Ana kategori silinemedi!', false);
         }
     }
 
-    // Kategori ekle/düzenle form submit
-    categoryForm.addEventListener('submit', async (e) => {
+    // Alt kategori ekle/düzenle
+    async function editSubcategory(subcategoryId) {
+        try {
+            const doc = await window.db.collection('subcategories').doc(subcategoryId).get();
+            if (!doc.exists) {
+                showNotification('Alt kategori bulunamadı!', false);
+                return;
+            }
+            
+            const subcategory = doc.data();
+            
+            document.getElementById('subcategory-modal-title').textContent = 'Alt Kategori Düzenle';
+            document.getElementById('subcategory-id').value = subcategoryId;
+            document.getElementById('subcategory-name').value = subcategory.name;
+            document.getElementById('subcategory-parent').value = subcategory.parentId;
+            document.getElementById('subcategory-order').value = subcategory.order;
+            
+            document.getElementById('subcategory-modal').style.display = 'block';
+            
+        } catch (error) {
+            console.error('Alt kategori düzenlenemedi:', error);
+            showNotification('Bir hata oluştu!', false);
+        }
+    }
+
+    async function deleteSubcategory(subcategoryId) {
+        // Önce mağazaları kontrol et
+        const storesSnapshot = await window.db.collection('stores')
+            .where('category', '==', subcategoryId)
+            .get();
+        
+        if (!storesSnapshot.empty) {
+            showNotification('Bu alt kategoride mağazalar var, önce silmelisiniz!', false);
+            return;
+        }
+        
+        if (!confirm('Bu alt kategoriyi silmek istediğinizden emin misiniz?')) return;
+        
+        try {
+            await window.db.collection('subcategories').doc(subcategoryId).delete();
+            showNotification('Alt kategori silindi!');
+            renderSubcategoriesTable();
+        } catch (error) {
+            console.error('Alt kategori silinemedi:', error);
+            showNotification('Alt kategori silinemedi!', false);
+        }
+    }
+
+    // Ana kategori form submit
+    document.getElementById('parent-category-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const categoryId = document.getElementById('category-id').value;
-        const name = document.getElementById('category-name').value.trim();
-        const icon = document.getElementById('category-icon').value || 'fa-tag';
-        const order = parseInt(document.getElementById('category-order').value) || 1;
+        const categoryId = document.getElementById('parent-category-id').value;
+        const name = document.getElementById('parent-category-name').value.trim();
+        const icon = document.getElementById('parent-category-icon').value || 'fa-tag';
+        const order = parseInt(document.getElementById('parent-category-order').value) || 1;
         
         if (!name) {
             showNotification('Kategori adı gerekli!', false);
             return;
         }
         
-        // ID oluştur (Türkçe karakterleri temizle)
+        // ID oluştur
         const id = categoryId || name
             .toLowerCase()
             .replace(/ç/g, 'c')
@@ -477,63 +583,135 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             if (categoryId) {
-                // Güncelle
-                await window.db.collection('categories').doc(categoryId).update({
+                await window.db.collection('parentCategories').doc(categoryId).update({
                     name: name,
                     icon: icon,
                     order: order
                 });
-                showNotification('Kategori güncellendi!');
+                showNotification('Ana kategori güncellendi!');
             } else {
-                // Yeni ekle
-                await window.db.collection('categories').doc(id).set({
+                await window.db.collection('parentCategories').doc(id).set({
                     name: name,
                     icon: icon,
-                    order: order
+                    order: order,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                showNotification('Kategori eklendi!');
+                showNotification('Ana kategori eklendi!');
             }
             
-            categoryModal.style.display = 'none';
-            categoryForm.reset();
-            renderCategoriesTable();
-            loadCategories(); // Dropdown'u güncelle
+            document.getElementById('parent-category-modal').style.display = 'none';
+            document.getElementById('parent-category-form').reset();
+            renderParentCategoriesTable();
+            populateSubcategoryParentDropdown();
+            loadCategories();
             
         } catch (error) {
-            console.error('Kategori kaydedilemedi:', error);
+            console.error('Ana kategori kaydedilemedi:', error);
             showNotification('Bir hata oluştu!', false);
         }
     });
 
-    // Kategori modal kontrolleri
-    addCategoryBtn?.addEventListener('click', () => {
-        document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goš';
-        categoryForm.reset();
-        document.getElementById('category-id').value = '';
-        document.getElementById('category-icon').value = 'fa-tag';
-        selectCategoryIcon('fa-tag'); // Varsayılan ikon
-        categoryModal.style.display = 'block';
+    // Alt kategori form submit
+    document.getElementById('subcategory-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const subcategoryId = document.getElementById('subcategory-id').value;
+        const name = document.getElementById('subcategory-name').value.trim();
+        const parentId = document.getElementById('subcategory-parent').value;
+        const order = parseInt(document.getElementById('subcategory-order').value) || 1;
+        
+        if (!name || !parentId) {
+            showNotification('Kategori adı ve ana kategori gerekli!', false);
+            return;
+        }
+        
+        // ID oluştur
+        const id = subcategoryId || name
+            .toLowerCase()
+            .replace(/ç/g, 'c')
+            .replace(/ğ/g, 'g')
+            .replace(/ı/g, 'i')
+            .replace(/ö/g, 'o')
+            .replace(/ş/g, 's')
+            .replace(/ü/g, 'u')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        
+        try {
+            if (subcategoryId) {
+                await window.db.collection('subcategories').doc(subcategoryId).update({
+                    name: name,
+                    parentId: parentId,
+                    order: order
+                });
+                showNotification('Alt kategori güncellendi!');
+            } else {
+                await window.db.collection('subcategories').doc(id).set({
+                    name: name,
+                    parentId: parentId,
+                    order: order,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showNotification('Alt kategori eklendi!');
+            }
+            
+            document.getElementById('subcategory-modal').style.display = 'none';
+            document.getElementById('subcategory-form').reset();
+            renderSubcategoriesTable();
+            loadCategories();
+            
+        } catch (error) {
+            console.error('Alt kategori kaydedilemedi:', error);
+            showNotification('Bir hata oluştu!', false);
+        }
     });
 
-    // Mobil kategori butonu
-    const addCategoryBtnMobile = document.getElementById('add-category-btn-mobile');
-    if (addCategoryBtnMobile) {
-        addCategoryBtnMobile.addEventListener('click', () => {
-            document.getElementById('category-modal-title').textContent = 'Täze kategoriýa goš';
-            categoryForm.reset();
-            document.getElementById('category-id').value = '';
-            document.getElementById('category-icon').value = 'fa-tag';
-            selectCategoryIcon('fa-tag'); // Varsayılan ikon
-            categoryModal.style.display = 'block';
+    // Ana kategori dropdown'unu doldur
+    async function populateSubcategoryParentDropdown() {
+        const select = document.getElementById('subcategory-parent');
+        select.innerHTML = '<option value="">Ana kategori seçin</option>';
+        
+        const snapshot = await window.db.collection('parentCategories')
+            .orderBy('order', 'asc')
+            .get();
+        
+        snapshot.docs.forEach(doc => {
+            const category = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = category.name;
+            select.appendChild(option);
         });
     }
 
-    cancelCategory?.addEventListener('click', () => {
-        categoryModal.style.display = 'none';
-        categoryForm.reset();
+    // Ana kategori modal kontrolleri
+    document.getElementById('add-parent-category-btn').addEventListener('click', () => {
+        document.getElementById('parent-category-modal-title').textContent = 'Ana Kategori Ekle';
+        document.getElementById('parent-category-form').reset();
+        document.getElementById('parent-category-id').value = '';
+        document.getElementById('parent-category-icon').value = 'fa-tag';
+        selectParentCategoryIcon('fa-tag');
+        document.getElementById('parent-category-modal').style.display = 'block';
     });
-    
-    // ✅ KATEGORİ İKONLARI
+
+    document.getElementById('cancel-parent-category').addEventListener('click', () => {
+        document.getElementById('parent-category-modal').style.display = 'none';
+    });
+
+    // Alt kategori modal kontrolleri
+    document.getElementById('add-subcategory-btn').addEventListener('click', () => {
+        document.getElementById('subcategory-modal-title').textContent = 'Alt Kategori Ekle';
+        document.getElementById('subcategory-form').reset();
+        document.getElementById('subcategory-id').value = '';
+        populateSubcategoryParentDropdown();
+        document.getElementById('subcategory-modal').style.display = 'block';
+    });
+
+    document.getElementById('cancel-subcategory').addEventListener('click', () => {
+        document.getElementById('subcategory-modal').style.display = 'none';
+    });
+
+    // Ana kategori ikonları
     const categoryIcons = [
         'fa-tag', 'fa-tshirt', 'fa-shirt', 'fa-user-tie', 'fa-user-ninja',
         'fa-user-astronaut', 'fa-vest', 'fa-socks', 'fa-hat-cowboy', 'fa-hat-wizard',
@@ -554,42 +732,32 @@ document.addEventListener('DOMContentLoaded', () => {
         'fa-utensils', 'fa-mug-hot', 'fa-ice-cream', 'fa-pizza-slice', 'fa-burger'
     ];
     
-    // İkonları grid'e yükle
-    function loadCategoryIcons() {
-        const iconGrid = document.getElementById('category-icon-grid');
+    function loadParentCategoryIcons() {
+        const iconGrid = document.getElementById('parent-category-icon-grid');
         if (!iconGrid) return;
         
         iconGrid.innerHTML = categoryIcons.map(icon => `
-            <div class="icon-item" data-icon="${icon}" onclick="selectCategoryIcon('${icon}')">
+            <div class="icon-item" data-icon="${icon}" onclick="selectParentCategoryIcon('${icon}')">
                 <i class="fas ${icon}"></i>
             </div>
         `).join('');
-        
-        console.log(`✅ ${categoryIcons.length} kategori ikonu yüklendi`);
     }
     
-    // İkon seçme fonksiyonu
-    window.selectCategoryIcon = function(icon) {
-        // Hidden input'u güncelle
-        const iconInput = document.getElementById('category-icon');
+    window.selectParentCategoryIcon = function(icon) {
+        const iconInput = document.getElementById('parent-category-icon');
         if (iconInput) iconInput.value = icon;
         
-        // Display'i güncelle
-        const display = document.getElementById('selected-icon-display');
+        const display = document.getElementById('parent-selected-icon-display');
         if (display) {
             display.innerHTML = `<i class="fas ${icon}"></i>`;
         }
         
-        // Seçili özelliğini güncelle
-        document.querySelectorAll('.icon-item').forEach(item => {
+        document.querySelectorAll('#parent-category-icon-grid .icon-item').forEach(item => {
             item.classList.toggle('selected', item.getAttribute('data-icon') === icon);
         });
-        
-        console.log('Seçilen ikon:', icon);
     };
     
-    // Sayfa yüklendiğinde ikonları yükle
-    loadCategoryIcons();
+    loadParentCategoryIcons();
     
     const handleStoreSubmit = async (e) => {
         e.preventDefault();
@@ -2076,7 +2244,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderProductsTable(), // Ürünler
                 renderOrdersTable(), // Siparişler
                 renderUsersTable(), // Kullanıcılar
-                renderCategoriesTable(), // Kategori tablosu
+                renderParentCategoriesTable(), // Ana kategori tablosu
+                renderSubcategoriesTable(), // Alt kategori tablosu
                 populateStoreSelect(), // Mağaza dropdown'ı
                 populateStoreFilter() // Mağaza filtresi
             ]);
