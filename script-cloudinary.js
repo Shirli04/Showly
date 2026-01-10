@@ -34,8 +34,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentStoreId = null;
     let allStores = [];
     let allProducts = [];
-    loadingOverlay.style.display = 'flex'; // Yükleniyor animasyonunu göster
-
+    
+    // Firebase kontrolü
+    if (!window.db) {
+        console.error('❌ Firebase veritabanı bulunamadı!');
+        showNotification('Firebase yüklenemedi! Lütfen sayfayı yenileyin.', false);
+        return;
+    }
+    
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+    }
+    
     console.log('🔄 Firebase\'den veriler yükleniyor...');
 
     try {
@@ -95,7 +105,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
     } finally {
-        loadingOverlay.style.display = 'none'; // Animasyonu gizle
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
     }
     
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
@@ -169,6 +181,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             categoryMenu.innerHTML = '';
             
+            // Eğer hiç kategori yoksa, eski tek seviyeli sistemden veri çekmeye çalış
+            if (parentCategories.length === 0) {
+                console.log('⚠️ Ana kategori bulunamadı, eski sistem deneniyor...');
+                
+                const oldCategoriesSnapshot = await window.db.collection('categories').orderBy('order', 'asc').get();
+                const oldCategories = oldCategoriesSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                if (oldCategories.length === 0) {
+                    categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
+                    return;
+                }
+                
+                oldCategories.forEach(category => {
+                    const categoryStores = allStores.filter(s => s.category === category.id);
+                    if (categoryStores.length === 0) return;
+                    
+                    const categoryIcon = category.icon || 'fa-tag';
+                    
+                    const categoryItem = document.createElement('div');
+                    categoryItem.className = 'category-item';
+                    categoryItem.innerHTML = `
+                        <div class="category-header" data-category="${category.id}">
+                            <i class="fas fa-chevron-right chevron-icon"></i>
+                            <i class="fas ${categoryIcon} category-logo-icon"></i>
+                            <span>${category.name}</span>
+                        </div>
+                        <ul class="category-stores" id="stores-${category.id}" style="display: none;">
+                            ${categoryStores.map(store => `
+                                <li>
+                                    <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
+                                        ${store.name}
+                                    </a>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    categoryMenu.appendChild(categoryItem);
+                });
+                return;
+            }
+            
+            categoryMenu.innerHTML = '';
+            
             if (parentCategories.length === 0) {
                 categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
                 return;
@@ -205,7 +263,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <ul class="category-stores" id="stores-${parent.id}" style="display: none;">
                         ${parentSubcategories.map(sub => {
-                            // Bu alt kategoriye ait mağazaları filtrele
                             const subStores = allStores.filter(s => s.category === sub.id);
                             if (subStores.length === 0) return '';
                             
@@ -213,6 +270,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <li class="subcategory-item">
                                     <span class="subcategory-name">${sub.name}</span>
                                     <ul class="subcategory-stores">
+                                        ${subStores.map(store => `
+                                            <li>
+                                                <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
                                                     ${store.name}
                                                 </a>
                                             </li>
@@ -224,9 +284,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </ul>
                 `;
                 categoryMenu.appendChild(parentItem);
-            });
-                
-                categoryMenu.appendChild(categoryItem);
             });
             
             // Açılır/kapanır menü event'i
