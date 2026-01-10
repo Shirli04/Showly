@@ -53,11 +53,15 @@ class ShowlyDB {
             description: store.description,
             category: store.category || '', // ✅ YENİ
             customBannerText: store.customBannerText || '',
+            tiktok: store.tiktok || '',
+            instagram: store.instagram || '',
+            phone: store.phone || '',
+            location: store.location || '',
             createdAt: new Date().toISOString()
         };
-        
+
         const docRef = await window.db.collection('stores').add(newStore);
-        console.log('Mağaza Firebase\'ye eklendi, ID:', docRef.id);
+        console.log('Mağaza Firebase\'ye eklendi, ID:', docRef.id, 'phone:', store.phone, 'location:', store.location);
         return { id: docRef.id, ...newStore };
     }
     
