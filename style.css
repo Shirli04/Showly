@@ -2342,19 +2342,40 @@ header {
 
 /* ================================ ALT KATEGORİ STİLLERİ ===================== */
 .subcategory-item {
-    padding: 10px 0 5px 0;
+    margin-top: 5px;
+}
+
+.subcategory-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 8px 20px;
+}
+
+.subcategory-header:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+.subcategory-header .chevron-icon {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    transition: transform 0.3s ease;
+    min-width: 14px;
 }
 
 .subcategory-name {
-    display: block;
-    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 14px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.85);
-    border-left: 3px solid rgba(102, 126, 234, 0.6);
-    margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    cursor: pointer;
+    flex: 1;
 }
 
 .subcategory-stores {
@@ -2380,9 +2401,17 @@ header {
 }
 
 @media (max-width: 768px) {
+    .subcategory-header {
+        padding: 6px 15px;
+    }
+
+    .subcategory-header .chevron-icon {
+        font-size: 10px;
+        min-width: 12px;
+    }
+
     .subcategory-name {
         font-size: 13px;
-        padding: 6px 15px;
     }
 
     .subcategory-stores {

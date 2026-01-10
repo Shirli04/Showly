@@ -160,6 +160,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
+            categoryMenu.innerHTML = ''; // Önce temizle
+            
             // Kategorileri çek (iki seviyeli sistem)
             const [parentCategoriesSnapshot, subcategoriesSnapshot] = await Promise.all([
                 window.db.collection('parentCategories').orderBy('order', 'asc').get(),
@@ -178,8 +180,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             console.log('📂 Ana Kategoriler:', parentCategories);
             console.log('📂 Alt Kategoriler:', subcategories);
-            
-            categoryMenu.innerHTML = '';
             
             // Eğer hiç kategori yoksa, eski tek seviyeli sistemden veri çekmeye çalış
             if (parentCategories.length === 0) {
@@ -222,10 +222,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                     categoryMenu.appendChild(categoryItem);
                 });
+                
+                // Eski sistem için event listener'ları ekle
+                document.querySelectorAll('.category-header').forEach(header => {
+                    header.addEventListener('click', () => {
+                        const categoryId = header.getAttribute('data-category');
+                        const storesList = document.getElementById(`stores-${categoryId}`);
+                        const chevronIcon = header.querySelector('.chevron-icon');
+                        
+                        if (storesList.style.display === 'none') {
+                            storesList.style.display = 'block';
+                            chevronIcon.style.transform = 'rotate(90deg)';
+                        } else {
+                            storesList.style.display = 'none';
+                            chevronIcon.style.transform = 'rotate(0deg)';
+                        }
+                    });
+                });
+                
+                console.log('✅ Eski kategori sistemi ile menü oluşturuldu');
                 return;
             }
-            
-            categoryMenu.innerHTML = '';
             
             if (parentCategories.length === 0) {
                 categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
@@ -268,8 +285,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             
                             return `
                                 <li class="subcategory-item">
-                                    <span class="subcategory-name">${sub.name}</span>
-                                    <ul class="subcategory-stores">
+                                    <div class="subcategory-header" data-subcategory="${sub.id}">
+                                        <i class="fas fa-chevron-right chevron-icon"></i>
+                                        <span class="subcategory-name">${sub.name}</span>
+                                    </div>
+                                    <ul class="subcategory-stores" id="sub-stores-${sub.id}" style="display: none;">
                                         ${subStores.map(store => `
                                             <li>
                                                 <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
@@ -299,6 +319,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } else {
                         storesList.style.display = 'none';
                         chevronIcon.style.transform = 'rotate(0deg)';
+                    }
+            });
+            
+            // Alt kategori açılır/kapanır menü event'i
+            document.querySelectorAll('.subcategory-header').forEach(subHeader => {
+                subHeader.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Ana kategori tıklamasını engelle
+                    const subcategoryId = subHeader.getAttribute('data-subcategory');
+                    const subStoresList = document.getElementById(`sub-stores-${subcategoryId}`);
+                    const subChevronIcon = subHeader.querySelector('.chevron-icon');
+                    
+                    if (subStoresList.style.display === 'none') {
+                        subStoresList.style.display = 'block';
+                        subChevronIcon.style.transform = 'rotate(90deg)';
+                    } else {
+                        subStoresList.style.display = 'none';
+                        subChevronIcon.style.transform = 'rotate(0deg)';
                     }
                 });
             });
