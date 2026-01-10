@@ -346,7 +346,7 @@ header {
 .category-header span {
     color: rgba(255, 255, 255, 0.95);
     font-weight: 600;
-    font-size: 15px;
+    font-size: 17px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-family: var(--vip-font), serif;
@@ -373,7 +373,7 @@ header {
     padding: 12px 20px;
     text-decoration: none;
     color: rgba(255, 255, 255, 0.75);
-    font-size: 14px;
+    font-size: 15px;
     transition: all 0.3s ease;
     border-left: 3px solid transparent;
     font-family: var(--vip-font), serif;
@@ -2369,7 +2369,7 @@ header {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.85);
     text-transform: uppercase;
@@ -2385,10 +2385,10 @@ header {
 
 .subcategory-stores li a {
     display: block;
-    padding: 8px 20px;
+    padding: 10px 20px;
     color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
-    font-size: 13px;
+    font-size: 15px;
     border-left: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
 }
@@ -2411,7 +2411,7 @@ header {
     }
 
     .subcategory-name {
-        font-size: 13px;
+        font-size: 14px;
     }
 
     .subcategory-stores {
@@ -2419,7 +2419,7 @@ header {
     }
 
     .subcategory-stores li a {
-        font-size: 12px;
-        padding: 6px 15px;
+        font-size: 13px;
+        padding: 8px 15px;
     }
 }
