@@ -279,8 +279,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // ✅ Yeni: Phone ve Location
         const phoneInput = document.getElementById('store-phone');
         const locationInput = document.getElementById('store-location');
+        const orderPhoneInput = document.getElementById('store-order-phone');
         if (phoneInput) phoneInput.value = store.phone || '';
         if (locationInput) locationInput.value = store.location || '';
+        if (orderPhoneInput) orderPhoneInput.value = store.orderPhone || '';
 
         // ✅ Kategori seç
         const categorySelect = document.getElementById('store-category');
@@ -772,6 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const instagram = document.getElementById('store-instagram')?.value.trim() || '';
         const phone = document.getElementById('store-phone')?.value.trim() || '';
         const location = document.getElementById('store-location')?.value.trim() || '';
+        const orderPhone = document.getElementById('store-order-phone')?.value.trim() || '';
 
         if (!name || !category) {
             showNotification('Mağaza adı ve kategori gerekli!', false);
@@ -790,7 +793,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     tiktok,
                     instagram,
                     phone,
-                    location
+                    location,
+                    orderPhone
                 });
                 showNotification('Mağaza güncellendi!');
             } else {
@@ -803,9 +807,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     tiktok,
                     instagram,
                     phone,
-                    location
+                    location,
+                    orderPhone
                 });
-                showNotification('Mağaza Firebase\'e eklendi!');
+                showNotification('Mağaza eklendi!');
             }
 
             renderStoresTable();

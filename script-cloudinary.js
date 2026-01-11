@@ -947,19 +947,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingOverlay.style.display = 'flex';
             loadingText.textContent = 'Sargydyňyz işlenýär...';
 
-            const order = {
-                customer: { name, phone, address },
-                storeId: currentStoreCart.storeId,
-                storeName: currentStoreCart.storeName,
-                items: [...currentStoreCart.items],
-                total: storeTotal.toFixed(2) + ' TMT',
-                date: new Date().toISOString(),
-                status: 'pending'
-            };
+            // Mağazanın sipariş telefon numarasını al
+            const store = allStores.find(s => s.id === currentStoreCart.storeId);
+            const orderPhone = store?.orderPhone || '';
+
+            if (!orderPhone) {
+                loadingOverlay.style.display = 'none';
+                submitBtn.disabled = false;
+                cancelBtn.disabled = false;
+                submitBtn.innerHTML = 'Sargyt ediň';
+                showNotification('Mağaza üçin sargyt nomer ýok!', false);
+                return;
+            }
+
+            // Sipariş metnini oluştur
+            const itemsText = currentStoreCart.items.map(item => `- ${item.title} (${item.quantity} haryt)`).join('\n');
+            const orderText = `Ady: ${name}\nTelefon: ${phone}\nAdres: ${address}\n\nSargyt:\n${itemsText}\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
+
+            // WhatsApp linki oluştur
+            const whatsappNumber = orderPhone.replace(/[^0-9]/g, '');
+            const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(orderText)}`;
 
             try {
-                const docRef = await window.db.collection('orders').add(order);
-                console.log('Sipariş Firebase\'e eklendi, ID:', docRef.id);
+                // Firebase'e siparişi kaydet
+                const order = {
+                    customer: { name, phone, address },
+                    storeId: currentStoreCart.storeId,
+                    storeName: currentStoreCart.storeName,
+                    items: [...currentStoreCart.items],
+                    total: storeTotal.toFixed(2) + ' TMT',
+                    date: new Date().toISOString(),
+                    status: 'pending'
+                };
+
+                await window.db.collection('orders').add(order);
+                console.log('Sipariş Firebase\'e eklendi');
 
                 loadingOverlay.style.display = 'none';
                 showNotification(`✅ ${currentStoreCart.storeName} üçin sargydyňyz kabul edildi!`, true);
@@ -968,6 +990,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 delete cart[currentStoreCart.storeId];
                 updateCartCount();
                 document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
+
+                // SMS uygulamasına yönlendir (WhatsApp yerine)
+                const smsURL = `sms:${whatsappNumber}?body=${encodeURIComponent(orderText)}`;
+                window.open(smsURL, '_self');
 
                 // Sepet modalını güncelle
                 cartButton.click();
