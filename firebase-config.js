@@ -208,10 +208,11 @@ window.addStoreToFirebase = async function(store) {
         instagram: store.instagram || '',
         phone: store.phone || '',
         location: store.location || '',
+        orderPhone: store.orderPhone || '',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    console.log('✅ Mağaza Firebase\'e eklendi, ID:', doc.id, 'phone:', store.phone, 'location:', store.location);
+    console.log('✅ Mağaza Firebase\'e eklendi, ID:', doc.id, 'phone:', store.phone, 'location:', store.location, 'orderPhone:', store.orderPhone);
     return {
         id: doc.id,
         name: store.name,
@@ -222,7 +223,8 @@ window.addStoreToFirebase = async function(store) {
         tiktok: store.tiktok,
         instagram: store.instagram,
         phone: store.phone,
-        location: store.location
+        location: store.location,
+        orderPhone: store.orderPhone
     };
 };
 
