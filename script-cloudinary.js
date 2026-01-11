@@ -268,16 +268,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Her ana kategori için
             parentCategories.forEach(parent => {
                 const parentIcon = parent.icon || 'fa-tag';
-                
+
                 // Bu ana kategoriye ait alt kategorileri bul
                 const parentSubcategories = subcategories.filter(sub => sub.parentId === parent.id);
-                
-                // Bu kategori hiyerarşisindeki tüm mağazaları topla
+
+                // Bu kategori hiyerarşisindeki tüm mağazaları topla (alt kategorilerdeki + doğrudan ana kategoriye eklenenler)
                 const categoryStoreIds = parentSubcategories.map(sub => sub.id);
-                const categoryStores = allStores.filter(s => categoryStoreIds.includes(s.category));
-                
-                console.log(`📁 ${parent.name}: ${parentSubcategories.length} alt kategori, ${categoryStores.length} mağaza`);
-                
+                const subCategoryStores = allStores.filter(s => categoryStoreIds.includes(s.category));
+                const directParentStores = allStores.filter(s => s.category === parent.id);
+                const categoryStores = [...subCategoryStores, ...directParentStores];
+
+                console.log(`📁 ${parent.name}: ${parentSubcategories.length} alt kategori, ${subCategoryStores.length} alt kategori mağaza, ${directParentStores.length} doğrudan ana kategori mağaza, toplam: ${categoryStores.length} mağaza`);
+
                 if (categoryStores.length === 0) return; // Boş kategorileri gösterme
                 
                 // Ana kategori başlığı
@@ -293,7 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ${parentSubcategories.map(sub => {
                             const subStores = allStores.filter(s => s.category === sub.id);
                             if (subStores.length === 0) return '';
-                            
+
                             return `
                                 <li class="subcategory-item">
                                     <div class="subcategory-header" data-subcategory="${sub.id}">
@@ -312,6 +314,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 </li>
                             `;
                         }).join('')}
+                        ${directParentStores.length > 0 ? directParentStores.map(store => `
+                            <li>
+                                <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
+                                    ${store.name}
+                                </a>
+                            </li>
+                        `).join('') : ''}
                     </ul>
                 `;
                 categoryMenu.appendChild(parentItem);
