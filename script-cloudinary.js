@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     
     // --- DURUM DEĞİŞKENLERİ (STATE) ---
-    let cart = [];
+    let cart = {}; // Mağaza bazlı sepet: { storeId: { storeName, items: [] } }
     let favorites = [];
     let currentStoreId = null;
     let allStores = [];
@@ -678,17 +678,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     
     const updateCartCount = () => {
-        const total = cart.reduce((sum, item) => sum + item.quantity, 0);
+        let total = 0;
+        Object.values(cart).forEach(storeCart => {
+            total += storeCart.items.reduce((sum, item) => sum + item.quantity, 0);
+        });
         cartCount.textContent = total;
         cartCount.classList.toggle('show', total > 0);
     };
-    
+
     const addToCart = (product) => {
-        const existing = cart.find(item => item.id === product.id);
-        if (existing) { 
-            existing.quantity += 1; 
-        } else { 
-            cart.push({ ...product, quantity: 1 }); 
+        const store = allStores.find(s => s.id === product.storeId);
+        if (!store) return;
+
+        if (!cart[product.storeId]) {
+            cart[product.storeId] = {
+                storeId: product.storeId,
+                storeName: store.name,
+                items: []
+            };
+        }
+
+        const existing = cart[product.storeId].items.find(item => item.id === product.id);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            cart[product.storeId].items.push({ ...product, quantity: 1 });
         }
         updateCartCount();
         showNotification(product.title + ' sebede goşuldy!');
@@ -770,161 +784,205 @@ document.addEventListener('DOMContentLoaded', async () => {
     cartButton.addEventListener('click', () => {
         const cartModal = document.getElementById('cart-modal');
         const cartItems = document.getElementById('cart-items');
-        if (cart.length === 0) { 
-            cartItems.innerHTML = '<p class="empty-cart-message">Siz öz sargyt etjek harytlaryňyzy şu sebede goşup bilersiňiz.</p>'; 
+        const storeCarts = Object.values(cart);
+
+        if (storeCarts.length === 0) {
+            cartItems.innerHTML = '<p class="empty-cart-message">Siz öz sargyt etjek harytlaryňyzy şu sebede goşup bilersiňiz.</p>';
         } else {
-            cartItems.innerHTML = ''; 
-            let total = 0;
-            cart.forEach(item => {
-                const price = parseFloat(item.price.replace(' TMT', '')); 
-                total += price * item.quantity;
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                cartItem.innerHTML = `
-                    <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3E%3C/text%3E%3C/svg%3E'}" alt="${item.title}">
-                    <div class="cart-item-details">
-                        <div class="cart-item-title">${item.title}</div>
-                        <div class="cart-item-price">${item.price}</div>
+            cartItems.innerHTML = '';
+            let grandTotal = 0;
+
+            storeCarts.forEach(storeCart => {
+                const storeSection = document.createElement('div');
+                storeSection.className = 'cart-store-section';
+
+                let storeTotal = 0;
+                const itemsHTML = storeCart.items.map(item => {
+                    const price = parseFloat(item.price.replace(' TMT', ''));
+                    storeTotal += price * item.quantity;
+                    return `
+                        <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3E%3C/text%3E%3C/svg%3E'}" alt="${item.title}">
+                        <div class="cart-item-details">
+                            <div class="cart-item-title">${item.title}</div>
+                            <div class="cart-item-price">${item.price}</div>
+                        </div>
+                        <div class="cart-item-quantity">
+                            <button class="quantity-btn" data-store-id="${storeCart.storeId}" data-id="${item.id}" data-action="decrease">-</button>
+                            <span>${item.quantity}</span>
+                            <button class="quantity-btn" data-store-id="${storeCart.storeId}" data-id="${item.id}" data-action="increase">+</button>
+                        </div>
+                        <i class="fas fa-trash cart-item-remove" data-store-id="${storeCart.storeId}" data-id="${item.id}"></i>
+                    `;
+                }).join('');
+
+                storeSection.innerHTML = `
+                    <div class="cart-store-header">
+                        <h4>${storeCart.storeName}</h4>
+                        <span class="cart-store-total">Umumy: ${storeTotal.toFixed(2)} TMT</span>
                     </div>
-                    <div class="cart-item-quantity">
-                        <button class="quantity-btn" data-id="${item.id}" data-action="decrease">-</button>
-                        <span>${item.quantity}</span>
-                        <button class="quantity-btn" data-id="${item.id}" data-action="increase">+</button>
-                    </div>
-                    <i class="fas fa-trash cart-item-remove" data-id="${item.id}"></i>
+                    ${itemsHTML}
                 `;
-                cartItems.appendChild(cartItem);
+                cartItems.appendChild(storeSection);
+                grandTotal += storeTotal;
             });
-            document.getElementById('cart-total-price').textContent = total.toFixed(2) + ' TMT';
-        } 
+
+            document.getElementById('cart-total-price').textContent = grandTotal.toFixed(2) + ' TMT';
+        }
         cartModal.style.display = 'block';
     });
     
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('quantity-btn')) {
-            const productId = e.target.getAttribute('data-id'); 
-            const action = e.target.getAttribute('data-action'); 
-            const item = cart.find(i => i.id === productId);
-            if (item) { 
-                if (action === 'increase') item.quantity++; 
-                else if (action === 'decrease' && item.quantity > 1) item.quantity--; 
-                updateCartCount(); 
-                cartButton.click(); 
+            const storeId = e.target.getAttribute('data-store-id');
+            const productId = e.target.getAttribute('data-id');
+            const action = e.target.getAttribute('data-action');
+            if (cart[storeId]) {
+                const item = cart[storeId].items.find(i => i.id === productId);
+                if (item) {
+                    if (action === 'increase') item.quantity++;
+                    else if (action === 'decrease' && item.quantity > 1) item.quantity--;
+                    updateCartCount();
+                    cartButton.click();
+                }
             }
         }
-        if (e.target.classList.contains('cart-item-remove')) { 
-            cart = cart.filter(i => i.id !== e.target.getAttribute('data-id')); 
-            updateCartCount(); 
-            cartButton.click(); 
+        if (e.target.classList.contains('cart-item-remove')) {
+            const storeId = e.target.getAttribute('data-store-id');
+            const productId = e.target.getAttribute('data-id');
+            if (cart[storeId]) {
+                cart[storeId].items = cart[storeId].items.filter(i => i.id !== productId);
+                if (cart[storeId].items.length === 0) {
+                    delete cart[storeId];
+                }
+                updateCartCount();
+                cartButton.click();
+            }
         }
     });
 
     // --- SİPARİŞ TAMAMLAMA FONKSİYONU ---
     document.querySelector('.checkout-button').addEventListener('click', () => {
-        if (cart.length === 0) {
+        const storeCarts = Object.values(cart);
+        if (storeCarts.length === 0) {
             showNotification('Sebediňiz boş!', false);
             return;
         }
 
-        // Sipariş formunu oluştur
-        const formHTML = `
-            <div class="order-form-overlay">
-                <div class="order-form-modal">
-                    <div class="order-form-header">
-                        <h3>Sargydyňyzy tamamlaň</h3>
-                        <p>Aşakdaky maglumatlary dogry ýazyň.</p>
+        // Her mağaza için ayrı sipariş formu oluştur
+        const formsHTML = storeCarts.map(storeCart => {
+            const storeTotal = storeCart.items.reduce((sum, item) => {
+                const price = parseFloat(item.price.replace(' TMT', ''));
+                return sum + (price * item.quantity);
+            }, 0);
+
+            const itemsPreview = storeCart.items.map(item => `${item.title} (${item.quantity})`).join(', ');
+
+            return `
+                <div class="order-form-overlay" data-store-id="${storeCart.storeId}">
+                    <div class="order-form-modal">
+                        <div class="order-form-header">
+                            <h3>${storeCart.storeName}</h3>
+                            <p>Umumy: ${storeTotal.toFixed(2)} TMT</p>
+                        </div>
+                        <div class="order-items-preview">
+                            <strong>Harytlar:</strong> ${itemsPreview}
+                        </div>
+                        <form id="order-form-${storeCart.storeId}">
+                            <div class="form-group">
+                                <label>Adyňyz Familiýaňyz</label>
+                                <input type="text" class="customer-name" placeholder="Adyňyzy we Familiýaňyzy ýazyň" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Telefon nomeriňiz</label>
+                                <input type="tel" class="customer-phone" placeholder="Telefon nomeriňiz (:+993...)" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Adresiňiz</label>
+                                <textarea class="customer-address" rows="3" placeholder="Adresiňizi ýazyň" required></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary cancel-order-${storeCart.storeId}">Aýyr</button>
+                                <button type="submit" class="btn-primary">Sargyt ediň</button>
+                            </div>
+                        </form>
                     </div>
-                    <form id="order-form">
-                        <div class="form-group">
-                            <label>Adyňyz Familiýaňyz</label>
-                            <input type="text" id="customer-name" placeholder="Adyňyzy we Familiýaňyzy ýazyň" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Telefon nomeriňiz</label>
-                            <input type="tel" id="customer-phone" placeholder="Telefon nomeriňiz (:+993...)" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Adresiňiz</label>
-                            <textarea id="customer-address" rows="3" placeholder="Adresiňizi ýazyň" required></textarea>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" id="cancel-order" class="btn-secondary">Aýyr</button>
-                            <button type="submit" class="btn-primary">Sargyt ediň</button>
-                        </div>
-                    </form>
                 </div>
-            </div>
-        `;
+            `;
+        }).join('');
 
-        document.body.insertAdjacentHTML('beforeend', formHTML);
+        document.body.insertAdjacentHTML('beforeend', formsHTML);
 
-        // İptal butonu
-        document.getElementById('cancel-order').addEventListener('click', () => {
-            document.querySelector('.order-form-overlay').remove();
+        // İptal butonları
+        storeCarts.forEach(storeCart => {
+            document.querySelector(`.cancel-order-${storeCart.storeId}`).addEventListener('click', () => {
+                document.querySelector(`.order-form-overlay[data-store-id="${storeCart.storeId}"]`).remove();
+            });
         });
 
-        // Form submit
-        document.getElementById('order-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Form submit handler'ları
+        storeCarts.forEach(storeCart => {
+            document.getElementById(`order-form-${storeCart.storeId}`).addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-            const name = document.getElementById('customer-name').value.trim();
-            const phone = document.getElementById('customer-phone').value.trim();
-            const address = document.getElementById('customer-address').value.trim();
+                const name = e.target.querySelector('.customer-name').value.trim();
+                const phone = e.target.querySelector('.customer-phone').value.trim();
+                const address = e.target.querySelector('.customer-address').value.trim();
 
-            if (!name || !phone || !address) {
-                showNotification('Ähli meýdançalary dolduryň!', false);
-                return;
-            }
+                if (!name || !phone || !address) {
+                    showNotification('Ähli meýdançalary dolduryň!', false);
+                    return;
+                }
 
-            // ✅ Butonları devre dışı bırak
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const cancelBtn = document.getElementById('cancel-order');
-            submitBtn.disabled = true;
-            cancelBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iberilýär...';
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const cancelBtn = e.target.querySelector('.btn-secondary');
+                submitBtn.disabled = true;
+                cancelBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iberilýär...';
 
-            // ✅ LOADING GÖSTER
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const loadingText = document.querySelector('.loading-text');
-            loadingOverlay.style.display = 'flex';
-            loadingText.textContent = 'Sargydyňyz işlenýär...';
+                const loadingOverlay = document.getElementById('loading-overlay');
+                const loadingText = document.querySelector('.loading-text');
+                loadingOverlay.style.display = 'flex';
+                loadingText.textContent = 'Sargydyňyz işlenýär...';
 
-            const order = {
-                customer: { name, phone, address },
-                items: [...cart],
-                total: cart.reduce((sum, item) => {
-                    const price = parseFloat(item.price.replace(' TMT', ''));
-                    return sum + (price * item.quantity);
-                }, 0).toFixed(2) + ' TMT',
-                date: new Date().toISOString(),
-                status: 'pending'
-            };
+                const order = {
+                    customer: { name, phone, address },
+                    storeId: storeCart.storeId,
+                    storeName: storeCart.storeName,
+                    items: [...storeCart.items],
+                    total: storeCart.items.reduce((sum, item) => {
+                        const price = parseFloat(item.price.replace(' TMT', ''));
+                        return sum + (price * item.quantity);
+                    }, 0).toFixed(2) + ' TMT',
+                    date: new Date().toISOString(),
+                    status: 'pending'
+                };
 
-            try {
-                const docRef = await window.db.collection('orders').add(order);
-                console.log('Sipariş Firebase\'e eklendi, ID:', docRef.id);
+                try {
+                    const docRef = await window.db.collection('orders').add(order);
+                    console.log('Sipariş Firebase\'e eklendi, ID:', docRef.id);
 
-                loadingOverlay.style.display = 'none';
+                    loadingOverlay.style.display = 'none';
+                    showNotification(`✅ ${storeCart.storeName} üçin sargydyňyz kabul edildi!`, true);
 
-                const orderedItems = order.items.map(item => `${item.title} (${item.quantity} haryt)`).join(', ');
-                showNotification('✅ Sargydyňyz kabul edildi!', true);
+                    // Bu mağazayı sepetten sil
+                    delete cart[storeCart.storeId];
+                    updateCartCount();
+                    document.querySelector(`.order-form-overlay[data-store-id="${storeCart.storeId}"]`).remove();
 
-                cart = [];
-                updateCartCount();
-                document.querySelector('.order-form-overlay').remove();
-                document.getElementById('cart-modal').style.display = 'none';
+                    // Sepet modalını güncelle
+                    cartButton.click();
 
-            } catch (error) {
-                console.error('Sargyt goşulmady:', error);
-                loadingOverlay.style.display = 'none';
-                
-                // ✅ Butonları tekrar aktif et
-                submitBtn.disabled = false;
-                cancelBtn.disabled = false;
-                submitBtn.innerHTML = 'Sargyt ediň';
-                
-                showNotification('Sargydyňyz döredilmedi! Täzeden synanyşyň.', false);
-            }
+                } catch (error) {
+                    console.error('Sargyt goşulmady:', error);
+                    loadingOverlay.style.display = 'none';
+
+                    submitBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    submitBtn.innerHTML = 'Sargyt ediň';
+
+                    showNotification('Sargydyňyz döredilmedi! Täzeden synanyşyň.', false);
+                }
+            });
         });
     });
 
