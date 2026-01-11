@@ -1246,10 +1246,10 @@ header {
 }
 
 .cart-item img {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
 .favorite-item img {
@@ -1848,8 +1848,8 @@ header {
     }
 
     .cart-item img {
-        width: 60px;
-        height: 60px;
+        width: 45px;
+        height: 45px;
     }
 
     .favorites-items {
