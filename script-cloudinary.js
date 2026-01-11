@@ -694,8 +694,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Mevcut sepet varsa ve farklı mağazadan ürün ekleniyorsa
         const existingStoreId = Object.keys(cart)[0];
         if (existingStoreId && existingStoreId !== product.storeId) {
-            showNotification('Ilki bilen sebediňizi boşuň!', false);
-            return;
+            cart = {};
+            showNotification('Sebet tazelendi', false);
         }
 
         if (!cart[product.storeId]) {
