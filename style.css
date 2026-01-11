@@ -1240,14 +1240,16 @@ header {
 .cart-item {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 12px;
+    gap: 10px;
+    padding: 10px;
     border-bottom: 1px solid var(--light-gray);
 }
 
 .cart-item img {
-    width: 45px;
-    height: 45px;
+    width: 35px !important;
+    height: 35px !important;
+    max-width: 35px !important;
+    max-height: 35px !important;
     object-fit: cover;
     border-radius: 4px;
 }
@@ -1848,8 +1850,10 @@ header {
     }
 
     .cart-item img {
-        width: 45px;
-        height: 45px;
+        width: 35px !important;
+        height: 35px !important;
+        max-width: 35px !important;
+        max-height: 35px !important;
     }
 
     .favorites-items {
