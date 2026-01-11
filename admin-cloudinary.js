@@ -776,8 +776,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const location = document.getElementById('store-location')?.value.trim() || '';
         const orderPhone = document.getElementById('store-order-phone')?.value.trim() || '';
 
-        if (!name || !category) {
-            showNotification('Mağaza adı ve kategori gerekli!', false);
+        if (!name) {
+            showNotification('Mağaza ady gerekli!', false);
             isSubmitting = false;
             return;
         }
