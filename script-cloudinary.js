@@ -446,6 +446,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
+        // Farklı mağazaya geçiliyorsa sepeti temizle
+        if (Object.keys(cart).length > 0 && Object.keys(cart)[0] !== storeId) {
+            cart = {};
+            updateCartCount();
+            showNotification('Sebet tazelendi', false);
+        }
+
         const storeBanner = document.getElementById('store-banner');
         storeBanner.style.display = 'block';
 
@@ -689,6 +696,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addToCart = (product) => {
         const store = allStores.find(s => s.id === product.storeId);
         if (!store) return;
+
+        // Mevcut sepet varsa ve farklı mağazadan ürün ekleniyorsa
+        const existingStoreId = Object.keys(cart)[0];
+        if (existingStoreId && existingStoreId !== product.storeId) {
+            showNotification('Ilki bilen sebediňizi boşuň!', false);
+            return;
+        }
 
         if (!cart[product.storeId]) {
             cart[product.storeId] = {
