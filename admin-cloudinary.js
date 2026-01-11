@@ -441,9 +441,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 ...doc.data()
             }));
             
-            // Dropdown'u doldur (format: Parent > Subcategory)
-            storeCategorySelect.innerHTML = '<option value="">Kategoriýa saýlaň</option>';
-            
+            // Dropdown'u doldur (önce ana kategoriler, sonra alt kategoriler)
+            storeCategorySelect.innerHTML = '<option value="">Kategoriýa saýlaň (opsiýonel)</option>';
+
+            // Önce ana kategorileri ekle
+            parentCategories.forEach(parent => {
+                const option = document.createElement('option');
+                option.value = parent.id;
+                option.textContent = parent.name;
+                storeCategorySelect.appendChild(option);
+            });
+
+            // Sonra alt kategorileri ekle
             subcategories.forEach(sub => {
                 const parent = parentCategories.find(p => p.id === sub.parentId);
                 if (parent) {
