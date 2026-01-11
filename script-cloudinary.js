@@ -809,17 +809,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const price = parseFloat(item.price.replace(' TMT', ''));
                 storeTotal += price * item.quantity;
                 return `
-                    <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2212%22%3E%3C/text%3E%3C/svg%3E'}" alt="${item.title}">
-                    <div class="cart-item-details">
-                        <div class="cart-item-title">${item.title}</div>
-                        <div class="cart-item-price">${item.price}</div>
+                    <div class="cart-item">
+                        <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22%3E%3Crect fill=%22%23f5f5f5%22 width=%2230%22 height=%2230%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%228%22%3E%3C/text%3E%3C/svg%3E'}" style="width: 30px; height: 30px; max-width: 30px; max-height: 30px;" alt="${item.title}">
+                        <div class="cart-item-details">
+                            <div class="cart-item-title">${item.title}</div>
+                            <div class="cart-item-price">${item.price}</div>
+                        </div>
+                        <div class="cart-item-quantity">
+                            <button class="quantity-btn" data-store-id="${currentStoreCart.storeId}" data-id="${item.id}" data-action="decrease">-</button>
+                            <span>${item.quantity}</span>
+                            <button class="quantity-btn" data-store-id="${currentStoreCart.storeId}" data-id="${item.id}" data-action="increase">+</button>
+                        </div>
+                        <i class="fas fa-trash cart-item-remove" data-store-id="${currentStoreCart.storeId}" data-id="${item.id}"></i>
                     </div>
-                    <div class="cart-item-quantity">
-                        <button class="quantity-btn" data-store-id="${currentStoreCart.storeId}" data-id="${item.id}" data-action="decrease">-</button>
-                        <span>${item.quantity}</span>
-                        <button class="quantity-btn" data-store-id="${currentStoreCart.storeId}" data-id="${item.id}" data-action="increase">+</button>
-                    </div>
-                    <i class="fas fa-trash cart-item-remove" data-store-id="${currentStoreCart.storeId}" data-id="${item.id}"></i>
                 `;
             }).join('');
 
