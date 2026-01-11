@@ -308,11 +308,12 @@ header {
 /* ================================ KATEGORİ MENÜSÜ STİLLERİ ================================ */
 #category-menu {
     padding: 0;
+    background: #121212;
 }
 
 .category-item {
     margin-bottom: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .category-header {
@@ -325,26 +326,26 @@ header {
 }
 
 .category-header:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .category-header .chevron-icon {
     font-size: 12px;
     margin-right: 12px;
     transition: transform 0.3s ease;
-    color: rgba(255, 255, 255, 0.6);
+    color: #7A7A7A;
 }
 
 .category-header .category-logo-icon {
     font-size: 18px;
     margin-right: 12px;
-    color: rgba(255, 255, 255, 0.9); /* Beyaz - VIP tarzı */
+    color: #F2F2F2;
     width: 24px;
     text-align: center;
 }
 
 .category-header span {
-    color: rgba(255, 255, 255, 0.95);
+    color: #F2F2F2;
     font-weight: 600;
     font-size: 17px;
     text-transform: uppercase;
@@ -360,7 +361,7 @@ header {
     list-style: none;
     padding: 0;
     margin: 0;
-    background: rgba(0, 0, 0, 0.2);
+    background: #121212;
 }
 
 .category-stores li {
@@ -372,7 +373,7 @@ header {
     align-items: center;
     padding: 12px 20px;
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.75);
+    color: #B5B5B5;
     font-size: 15px;
     transition: all 0.3s ease;
     border-left: 3px solid transparent;
@@ -380,13 +381,93 @@ header {
 }
 
 .category-stores a:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    border-left-color: #ffd700;
+    background: rgba(255, 255, 255, 0.06);
+    color: #F2F2F2;
 }
 
 .category-stores a i {
     display: none;
+}
+
+/* Alt kategori stilleri */
+.subcategory-item {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.subcategory-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px 12px 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.subcategory-header:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.subcategory-header .chevron-icon {
+    font-size: 12px;
+    margin-right: 12px;
+    transition: transform 0.3s ease;
+    color: #7A7A7A;
+}
+
+.subcategory-name {
+    color: #B5B5B5;
+    font-weight: 500;
+    font-size: 15px;
+    font-family: var(--vip-font), serif;
+}
+
+.subcategory-stores {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    background: #121212;
+}
+
+.subcategory-stores li {
+    margin: 0;
+}
+
+.subcategory-stores a {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px 10px 56px;
+    text-decoration: none;
+    color: #7A7A7A;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    font-family: var(--vip-font), serif;
+}
+
+.subcategory-stores a:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #B5B5B5;
+}
+
+/* Scroll bar stilini güzelleştir */
+
+/* Overlay (Mobil menü açıkken arka plan karartma) */
+.menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1005;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.menu-overlay.active {
+    display: block;
+    opacity: 1;
 }
 
 /* Scroll bar stilini güzelleştir */
@@ -395,16 +476,16 @@ header {
 }
 
 .store-menu::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: #121212;
 }
 
 .store-menu::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 10px;
 }
 
 .store-menu::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* ================================ İÇERİK ALANI ================================ */
@@ -1369,7 +1450,7 @@ header {
 
     .store-menu-header {
         padding: 15px 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .store-menu h2 {
