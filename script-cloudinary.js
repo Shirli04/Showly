@@ -573,19 +573,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeFilter) {
             switch (activeFilter.type) {
                 case 'CATEGORY': 
-                    productsToRender = storeProducts.filter(p => p.category === activeFilter.value); 
+            productsToRender = storeProducts.filter(p => p.category === activeFilter.value);
                     break;
-                case 'DISCOUNT': 
-                    productsToRender = storeProducts.filter(p => p.isOnSale); 
-                    break;
-                case 'EXPENSIVE': 
-                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500); 
+                case 'DISCOUNT':
+                    productsToRender = storeProducts.filter(p => p.isOnSale);
                     break;
                 case 'SORT_PRICE_ASC':
                     productsToRender = [...storeProducts];
                     break;
+                case 'SORT_PRICE_DESC':
+                    productsToRender = [...storeProducts];
+                    break;
                 case 'PRICE_RANGE':
-                    const min = activeFilter.min || 0;
+                    const min = activeFilter.min ||0;
                     const max = activeFilter.max || Infinity;
                     productsToRender = storeProducts.filter(p => {
                         const price = parseFloat(p.price.replace(' TMT', ''));
@@ -593,6 +593,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                     break;
             }
+        }
+
+        if (productsToRender.length === 0) {
+            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrde haryt tapylmady.</h3></div>`;
+            return;
+        }
+
+        // ✅ Sıralama kodu
+        if (activeFilter?.type === 'SORT_PRICE_ASC') {
+            // Ucuzdan pahalıya
+            productsToRender.sort((a, b) => {
+                const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
+                const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
+                return priceA - priceB;
+            });
+            console.log('✅ Ürünler ucuzdan pahalıya sıralandı');
+        } else if (activeFilter?.type === 'SORT_PRICE_DESC') {
+            // Pahalıdan uza
+            productsToRender.sort((a, b) => {
+                const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
+                const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
+                return priceB - priceA;
+            });
+            console.log('✅ Ürünler pahalıdan uza sıralandı');
+        } else {
+            // Öncelik sırasına göre
+            productsToRender.sort((a, b) => {
+                const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
+                const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
+
+                const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
+                const bHasPrice = b.price && parseFloat(b.price.replace(' TMT', '')) > 0;
+
+                const aScore = (aHasImage ?2 : 0) + (aHasPrice ?1 : 0);
+                const bScore = (bHasImage ?2 : 0) + (bHasPrice ?1 : 0);
+
+                return bScore - aScore;
+            });
+            console.log('✅ Ürünler öncelik sırasına göre sıralandı');
+        }
         }
 
         if (productsToRender.length === 0) {
