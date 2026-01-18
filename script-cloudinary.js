@@ -1148,12 +1148,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isInApp = userAgent.includes('fbios') || userAgent.includes('instagram') ||
                         userAgent.includes('tiktok') || userAgent.includes('messenger');
 
-        if (isInApp) {
-            console.log('📱 In-app browser tespit edildi, tarayıcıdan açılıyor...');
+        const isAndroid = userAgent.includes('android');
+        const isIOS = /iphone|ipad|ipod/.test(userAgent);
 
-            // 1 saniye sonra otomatik olarak tarayıcıdan aç
-            setTimeout(() => {
-                console.log('📱 Tarayıcıdan açılıyor:', window.location.href);
+        if (isInApp) {
+            console.log('📱 In-app browser tespit edildi');
+
+            // Tarayıcıdan açma fonksiyonu
+            const openInExternalBrowser = () => {
+                const currentUrl = window.location.href;
+                console.log('📱 Tarayıcıdan açılıyor:', currentUrl);
 
                 // Form modal'ını kapat
                 const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
@@ -1167,12 +1171,58 @@ document.addEventListener('DOMContentLoaded', async () => {
                     cartModal.style.display = 'none';
                 }
 
-                // Tarayıcıdan aç
-                window.open(window.location.href, '_blank');
-            }, 1000);
+                // Android: Chrome aç
+                if (isAndroid) {
+                    console.log('🤖 Android: Chrome açılıyor...');
+
+                    // Yöntem 1: intent:// scheme
+                    const intentUrl = `intent://${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+                    window.location.href = intentUrl;
+
+                    // Yöntem 2: googlechrome:// scheme (yedek)
+                    setTimeout(() => {
+                        const chromeUrl = `googlechrome://${currentUrl.replace(/^https?:\/\//, '')}`;
+                        window.location.href = chromeUrl;
+                    }, 500);
+
+                    // Yöntem 3: _blank window.open (yedek)
+                    setTimeout(() => {
+                        window.open(currentUrl, '_blank');
+                    }, 1000);
+                }
+                // iOS: Chrome aç, yoksa Safari
+                else if (isIOS) {
+                    console.log('🍎 iOS: Chrome açılıyor...');
+
+                    // Yöntem 1: googlechromes:// scheme
+                    const chromeUrl = `googlechromes://${currentUrl.replace(/^https?:\/\//, '')}`;
+                    window.location.href = chromeUrl;
+
+                    // Yöntem 2: _blank window.open (Safari)
+                    setTimeout(() => {
+                        window.open(currentUrl, '_blank');
+                    }, 500);
+
+                    // Yöntem 3: _self window.open (yedek)
+                    setTimeout(() => {
+                        window.open(currentUrl, '_self');
+                    }, 1000);
+                }
+                // Diğer: _blank window.open
+                else {
+                    console.log('💻 Diğer: Tarayıcıdan açılıyor...');
+                    window.open(currentUrl, '_blank');
+                }
+            };
+
+            // 2 saniye sonra otomatik olarak tarayıcıdan aç
+            setTimeout(() => {
+                openInExternalBrowser();
+            }, 2000);
 
             // Kullanıcıya bilgi ver
-            showNotification('📱 Tarayıcıdan açylýar...', true);
+            const browserName = isAndroid ? 'Chrome' : (isIOS ? 'Chrome (ýa-da Safari)' : 'tarayıcı');
+            showNotification(`📱 ${browserName} açylýar...`, true);
         }
 
         // İptal butonu
