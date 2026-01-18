@@ -34,6 +34,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentStoreId = null;
     let allStores = [];
     let allProducts = [];
+
+    // TikTok/Instagram in-app browser tespiti
+    function isInAppBrowser() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isInApp = userAgent.includes('fbios') || userAgent.includes('instagram') ||
+                        userAgent.includes('tiktok') || userAgent.includes('messenger') ||
+                        window.webkit?.messageHandlers ||
+                        (window.webkit && window.webkit.messageHandlers);
+        console.log('🔍 Tarayıcı tespit:', isInApp ? 'In-App Browser' : 'Normal Tarayıcı');
+        console.log('📱 User Agent:', userAgent);
+        return isInApp;
+    }
+
+    // Harici tarayıcıya açma
+    function openInExternalBrowser(url) {
+        if (isInAppBrowser()) {
+            // In-app browser'da ise, link oluştur ve kullanıcıya tıklat
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            window.open(url, '_self');
+        }
+    }
     
     // Firebase kontrolü
     if (!window.db) {
@@ -697,8 +725,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const addToCart = (product) => {
+        console.log('🛒 Sepete ekle çalışıyor:', product);
+
         const store = allStores.find(s => s.id === product.storeId);
-        if (!store) return;
+        if (!store) {
+            console.error('❌ Mağaza bulunamadı:', product.storeId);
+            return;
+        }
 
         // Mevcut sepet varsa ve farklı mağazadan ürün ekleniyorsa
         const existingStoreId = Object.keys(cart)[0];
@@ -723,6 +756,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         updateCartCount();
         showNotification(product.title + ' sebede goşuldy!');
+        console.log('✅ Sepete eklendi:', product.title);
     };
 
     // --- OLAY DİNLEYİCİLER ---
@@ -759,33 +793,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Ürün gridi olayları
     productsGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-favorite');
-        if (btn) { 
+        if (btn) {
             const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
             if (product) toggleFavorite(product);
-            return; 
+            return;
         }
-        
-        if (e.target.classList.contains('btn-cart')) { 
-            const product = allProducts.find(p => p.id === e.target.getAttribute('data-id'));
+
+        const cartBtn = e.target.closest('.btn-cart');
+        if (cartBtn) {
+            const product = allProducts.find(p => p.id === cartBtn.getAttribute('data-id'));
             if (product) addToCart(product);
-            return; 
+            return;
         }
-        
+
         const card = e.target.closest('.product-card');
-        if (card) { 
-            const productId = card.querySelector('.btn-cart').getAttribute('data-id'); 
-            openProductModal(productId); 
+        if (card) {
+            const productId = card.querySelector('.btn-cart').getAttribute('data-id');
+            openProductModal(productId);
+        }
+    });
+
+    // iOS Safari için touch event ekle
+    productsGrid.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const cartBtn = e.target.closest('.btn-cart');
+        if (cartBtn) {
+            const product = allProducts.find(p => p.id === cartBtn.getAttribute('data-id'));
+            if (product) addToCart(product);
+            return;
+        }
+
+        const btn = e.target.closest('.btn-favorite');
+        if (btn) {
+            const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
+            if (product) toggleFavorite(product);
+            return;
+        }
+
+        const card = e.target.closest('.product-card');
+        if (card) {
+            const productId = card.querySelector('.btn-cart').getAttribute('data-id');
+            openProductModal(productId);
         }
     });
 
     // Modal kontrolleri
-    document.getElementById('modal-add-cart').addEventListener('click', () => {
+    const modalAddCartBtn = document.getElementById('modal-add-cart');
+    modalAddCartBtn.addEventListener('click', () => {
         const modal = document.getElementById('product-modal');
         const productId = modal.getAttribute('data-product-id');
         const product = allProducts.find(p => p.id === productId);
-        if (product) { 
-            addToCart(product); 
-            document.getElementById('product-modal').style.display = 'none'; 
+        if (product) {
+            addToCart(product);
+            document.getElementById('product-modal').style.display = 'none';
+        }
+    });
+
+    // iOS Safari için modal touch event
+    modalAddCartBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const modal = document.getElementById('product-modal');
+        const productId = modal.getAttribute('data-product-id');
+        const product = allProducts.find(p => p.id === productId);
+        if (product) {
+            addToCart(product);
+            document.getElementById('product-modal').style.display = 'none';
         }
     });
     
@@ -849,10 +921,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('quantity-btn')) {
-            const storeId = e.target.getAttribute('data-store-id');
-            const productId = e.target.getAttribute('data-id');
-            const action = e.target.getAttribute('data-action');
+        const quantityBtn = e.target.closest('.quantity-btn');
+        if (quantityBtn) {
+            const storeId = quantityBtn.getAttribute('data-store-id');
+            const productId = quantityBtn.getAttribute('data-id');
+            const action = quantityBtn.getAttribute('data-action');
             if (cart[storeId]) {
                 const item = cart[storeId].items.find(i => i.id === productId);
                 if (item) {
@@ -862,10 +935,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     cartButton.click();
                 }
             }
+            return;
         }
-        if (e.target.classList.contains('cart-item-remove')) {
-            const storeId = e.target.getAttribute('data-store-id');
-            const productId = e.target.getAttribute('data-id');
+
+        const removeBtn = e.target.closest('.cart-item-remove');
+        if (removeBtn) {
+            const storeId = removeBtn.getAttribute('data-store-id');
+            const productId = removeBtn.getAttribute('data-id');
             if (cart[storeId]) {
                 cart[storeId].items = cart[storeId].items.filter(i => i.id !== productId);
                 if (cart[storeId].items.length === 0) {
@@ -874,6 +950,44 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateCartCount();
                 cartButton.click();
             }
+            return;
+        }
+    });
+
+    // iOS Safari için cart touch events
+    document.addEventListener('touchend', (e) => {
+        const quantityBtn = e.target.closest('.quantity-btn');
+        if (quantityBtn) {
+            e.preventDefault();
+            const storeId = quantityBtn.getAttribute('data-store-id');
+            const productId = quantityBtn.getAttribute('data-id');
+            const action = quantityBtn.getAttribute('data-action');
+            if (cart[storeId]) {
+                const item = cart[storeId].items.find(i => i.id === productId);
+                if (item) {
+                    if (action === 'increase') item.quantity++;
+                    else if (action === 'decrease' && item.quantity > 1) item.quantity--;
+                    updateCartCount();
+                    cartButton.click();
+                }
+            }
+            return;
+        }
+
+        const removeBtn = e.target.closest('.cart-item-remove');
+        if (removeBtn) {
+            e.preventDefault();
+            const storeId = removeBtn.getAttribute('data-store-id');
+            const productId = removeBtn.getAttribute('data-id');
+            if (cart[storeId]) {
+                cart[storeId].items = cart[storeId].items.filter(i => i.id !== productId);
+                if (cart[storeId].items.length === 0) {
+                    delete cart[storeId];
+                }
+                updateCartCount();
+                cartButton.click();
+            }
+            return;
         }
     });
 
@@ -973,9 +1087,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const itemsText = currentStoreCart.items.map(item => `- ${item.title} (${item.quantity} haryt)`).join('\n');
             const orderText = `Ady: ${name}\nTelefon: ${phone}\nAdres: ${address}\n\nSargyt:\n${itemsText}\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
 
-            // WhatsApp linki oluştur
-            const whatsappNumber = orderPhone.replace(/[^0-9]/g, '');
-            const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(orderText)}`;
+            // Telefon numarasını temizle
+            const cleanNumber = orderPhone.replace(/[^0-9]/g, '');
 
             try {
                 // Firebase'e siparişi kaydet
@@ -1000,9 +1113,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateCartCount();
                 document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
 
-                // SMS uygulamasına yönlendir (WhatsApp yerine)
-                const smsURL = `sms:${whatsappNumber}?body=${encodeURIComponent(orderText)}`;
-                window.open(smsURL, '_self');
+                // TikTok/Instagram in-app browser için yönlendirme
+                if (isInAppBrowser()) {
+                    // Özel modal oluştur (sadece SMS)
+                    const redirectModal = document.createElement('div');
+                    redirectModal.className = 'redirect-modal';
+                    redirectModal.innerHTML = `
+                        <div class="redirect-modal-content">
+                            <i class="fas fa-check-circle" style="font-size: 60px; color: #6c5ce7; margin-bottom: 20px;"></i>
+                            <h3>Sargydyňyz Kabul Edildi!</h3>
+                            <p>Magaza bilen habarlaşmak üçin SMS açylýar...</p>
+                            <div class="redirect-buttons">
+                                <button class="btn-sms" onclick="window.location.href='sms:${cleanNumber}?body=${encodeURIComponent(orderText)}'; this.closest('.redirect-modal').remove();">
+                                    <i class="fas fa-sms"></i> SMS Iber
+                                </button>
+                                <button class="btn-close" onclick="this.closest('.redirect-modal').remove();">
+                                    Ýapyň
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(redirectModal);
+
+                    // Otomatik SMS'e yönlendir (3 saniye sonra)
+                    setTimeout(() => {
+                        const smsURL = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
+                        window.location.href = smsURL;
+                    }, 2000);
+                } else {
+                    // Normal tarayıcıda SMS aç
+                    const smsURL = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
+                    window.open(smsURL, '_self');
+                }
 
                 // Sepet modalını güncelle
                 cartButton.click();

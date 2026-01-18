@@ -21,7 +21,7 @@ try {
         cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
         experimentalForceLongPolling: true,
         ignoreUndefinedProperties: true
-    });
+    }, { merge: true });
 } catch (e) {
     console.log('Settings zaten yapılandırılmış, devam ediliyor...');
 }
