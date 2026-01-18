@@ -44,91 +44,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Yöntem 1: window.location.href (anında)
             window.location.href = url;
 
-            // Yöntem 2: window.location.replace (100ms sonra)
-            setTimeout(() => {
-                window.location.replace(url);
-            }, 100);
+            // Yöntem 2: window.open (anında)
+            window.open(url, '_self');
 
-            // Yöntem 3: window.location.assign (200ms sonra)
-            setTimeout(() => {
-                window.location.assign(url);
-            }, 200);
-
-            // Yöntem 4: window.open (_self) (300ms sonra)
-            setTimeout(() => {
-                window.open(url, '_self');
-            }, 300);
-
-            // Yöntem 5: window.open (_blank) (500ms sonra)
-            setTimeout(() => {
-                window.open(url, '_blank');
-            }, 500);
-
-            // Yöntem 6: Link elementi (target _blank) (anında)
-            const link1 = document.createElement('a');
-            link1.href = url;
-            link1.target = '_blank';
-            link1.style.display = 'none';
-            document.body.appendChild(link1);
-            link1.click();
-            setTimeout(() => {
-                document.body.removeChild(link1);
-            }, 100);
-
-            // Yöntem 7: Link elementi (target _self) (200ms sonra)
-            const link2 = document.createElement('a');
-            link2.href = url;
-            link2.target = '_self';
-            link2.style.display = 'none';
-            document.body.appendChild(link2);
-            setTimeout(() => {
-                link2.click();
-                document.body.removeChild(link2);
-            }, 200);
-
-            // Yöntem 8: Tel: arama (1000ms sonra, yedek)
-            setTimeout(() => {
-                const telUrl = `tel:${phoneNumber}`;
-                console.log('📞 Tel: deniyor...', telUrl);
-                window.location.href = telUrl;
-            }, 1000);
-
-            // Yöntem 9: Iframe (1500ms sonra)
-            setTimeout(() => {
-                try {
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.src = url;
-                    document.body.appendChild(iframe);
-                    setTimeout(() => {
-                        document.body.removeChild(iframe);
-                    }, 1000);
-                } catch (e) {
-                    console.log('📱 Iframe başarısız:', e);
-                }
-            }, 1500);
-
-            // Yöntem 10: Form POST (2000ms sonra)
-            setTimeout(() => {
-                try {
-                    const form = document.createElement('form');
-                    form.action = url;
-                    form.method = 'get';
-                    form.style.display = 'none';
-                    document.body.appendChild(form);
-                    form.submit();
-                    setTimeout(() => {
-                        document.body.removeChild(form);
-                    }, 100);
-                } catch (e) {
-                    console.log('📱 Form POST başarısız:', e);
-                }
-            }, 2000);
+            // Yöntem 3: window.open (_blank, yedek)
+            window.open(url, '_blank');
 
             // Bildirim: Telefon numarasını göster
-            setTimeout(() => {
-                showNotification(`✅ Sargyt kabul edildi! Telefon: ${phoneNumber}`, true);
-            }, 500);
+            showNotification(`✅ Sargyt kabul edildi! Telefon: ${phoneNumber}`, true);
 
         } catch (error) {
             console.error('❌ SMS açılamadı:', error);
@@ -1220,6 +1143,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.body.insertAdjacentHTML('beforeend', formHTML);
 
+        // TikTok/Instagram in-app browser'da ise otomatik olarak tarayıcıdan aç
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isInApp = userAgent.includes('fbios') || userAgent.includes('instagram') ||
+                        userAgent.includes('tiktok') || userAgent.includes('messenger');
+
+        if (isInApp) {
+            console.log('📱 In-app browser tespit edildi, tarayıcıdan açılıyor...');
+
+            // 1 saniye sonra otomatik olarak tarayıcıdan aç
+            setTimeout(() => {
+                console.log('📱 Tarayıcıdan açılıyor:', window.location.href);
+
+                // Form modal'ını kapat
+                const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
+                if (formOverlay) {
+                    formOverlay.remove();
+                }
+
+                // Sepet modal'ını kapat
+                const cartModal = document.getElementById('cart-modal');
+                if (cartModal) {
+                    cartModal.style.display = 'none';
+                }
+
+                // Tarayıcıdan aç
+                window.open(window.location.href, '_blank');
+            }, 1000);
+
+            // Kullanıcıya bilgi ver
+            showNotification('📱 Tarayıcıdan açylýar...', true);
+        }
+
         // İptal butonu
         document.querySelector(`.cancel-order-${currentStoreCart.storeId}`).addEventListener('click', () => {
             document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
@@ -1300,6 +1255,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Direkt SMS aç (tüm yöntemleri dene)
                 openSmsUrl(smsUrl, cleanNumber, orderText);
+
+                // Sipariş modal'ını kapat
+                const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
+                if (formOverlay) {
+                    formOverlay.remove();
+                }
 
                 // Sepet modalını güncelle
                 cartButton.click();
