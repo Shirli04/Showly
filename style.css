@@ -2837,6 +2837,10 @@ select {
     background: #e5e5e5;
 }
 
+.btn-close:active {
+    transform: scale(0.98);
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

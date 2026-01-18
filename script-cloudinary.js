@@ -35,56 +35,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allStores = [];
     let allProducts = [];
 
-    // TikTok/Instagram in-app browser tespiti
-    function isInAppBrowser() {
-        const userAgent = navigator.userAgent.toLowerCase();
-        const isInApp = userAgent.includes('fbios') || userAgent.includes('instagram') ||
-                        userAgent.includes('tiktok') || userAgent.includes('messenger') ||
-                        window.webkit?.messageHandlers ||
-                        (window.webkit && window.webkit.messageHandlers);
-        console.log('🔍 Tarayıcı tespit:', isInApp ? 'In-App Browser' : 'Normal Tarayıcı');
-        console.log('📱 User Agent:', userAgent);
-        return isInApp;
-    }
-
-    // Harici tarayıcıya açma
-    function openInExternalBrowser(url) {
-        if (isInAppBrowser()) {
-            // In-app browser'da ise, link oluştur ve kullanıcıya tıklat
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } else {
-            window.open(url, '_self');
-        }
-    }
-
-    // SMS URL açma fonksiyonu (TikTok/Instagram için)
+    // SMS URL açma fonksiyonu
     function openSmsUrl(url) {
         try {
             console.log('📱 SMS açılıyor:', url);
 
-            // Yöntem 1: window.location.href
+            // Yöntem 1: window.location.href (anında)
             window.location.href = url;
 
-            // Yöntem 2: window.open (500ms sonra yedek)
+            // Yöntem 2: window.open (300ms sonra)
             setTimeout(() => {
                 window.open(url, '_self');
-            }, 500);
+            }, 300);
 
-            // Yöntem 3: Link elementi oluştur ve tıklat (tüm yöntemler)
-            const link = document.createElement('a');
-            link.href = url;
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
+            // Yöntem 3: window.open (800ms sonra, farklı target)
             setTimeout(() => {
-                document.body.removeChild(link);
+                window.open(url, '_blank');
+            }, 800);
+
+            // Yöntem 4: Link elementi oluştur ve tıklat (anında)
+            const link1 = document.createElement('a');
+            link1.href = url;
+            link1.target = '_blank';
+            link1.style.display = 'none';
+            document.body.appendChild(link1);
+            link1.click();
+            setTimeout(() => {
+                document.body.removeChild(link1);
             }, 100);
+
+            // Yöntem 5: Link elementi (target _self)
+            const link2 = document.createElement('a');
+            link2.href = url;
+            link2.target = '_self';
+            link2.style.display = 'none';
+            document.body.appendChild(link2);
+            setTimeout(() => {
+                link2.click();
+                document.body.removeChild(link2);
+            }, 200);
 
         } catch (error) {
             console.error('❌ SMS açılamadı:', error);
@@ -1196,9 +1185,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // Sipariş metnini oluştur
+            // Sipariş metnini oluştur (Türkmençe)
             const itemsText = currentStoreCart.items.map(item => `- ${item.title} (${item.quantity} haryt)`).join('\n');
-            const orderText = `Ady: ${name}\nTelefon: ${phone}\nAdres: ${address}\n\nSargyt:\n${itemsText}\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
+            const orderText = `Sargyt:\n${itemsText}\n\nAdy: ${name}\nTelefon: ${phone}\nAdres: ${address}\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
 
             // Telefon numarasını temizle
             const cleanNumber = orderPhone.replace(/[^0-9]/g, '');
@@ -1226,59 +1215,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateCartCount();
                 document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
 
-                // TikTok/Instagram in-app browser için yönlendirme
-                if (isInAppBrowser()) {
-                    const redirectModal = document.getElementById('redirect-modal');
-                    const redirectSmsBtn = document.getElementById('redirect-sms-btn');
-                    const redirectCloseBtn = document.getElementById('redirect-close-btn');
-                    const redirectPhoneDisplay = document.getElementById('redirect-phone-display');
+                // SMS URL oluştur
+                const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
 
-                    if (redirectModal && redirectSmsBtn && redirectCloseBtn && redirectPhoneDisplay) {
-                        // Telefon numarasını göster
-                        redirectPhoneDisplay.textContent = '+' + cleanNumber;
+                console.log('📱 SMS açılıyor:', smsUrl);
+                console.log('📱 SMS içeriği:', orderText);
 
-                        // Modal'ı göster
-                        redirectModal.style.display = 'flex';
-
-                        // SMS URL oluştur
-                        const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
-
-                        console.log('📱 Modal açılıyor, SMS URL:', smsUrl);
-
-                        // SMS butonu tıklama
-                        redirectSmsBtn.onclick = () => {
-                            console.log('📱 SMS butonuna tıklandı');
-                            openSmsUrl(smsUrl);
-                            redirectModal.style.display = 'none';
-                        };
-
-                        // Kapat butonu tıklama
-                        redirectCloseBtn.onclick = () => {
-                            console.log('📱 Modal kapatıldı');
-                            redirectModal.style.display = 'none';
-                        };
-
-                        // Otomatik SMS'e yönlendir (2 saniye sonra)
-                        setTimeout(() => {
-                            console.log('📱 Otomatik SMS açılıyor...');
-                            openSmsUrl(smsUrl);
-                            redirectModal.style.display = 'none';
-                        }, 2000);
-                    } else {
-                        console.error('❌ Redirect modal elementleri bulunamadı');
-                        console.log('⚠️ Modal bulunamadı, direkt SMS açılıyor...');
-
-                        // Yedek: Direkt SMS açmayı dene
-                        const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
-                        openSmsUrl(smsUrl);
-
-                        showNotification('SMS açylýar...', true);
-                    }
-                } else {
-                    // Normal tarayıcıda SMS aç
-                    const smsURL = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
-                    openSmsUrl(smsURL);
-                }
+                // Direkt SMS aç (tüm yöntemleri dene)
+                openSmsUrl(smsUrl);
 
                 // Sepet modalını güncelle
                 cartButton.click();
