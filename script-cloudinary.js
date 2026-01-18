@@ -397,22 +397,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('category-buttons-container');
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
         const categories = [...new Set(storeProducts.map(p => p.category).filter(Boolean))];
-        
+
+        const activeCategoryName = activeFilter?.type === 'CATEGORY' ? activeFilter.value : 'Ähli harytlar';
+
         container.innerHTML = '';
 
-        const allBtn = document.createElement('button');
-        allBtn.className = 'category-btn ' + (!activeFilter ? 'active' : '');
-        allBtn.innerHTML = `Ähli harytlar <span class="category-count">${storeProducts.length}</span>`;
-        allBtn.addEventListener('click', () => renderStorePage(storeId, null));
-        container.appendChild(allBtn);
+        // Dropdown butonu
+        const dropdownBtn = document.createElement('button');
+        dropdownBtn.className = 'category-dropdown-btn';
+        dropdownBtn.innerHTML = `
+            <span class="category-dropdown-text">${activeCategoryName}</span>
+            <span class="category-dropdown-icon">▼</span>
+        `;
 
+        // Dropdown içerik
+        const dropdownContent = document.createElement('div');
+        dropdownContent.className = 'category-dropdown-content';
+        dropdownContent.style.display = 'none';
+
+        // "Tüm ürünler" seçeneği
+        const allOption = document.createElement('button');
+        allOption.className = 'category-dropdown-item ' + (!activeFilter ? 'active' : '');
+        allOption.innerHTML = `Ähli harytlar <span class="category-count">${storeProducts.length}</span>`;
+        allOption.addEventListener('click', () => {
+            renderStorePage(storeId, null);
+            dropdownContent.style.display = 'none';
+        });
+        dropdownContent.appendChild(allOption);
+
+        // Kategori seçenekleri
         categories.forEach(category => {
             const count = storeProducts.filter(p => p.category === category).length;
-            const btn = document.createElement('button');
-            btn.className = 'category-btn ' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === category ? 'active' : '');
-            btn.innerHTML = `${category} <span class="category-count">${count}</span>`;
-            btn.addEventListener('click', () => renderStorePage(storeId, { type: 'CATEGORY', value: category }));
-            container.appendChild(btn);
+            const option = document.createElement('button');
+            option.className = 'category-dropdown-item ' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === category ? 'active' : '');
+            option.innerHTML = `${category} <span class="category-count">${count}</span>`;
+            option.addEventListener('click', () => {
+                renderStorePage(storeId, { type: 'CATEGORY', value: category });
+                dropdownContent.style.display = 'none';
+            });
+            dropdownContent.appendChild(option);
+        });
+
+        // Dropdown butonu tıklama
+        dropdownBtn.addEventListener('click', () => {
+            if (dropdownContent.style.display === 'none') {
+                dropdownContent.style.display = 'block';
+                dropdownBtn.querySelector('.category-dropdown-icon').style.transform = 'rotate(180deg)';
+            } else {
+                dropdownContent.style.display = 'none';
+                dropdownBtn.querySelector('.category-dropdown-icon').style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Container'a ekle
+        container.appendChild(dropdownBtn);
+        container.appendChild(dropdownContent);
+
+        // Dropdown dışına tıklama
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) {
+                dropdownContent.style.display = 'none';
+                dropdownBtn.querySelector('.category-dropdown-icon').style.transform = 'rotate(0deg)';
+            }
         });
     };
 
