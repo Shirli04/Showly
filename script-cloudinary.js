@@ -1143,13 +1143,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.body.insertAdjacentHTML('beforeend', formHTML);
 
-        // TikTok/Instagram in-app browser'da ise otomatik olarak tarayıcıdan aç
+        // In-app browser tespiti
         const userAgent = navigator.userAgent.toLowerCase();
-        const isInApp = userAgent.includes('fbios') || userAgent.includes('instagram') ||
-                        userAgent.includes('tiktok') || userAgent.includes('messenger');
+        console.log('🔍 User Agent:', userAgent);
+
+        const isInApp =
+            userAgent.includes('fbios') ||
+            userAgent.includes('instagram') ||
+            userAgent.includes('tiktok') ||
+            userAgent.includes('messenger') ||
+            /fb_iab/.test(userAgent) ||
+            /instagram/.test(userAgent) ||
+            /tiktok/.test(userAgent);
 
         const isAndroid = userAgent.includes('android');
         const isIOS = /iphone|ipad|ipod/.test(userAgent);
+
+        console.log('📱 In-app browser:', isInApp);
+        console.log('📱 Android:', isAndroid);
+        console.log('📱 iOS:', isIOS);
 
         if (isInApp) {
             console.log('📱 In-app browser tespit edildi');
@@ -1171,31 +1183,47 @@ document.addEventListener('DOMContentLoaded', async () => {
                     cartModal.style.display = 'none';
                 }
 
+                const urlWithoutProtocol = currentUrl.replace(/^https?:\/\//, '');
+
                 // Android: Chrome aç
                 if (isAndroid) {
                     console.log('🤖 Android: Chrome açılıyor...');
 
-                    // Yöntem 1: intent:// scheme
-                    const intentUrl = `intent://${currentUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
+                    // Yöntem 1: intent:// scheme (Android Chrome)
+                    const intentUrl = `intent://${urlWithoutProtocol}#Intent;scheme=https;package=com.android.chrome;end`;
                     window.location.href = intentUrl;
 
-                    // Yöntem 2: googlechrome:// scheme (yedek)
+                    // Yöntem 2: googlechrome:// scheme
                     setTimeout(() => {
-                        const chromeUrl = `googlechrome://${currentUrl.replace(/^https?:\/\//, '')}`;
+                        const chromeUrl = `googlechrome://${urlWithoutProtocol}`;
                         window.location.href = chromeUrl;
                     }, 500);
 
-                    // Yöntem 3: _blank window.open (yedek)
+                    // Yöntem 3: _blank window.open
                     setTimeout(() => {
                         window.open(currentUrl, '_blank');
                     }, 1000);
+
+                    // Yöntem 4: _system window.open
+                    setTimeout(() => {
+                        window.open(currentUrl, '_system');
+                    }, 1500);
+
+                    // Yöntem 5: Link elementi
+                    setTimeout(() => {
+                        const link = document.createElement('a');
+                        link.href = currentUrl;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.click();
+                    }, 2000);
                 }
                 // iOS: Chrome aç, yoksa Safari
                 else if (isIOS) {
                     console.log('🍎 iOS: Chrome açılıyor...');
 
                     // Yöntem 1: googlechromes:// scheme
-                    const chromeUrl = `googlechromes://${currentUrl.replace(/^https?:\/\//, '')}`;
+                    const chromeUrl = `googlechromes://${urlWithoutProtocol}`;
                     window.location.href = chromeUrl;
 
                     // Yöntem 2: _blank window.open (Safari)
@@ -1203,10 +1231,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                         window.open(currentUrl, '_blank');
                     }, 500);
 
-                    // Yöntem 3: _self window.open (yedek)
+                    // Yöntem 3: _self window.open
                     setTimeout(() => {
                         window.open(currentUrl, '_self');
                     }, 1000);
+
+                    // Yöntem 4: _system window.open
+                    setTimeout(() => {
+                        window.open(currentUrl, '_system');
+                    }, 1500);
+
+                    // Yöntem 5: Link elementi
+                    setTimeout(() => {
+                        const link = document.createElement('a');
+                        link.href = currentUrl;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.click();
+                    }, 2000);
                 }
                 // Diğer: _blank window.open
                 else {
@@ -1215,10 +1257,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             };
 
-            // 2 saniye sonra otomatik olarak tarayıcıdan aç
+            // "Tarayıcıdan Aç" butonu ekle
+            const openBrowserBtn = document.createElement('button');
+            openBrowserBtn.className = 'btn-primary open-browser-btn';
+            openBrowserBtn.innerHTML = '🌐 Tarayıcıdan Aç';
+            openBrowserBtn.style.cssText = 'width: 100%; margin-top: 10px; padding: 16px; background: #6c5ce7; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;';
+
+            const formActions = document.querySelector(`#order-form-${currentStoreCart.storeId} .form-actions`);
+            if (formActions) {
+                formActions.appendChild(openBrowserBtn);
+
+                // Buton click
+                openBrowserBtn.addEventListener('click', () => {
+                    console.log('🌐 Tarayıcıdan Aç butonuna tıklandı');
+                    openInExternalBrowser();
+                });
+            }
+
+            // 3 saniye sonra otomatik olarak tarayıcıdan aç
             setTimeout(() => {
+                console.log('⏱️ 3 saniye sonra otomatik tarayıcıdan açılıyor...');
                 openInExternalBrowser();
-            }, 2000);
+            }, 3000);
 
             // Kullanıcıya bilgi ver
             const browserName = isAndroid ? 'Chrome' : (isIOS ? 'Chrome (ýa-da Safari)' : 'tarayıcı');
