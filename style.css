@@ -2752,7 +2752,7 @@ select {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100000;
+    z-index: 999999;
     padding: 20px;
     animation: fadeIn 0.3s ease;
 }

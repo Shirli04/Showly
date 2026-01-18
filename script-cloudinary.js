@@ -62,6 +62,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.open(url, '_self');
         }
     }
+
+    // SMS URL açma fonksiyonu (TikTok/Instagram için)
+    function openSmsUrl(url) {
+        try {
+            console.log('📱 SMS açılıyor:', url);
+
+            // Yöntem 1: window.location.href
+            window.location.href = url;
+
+            // Yöntem 2: window.open (500ms sonra yedek)
+            setTimeout(() => {
+                window.open(url, '_self');
+            }, 500);
+
+            // Yöntem 3: Link elementi oluştur ve tıklat (tüm yöntemler)
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+                document.body.removeChild(link);
+            }, 100);
+
+        } catch (error) {
+            console.error('❌ SMS açılamadı:', error);
+            showNotification('SMS açma hatasy. Täzeden synanyşyň.', false);
+        }
+    }
     
     // Firebase kontrolü
     if (!window.db) {
@@ -1115,35 +1144,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // TikTok/Instagram in-app browser için yönlendirme
                 if (isInAppBrowser()) {
-                    // Özel modal oluştur (sadece SMS)
-                    const redirectModal = document.createElement('div');
-                    redirectModal.className = 'redirect-modal';
-                    redirectModal.innerHTML = `
-                        <div class="redirect-modal-content">
-                            <i class="fas fa-check-circle" style="font-size: 60px; color: #6c5ce7; margin-bottom: 20px;"></i>
-                            <h3>Sargydyňyz Kabul Edildi!</h3>
-                            <p>Magaza bilen habarlaşmak üçin SMS açylýar...</p>
-                            <div class="redirect-buttons">
-                                <button class="btn-sms" onclick="window.location.href='sms:${cleanNumber}?body=${encodeURIComponent(orderText)}'; this.closest('.redirect-modal').remove();">
-                                    <i class="fas fa-sms"></i> SMS Iber
-                                </button>
-                                <button class="btn-close" onclick="this.closest('.redirect-modal').remove();">
-                                    Ýapyň
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    document.body.appendChild(redirectModal);
+                    const redirectModal = document.getElementById('redirect-modal');
+                    const redirectSmsBtn = document.getElementById('redirect-sms-btn');
+                    const redirectCloseBtn = document.getElementById('redirect-close-btn');
+                    const redirectPhoneDisplay = document.getElementById('redirect-phone-display');
 
-                    // Otomatik SMS'e yönlendir (3 saniye sonra)
-                    setTimeout(() => {
-                        const smsURL = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
-                        window.location.href = smsURL;
-                    }, 2000);
+                    if (redirectModal && redirectSmsBtn && redirectCloseBtn && redirectPhoneDisplay) {
+                        // Telefon numarasını göster
+                        redirectPhoneDisplay.textContent = '+' + cleanNumber;
+
+                        // Modal'ı göster
+                        redirectModal.style.display = 'flex';
+
+                        // SMS URL oluştur
+                        const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
+
+                        console.log('📱 Modal açılıyor, SMS URL:', smsUrl);
+
+                        // SMS butonu tıklama
+                        redirectSmsBtn.onclick = () => {
+                            console.log('📱 SMS butonuna tıklandı');
+                            openSmsUrl(smsUrl);
+                            redirectModal.style.display = 'none';
+                        };
+
+                        // Kapat butonu tıklama
+                        redirectCloseBtn.onclick = () => {
+                            console.log('📱 Modal kapatıldı');
+                            redirectModal.style.display = 'none';
+                        };
+
+                        // Otomatik SMS'e yönlendir (2 saniye sonra)
+                        setTimeout(() => {
+                            console.log('📱 Otomatik SMS açılıyor...');
+                            openSmsUrl(smsUrl);
+                            redirectModal.style.display = 'none';
+                        }, 2000);
+                    } else {
+                        console.error('❌ Redirect modal elementleri bulunamadı');
+                        console.log('⚠️ Modal bulunamadı, direkt SMS açılıyor...');
+
+                        // Yedek: Direkt SMS açmayı dene
+                        const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
+                        openSmsUrl(smsUrl);
+
+                        showNotification('SMS açylýar...', true);
+                    }
                 } else {
                     // Normal tarayıcıda SMS aç
                     const smsURL = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
-                    window.open(smsURL, '_self');
+                    openSmsUrl(smsURL);
                 }
 
                 // Sepet modalını güncelle
