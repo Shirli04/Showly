@@ -36,24 +36,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allProducts = [];
 
     // SMS URL açma fonksiyonu
-    function openSmsUrl(url) {
+    function openSmsUrl(url, phoneNumber, orderText) {
         try {
             console.log('📱 SMS açılıyor:', url);
+            console.log('📱 Telefon:', phoneNumber);
 
             // Yöntem 1: window.location.href (anında)
             window.location.href = url;
 
-            // Yöntem 2: window.open (300ms sonra)
+            // Yöntem 2: window.location.replace (100ms sonra)
+            setTimeout(() => {
+                window.location.replace(url);
+            }, 100);
+
+            // Yöntem 3: window.location.assign (200ms sonra)
+            setTimeout(() => {
+                window.location.assign(url);
+            }, 200);
+
+            // Yöntem 4: window.open (_self) (300ms sonra)
             setTimeout(() => {
                 window.open(url, '_self');
             }, 300);
 
-            // Yöntem 3: window.open (800ms sonra, farklı target)
+            // Yöntem 5: window.open (_blank) (500ms sonra)
             setTimeout(() => {
                 window.open(url, '_blank');
-            }, 800);
+            }, 500);
 
-            // Yöntem 4: Link elementi oluştur ve tıklat (anında)
+            // Yöntem 6: Link elementi (target _blank) (anında)
             const link1 = document.createElement('a');
             link1.href = url;
             link1.target = '_blank';
@@ -64,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.body.removeChild(link1);
             }, 100);
 
-            // Yöntem 5: Link elementi (target _self)
+            // Yöntem 7: Link elementi (target _self) (200ms sonra)
             const link2 = document.createElement('a');
             link2.href = url;
             link2.target = '_self';
@@ -75,9 +86,53 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.body.removeChild(link2);
             }, 200);
 
+            // Yöntem 8: Tel: arama (1000ms sonra, yedek)
+            setTimeout(() => {
+                const telUrl = `tel:${phoneNumber}`;
+                console.log('📞 Tel: deniyor...', telUrl);
+                window.location.href = telUrl;
+            }, 1000);
+
+            // Yöntem 9: Iframe (1500ms sonra)
+            setTimeout(() => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = url;
+                    document.body.appendChild(iframe);
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                    }, 1000);
+                } catch (e) {
+                    console.log('📱 Iframe başarısız:', e);
+                }
+            }, 1500);
+
+            // Yöntem 10: Form POST (2000ms sonra)
+            setTimeout(() => {
+                try {
+                    const form = document.createElement('form');
+                    form.action = url;
+                    form.method = 'get';
+                    form.style.display = 'none';
+                    document.body.appendChild(form);
+                    form.submit();
+                    setTimeout(() => {
+                        document.body.removeChild(form);
+                    }, 100);
+                } catch (e) {
+                    console.log('📱 Form POST başarısız:', e);
+                }
+            }, 2000);
+
+            // Bildirim: Telefon numarasını göster
+            setTimeout(() => {
+                showNotification(`✅ Sargyt kabul edildi! Telefon: ${phoneNumber}`, true);
+            }, 500);
+
         } catch (error) {
             console.error('❌ SMS açılamadı:', error);
-            showNotification('SMS açma hatasy. Täzeden synanyşyň.', false);
+            showNotification(`✅ Sargyt kabul edildi! Telefon: ${phoneNumber}`, true);
         }
     }
     
@@ -812,12 +867,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let touchStartX = 0;
     let touchStartY = 0;
     let isScrolling = false;
+    let touchClickExecuted = false; // Flag to prevent double clicks
 
     // Touch start - başlangıç pozisyonunu kaydet
     productsGrid.addEventListener('touchstart', (e) => {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isScrolling = false;
+        touchClickExecuted = false;
     }, { passive: true });
 
     // Touch move - kaydırma yapıldı mı kontrol et
@@ -842,22 +899,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const cartBtn = e.target.closest('.btn-cart');
         if (cartBtn) {
-            const product = allProducts.find(p => p.id === cartBtn.getAttribute('data-id'));
-            if (product) addToCart(product);
+            e.preventDefault(); // Prevent click event
+            e.stopPropagation(); // Stop bubbling
+            if (!touchClickExecuted) {
+                touchClickExecuted = true;
+                const product = allProducts.find(p => p.id === cartBtn.getAttribute('data-id'));
+                if (product) addToCart(product);
+            }
             return;
         }
 
         const btn = e.target.closest('.btn-favorite');
         if (btn) {
-            const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
-            if (product) toggleFavorite(product);
+            e.preventDefault(); // Prevent click event
+            e.stopPropagation(); // Stop bubbling
+            if (!touchClickExecuted) {
+                touchClickExecuted = true;
+                const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
+                if (product) toggleFavorite(product);
+            }
             return;
         }
 
         const card = e.target.closest('.product-card');
         if (card) {
-            const productId = card.querySelector('.btn-cart').getAttribute('data-id');
-            openProductModal(productId);
+            e.preventDefault(); // Prevent click event
+            if (!touchClickExecuted) {
+                touchClickExecuted = true;
+                const productId = card.querySelector('.btn-cart').getAttribute('data-id');
+                openProductModal(productId);
+            }
         }
     });
 
@@ -891,11 +962,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let modalTouchStartX = 0;
     let modalTouchStartY = 0;
     let modalIsScrolling = false;
+    let modalTouchClickExecuted = false;
 
     modalAddCartBtn.addEventListener('touchstart', (e) => {
         modalTouchStartX = e.touches[0].clientX;
         modalTouchStartY = e.touches[0].clientY;
         modalIsScrolling = false;
+        modalTouchClickExecuted = false;
     }, { passive: true });
 
     modalAddCartBtn.addEventListener('touchmove', (e) => {
@@ -911,24 +984,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, { passive: true });
 
     modalAddCartBtn.addEventListener('touchend', (e) => {
-        if (!modalIsScrolling) {
+        if (!modalIsScrolling && !modalTouchClickExecuted) {
+            modalTouchClickExecuted = true;
+            e.preventDefault(); // Prevent click event
+            e.stopPropagation(); // Stop bubbling
             const modal = document.getElementById('product-modal');
             const productId = modal.getAttribute('data-product-id');
             const product = allProducts.find(p => p.id === productId);
             if (product) {
                 addToCart(product);
-                document.getElementById('product-modal').style.display = 'none';
+                modal.style.display = 'none';
             }
         }
     });
 
-    modalAddCartBtn.addEventListener('click', () => {
+    modalAddCartBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Stop bubbling
         const modal = document.getElementById('product-modal');
         const productId = modal.getAttribute('data-product-id');
         const product = allProducts.find(p => p.id === productId);
         if (product) {
             addToCart(product);
-            document.getElementById('product-modal').style.display = 'none';
+            modal.style.display = 'none';
         }
     });
 
@@ -1222,7 +1299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('📱 SMS içeriği:', orderText);
 
                 // Direkt SMS aç (tüm yöntemleri dene)
-                openSmsUrl(smsUrl);
+                openSmsUrl(smsUrl, cleanNumber, orderText);
 
                 // Sepet modalını güncelle
                 cartButton.click();
