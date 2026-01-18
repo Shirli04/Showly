@@ -789,28 +789,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // --- OLAY DİNLEYİCİLER ---
-    
+
     // Mobil menü
-    menuToggle.addEventListener('click', () => { 
-        storeMenu.classList.add('active'); 
-        menuOverlay.classList.add('active'); 
-        document.body.style.overflow = 'hidden'; 
+    menuToggle.addEventListener('click', () => {
+        storeMenu.classList.add('active');
+        menuOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
     });
-    menuClose.addEventListener('click', () => { 
-        storeMenu.classList.remove('active'); 
-        menuOverlay.classList.remove('active'); 
-        document.body.style.overflow = ''; 
+    menuClose.addEventListener('click', () => {
+        storeMenu.classList.remove('active');
+        menuOverlay.classList.remove('active');
+        document.body.style.overflow = '';
     });
-    menuOverlay.addEventListener('click', () => { 
-        storeMenu.classList.remove('active'); 
-        menuOverlay.classList.remove('active'); 
-        document.body.style.overflow = ''; 
+    menuOverlay.addEventListener('click', () => {
+        storeMenu.classList.remove('active');
+        menuOverlay.classList.remove('active');
+        document.body.style.overflow = '';
     });
 
     // Arama
     searchButton.addEventListener('click', performSearch);
-    searchInput.addEventListener('keypress', (e) => { 
-        if (e.key === 'Enter') performSearch(); 
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') performSearch();
     });
 
     // Filtreler butonu
@@ -819,7 +819,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         mainFiltersContainer.style.display = isHidden ? 'block' : 'none';
     });
 
-    // Ürün gridi olayları
+    // TikTok/Instagram in-app browser için touch scroll tespiti
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isScrolling = false;
+
+    // Touch start - başlangıç pozisyonunu kaydet
+    productsGrid.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isScrolling = false;
+    }, { passive: true });
+
+    // Touch move - kaydırma yapıldı mı kontrol et
+    productsGrid.addEventListener('touchmove', (e) => {
+        const touchEndX = e.touches[0].clientX;
+        const touchEndY = e.touches[0].clientY;
+
+        const diffX = Math.abs(touchEndX - touchStartX);
+        const diffY = Math.abs(touchEndY - touchStartY);
+
+        // 10px'den fazla hareket varsa scroll olarak kabul et
+        if (diffX > 10 || diffY > 10) {
+            isScrolling = true;
+        }
+    }, { passive: true });
+
+    // Touch end - scroll değilse click olarak kabul et
+    productsGrid.addEventListener('touchend', (e) => {
+        if (isScrolling) {
+            return; // Scroll yapılıyorsa, click event'i tetikleme
+        }
+
+        const cartBtn = e.target.closest('.btn-cart');
+        if (cartBtn) {
+            const product = allProducts.find(p => p.id === cartBtn.getAttribute('data-id'));
+            if (product) addToCart(product);
+            return;
+        }
+
+        const btn = e.target.closest('.btn-favorite');
+        if (btn) {
+            const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
+            if (product) toggleFavorite(product);
+            return;
+        }
+
+        const card = e.target.closest('.product-card');
+        if (card) {
+            const productId = card.querySelector('.btn-cart').getAttribute('data-id');
+            openProductModal(productId);
+        }
+    });
+
+    // Normal click event (desktop için)
     productsGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-favorite');
         if (btn) {
@@ -842,32 +895,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // iOS Safari için touch event ekle
-    productsGrid.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        const cartBtn = e.target.closest('.btn-cart');
-        if (cartBtn) {
-            const product = allProducts.find(p => p.id === cartBtn.getAttribute('data-id'));
-            if (product) addToCart(product);
-            return;
-        }
+    // Modal kontrolleri
+    const modalAddCartBtn = document.getElementById('modal-add-cart');
 
-        const btn = e.target.closest('.btn-favorite');
-        if (btn) {
-            const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
-            if (product) toggleFavorite(product);
-            return;
-        }
+    // Modal add cart button touch handling
+    let modalTouchStartX = 0;
+    let modalTouchStartY = 0;
+    let modalIsScrolling = false;
 
-        const card = e.target.closest('.product-card');
-        if (card) {
-            const productId = card.querySelector('.btn-cart').getAttribute('data-id');
-            openProductModal(productId);
+    modalAddCartBtn.addEventListener('touchstart', (e) => {
+        modalTouchStartX = e.touches[0].clientX;
+        modalTouchStartY = e.touches[0].clientY;
+        modalIsScrolling = false;
+    }, { passive: true });
+
+    modalAddCartBtn.addEventListener('touchmove', (e) => {
+        const touchEndX = e.touches[0].clientX;
+        const touchEndY = e.touches[0].clientY;
+
+        const diffX = Math.abs(touchEndX - modalTouchStartX);
+        const diffY = Math.abs(touchEndY - modalTouchStartY);
+
+        if (diffX > 10 || diffY > 10) {
+            modalIsScrolling = true;
+        }
+    }, { passive: true });
+
+    modalAddCartBtn.addEventListener('touchend', (e) => {
+        if (!modalIsScrolling) {
+            const modal = document.getElementById('product-modal');
+            const productId = modal.getAttribute('data-product-id');
+            const product = allProducts.find(p => p.id === productId);
+            if (product) {
+                addToCart(product);
+                document.getElementById('product-modal').style.display = 'none';
+            }
         }
     });
 
-    // Modal kontrolleri
-    const modalAddCartBtn = document.getElementById('modal-add-cart');
     modalAddCartBtn.addEventListener('click', () => {
         const modal = document.getElementById('product-modal');
         const productId = modal.getAttribute('data-product-id');
@@ -878,24 +943,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // iOS Safari için modal touch event
-    modalAddCartBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        const modal = document.getElementById('product-modal');
-        const productId = modal.getAttribute('data-product-id');
-        const product = allProducts.find(p => p.id === productId);
-        if (product) {
-            addToCart(product);
-            document.getElementById('product-modal').style.display = 'none';
-        }
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => btn.closest('.modal').style.display = 'none');
     });
-    
-    document.querySelectorAll('.close-modal').forEach(btn => { 
-        btn.addEventListener('click', () => btn.closest('.modal').style.display = 'none'); 
-    });
-    
-    window.addEventListener('click', (e) => { 
-        if (e.target.classList.contains('modal')) e.target.style.display = 'none'; 
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) e.target.style.display = 'none';
     });
 
     // Sepet modalı
@@ -949,7 +1002,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         cartModal.style.display = 'block';
     });
     
-    document.addEventListener('click', (e) => {
+    // TikTok/Instagram in-app browser için cart touch scroll tespiti
+    let cartTouchStartX = 0;
+    let cartTouchStartY = 0;
+    let cartIsScrolling = false;
+
+    document.addEventListener('touchstart', (e) => {
+        const target = e.target.closest('.quantity-btn') || e.target.closest('.cart-item-remove');
+        if (target) {
+            cartTouchStartX = e.touches[0].clientX;
+            cartTouchStartY = e.touches[0].clientY;
+            cartIsScrolling = false;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        const target = e.target.closest('.quantity-btn') || e.target.closest('.cart-item-remove');
+        if (target) {
+            const touchEndX = e.touches[0].clientX;
+            const touchEndY = e.touches[0].clientY;
+
+            const diffX = Math.abs(touchEndX - cartTouchStartX);
+            const diffY = Math.abs(touchEndY - cartTouchStartY);
+
+            if (diffX > 10 || diffY > 10) {
+                cartIsScrolling = true;
+            }
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        if (cartIsScrolling) {
+            return; // Scroll yapılıyorsa, click event'i tetikleme
+        }
+
         const quantityBtn = e.target.closest('.quantity-btn');
         if (quantityBtn) {
             const storeId = quantityBtn.getAttribute('data-store-id');
@@ -983,11 +1069,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // iOS Safari için cart touch events
-    document.addEventListener('touchend', (e) => {
+    // Normal click event (desktop için)
+    document.addEventListener('click', (e) => {
         const quantityBtn = e.target.closest('.quantity-btn');
         if (quantityBtn) {
-            e.preventDefault();
             const storeId = quantityBtn.getAttribute('data-store-id');
             const productId = quantityBtn.getAttribute('data-id');
             const action = quantityBtn.getAttribute('data-action');
@@ -1005,7 +1090,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const removeBtn = e.target.closest('.cart-item-remove');
         if (removeBtn) {
-            e.preventDefault();
             const storeId = removeBtn.getAttribute('data-store-id');
             const productId = removeBtn.getAttribute('data-id');
             if (cart[storeId]) {

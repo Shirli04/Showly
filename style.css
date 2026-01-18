@@ -2691,6 +2691,16 @@ header {
     user-select: none;
 }
 
+/* Ürün kartları için touch action */
+.product-card {
+    touch-action: pan-y;
+}
+
+/* Cart item'lar için touch action */
+.cart-item {
+    touch-action: pan-y;
+}
+
 /* iOS Safari'de hover efektini engelle */
 @media (hover: none) and (pointer: coarse) {
     .btn-cart:hover,
