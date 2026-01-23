@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
+ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- DOM ELEMANLARI ---
     const storeList = document.getElementById('store-list');
