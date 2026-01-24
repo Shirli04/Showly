@@ -138,7 +138,9 @@ async function sendFCMNotificationLegacy(fcmToken, orderId, customerName, items,
             }
         };
 
-        const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+        // Google FCM API'sine doğrudan gitmek yerine kendi PHP proxy'mizi kullanıyoruz
+        // Bu, tarayıcıdaki CORS engelini aşmamızı sağlar.
+        const response = await fetch('fcm_proxy.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
