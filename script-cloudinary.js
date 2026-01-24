@@ -73,38 +73,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🔄 Firebase\'den veriler yükleniyor...');
 
     try {
-        // ✅ YENİ: 20 saniye timeout ekle (daha hızlı hata göstermek için)
-        const timeoutPromise = new Error('Firebase bağlantısı zaman aşımına uğradı');
+        // ✅ YENİ: 30 saniye timeout ekle (Long Polling için biraz daha süre tanıyalım)
+        const timeoutPromiseString = 'Firebase bağlantısı zaman aşımına uğradı';
         const timeoutAction = new Promise((_, reject) => {
-            setTimeout(() => reject(timeoutPromise), 20000);
+            setTimeout(() => reject(new Error(timeoutPromiseString)), 30000);
         });
 
         // ✅ PARALEL İŞLEMLER: Mağaza ve ürünleri aynı anda çek
         const fetchDataPromise = (async () => {
             // Mağaza ve ürünleri paralel çek (Promise.all ile)
-            const [storesSnapshot, productsSnapshot] = await Promise.all([
-                window.db.collection('stores').get(),
-                window.db.collection('products').get()
-            ]);
+            try {
+                const [storesSnapshot, productsSnapshot] = await Promise.all([
+                    window.db.collection('stores').get(),
+                    window.db.collection('products').get()
+                ]);
 
-            const stores = storesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+                const stores = storesSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
 
-            const products = productsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+                const products = productsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
 
-            return { stores, products };
+                // Eğer veri gelmediyse hata fırlat (offline/restricted case)
+                if (stores.length === 0 && products.length === 0) {
+                    throw new Error('Veri çekilemedi (Boş veri)');
+                }
+
+                return { stores, products };
+            } catch (err) {
+                console.error('Fetch error:', err);
+                throw err;
+            }
         })();
 
         // ✅ Timeout ile yarış: Hangisi önce biterse onu al
-        const { stores, products } = await Promise.race([fetchDataPromise, timeoutAction]);
+        const result = await Promise.race([fetchDataPromise, timeoutAction]);
 
-        allStores = stores;
-        allProducts = products;
+        if (!result || !result.stores) {
+            throw new Error('Geçersiz veri formatı');
+        }
+
+        allStores = result.stores;
+        allProducts = result.products;
 
         console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
 

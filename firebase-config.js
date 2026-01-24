@@ -20,9 +20,11 @@ if (typeof firebase !== 'undefined') {
     try {
         db.settings({
             cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-            ignoreUndefinedProperties: true
+            ignoreUndefinedProperties: true,
+            experimentalForceLongPolling: true, // ✅ ÖNEMLİ: Kısıtlı ağlarda bağlantı için gerekli
+            experimentalAutoDetectLongPolling: true
         });
-        console.log('✅ Firestore settings configured');
+        console.log('✅ Firestore settings configured with Long Polling');
     } catch (e) {
         console.warn('Firestore settings already configured or failed:', e.message);
     }
