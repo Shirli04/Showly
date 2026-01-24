@@ -1,5 +1,5 @@
- document.addEventListener('DOMContentLoaded', async () => {
-    
+document.addEventListener('DOMContentLoaded', async () => {
+
     // --- DOM ELEMANLARI ---
     const storeList = document.getElementById('store-list');
     const productsGrid = document.getElementById('products-grid');
@@ -10,7 +10,7 @@
     const cartCount = document.querySelector('.cart-count');
     const favoritesCount = document.querySelector('.favorites-count');
     const loadingOverlay = document.getElementById('loading-overlay');
-    
+
     // Mobil menü elemanları
     const menuToggle = document.getElementById('menu-toggle');
     const menuClose = document.getElementById('menu-close');
@@ -26,8 +26,8 @@
     const mainFiltersSection = document.getElementById('main-filters-section');
     const mainFilterToggleBtn = document.getElementById('main-filter-toggle-btn');
     const mainFiltersContainer = document.getElementById('main-filters-container');
-    
-    
+
+
     // --- DURUM DEĞİŞKENLERİ (STATE) ---
     let cart = JSON.parse(localStorage.getItem('showlyCart')) || {}; // Mağaza bazlı sepet: { storeId: { storeName, items: [] } }
     let favorites = [];
@@ -58,18 +58,18 @@
             showNotification(`✅ Sargyt kabul edildi! Telefon: ${phoneNumber}`, true);
         }
     }
-    
+
     // Firebase kontrolü
     if (!window.db) {
         console.error('❌ Firebase veritabanı bulunamadı!');
         showNotification('Firebase yüklenemedi! Lütfen sayfayı yenileyin.', false);
         return;
     }
-    
+
     if (loadingOverlay) {
         loadingOverlay.style.display = 'flex';
     }
-    
+
     console.log('🔄 Firebase\'den veriler yükleniyor...');
 
     try {
@@ -85,7 +85,7 @@
                 window.db.collection('stores').get(),
                 window.db.collection('products').get()
             ]);
-            
+
             const stores = storesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -110,48 +110,48 @@
         console.log('📂 Kategori menüsü oluşturuluyor...');
         // ✅ Kategorili menüyü oluştur
         await renderCategoryMenu();
-    console.log('✅ Kategori menüsü tamamlandı');
-    
-    console.log('🔄 Loading kapatılıyor...');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = 'none';
-        console.log('✅ Loading kapatıldı');
-    } else {
-        console.warn('⚠️ loadingOverlay elementi bulunamadı!');
-    }
+        console.log('✅ Kategori menüsü tamamlandı');
+
+        console.log('🔄 Loading kapatılıyor...');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+            console.log('✅ Loading kapatıldı');
+        } else {
+            console.warn('⚠️ loadingOverlay elementi bulunamadı!');
+        }
 
     } catch (error) {
         console.error('❌ Firebase hatası:', error);
-        
+
         // ✅ Loading'i gizle
         if (loadingOverlay) {
             loadingOverlay.style.display = 'none';
         }
-        
+
         // ✅ YENİ: Hata mesajını 404 sayfasında göster
         const notFoundSection = document.getElementById('not-found');
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const errorTitle = document.getElementById('error-title');
         const errorMessage = document.getElementById('error-message');
-        
+
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
-        
+
         errorTitle.textContent = 'Baglanyşyk Ýok';
         errorMessage.textContent = 'Firebase bilen baglanyşyk guralyp bilinmedi. Sahypany täzeleň.';
         notFoundSection.style.display = 'block';
-        
+
         showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
     }
-    
+
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
     const router = async () => {
         const path = window.location.pathname.replace('/', '');
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const storeBanner = document.getElementById('store-banner');
-        
+
         if (!path) { // Ana sayfaysak
             if (heroSection) heroSection.style.display = 'block';
             if (infoSection) infoSection.style.display = 'grid';
@@ -183,60 +183,60 @@
             document.title = 'Sayfa Bulunamadı - Showly';
         }
     };
-    
+
     // ✅ YENİ: Kategorili menü yapısı
     async function renderCategoryMenu() {
         try {
             const categoryMenu = document.getElementById('category-menu');
-            
+
             // ✅ Element kontrolü
             if (!categoryMenu) {
                 console.error('❌ category-menu elementi bulunamadı!');
                 return;
             }
-            
+
             categoryMenu.innerHTML = ''; // Önce temizle
-            
+
             // Kategorileri çek (iki seviyeli sistem)
             const [parentCategoriesSnapshot, subcategoriesSnapshot] = await Promise.all([
                 window.db.collection('parentCategories').orderBy('order', 'asc').get(),
                 window.db.collection('subcategories').orderBy('order', 'asc').get()
             ]);
-            
+
             const parentCategories = parentCategoriesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             const subcategories = subcategoriesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             console.log('📂 Ana Kategoriler:', parentCategories);
             console.log('📂 Alt Kategoriler:', subcategories);
-            
+
             // Eğer hiç kategori yoksa, eski tek seviyeli sistemden veri çekmeye çalış
             if (parentCategories.length === 0) {
                 console.log('⚠️ Ana kategori bulunamadı, eski sistem deneniyor...');
-                
+
                 const oldCategoriesSnapshot = await window.db.collection('categories').orderBy('order', 'asc').get();
                 const oldCategories = oldCategoriesSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
-                
+
                 if (oldCategories.length === 0) {
                     categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
                     return;
                 }
-                
+
                 oldCategories.forEach(category => {
                     const categoryStores = allStores.filter(s => s.category === category.id);
                     if (categoryStores.length === 0) return;
-                    
+
                     const categoryIcon = category.icon || 'fa-tag';
-                    
+
                     const categoryItem = document.createElement('div');
                     categoryItem.className = 'category-item';
                     categoryItem.innerHTML = `
@@ -257,14 +257,14 @@
                     `;
                     categoryMenu.appendChild(categoryItem);
                 });
-                
+
                 // Eski sistem için event listener'ları ekle
                 document.querySelectorAll('.category-header').forEach(header => {
                     header.addEventListener('click', () => {
                         const categoryId = header.getAttribute('data-category');
                         const storesList = document.getElementById(`stores-${categoryId}`);
                         const chevronIcon = header.querySelector('.chevron-icon');
-                        
+
                         if (storesList.style.display === 'none') {
                             storesList.style.display = 'block';
                             chevronIcon.style.transform = 'rotate(90deg)';
@@ -274,21 +274,21 @@
                         }
                     });
                 });
-                
+
                 console.log('✅ Eski kategori sistemi ile menü oluşturuldu');
                 return;
             }
-            
+
             if (parentCategories.length === 0) {
                 categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
                 return;
             }
-            
+
             if (allStores.length === 0) {
                 categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz mağaza eklenmemiş.</p>';
                 return;
             }
-            
+
             // Her ana kategori için
             parentCategories.forEach(parent => {
                 const parentIcon = parent.icon || 'fa-tag';
@@ -305,7 +305,7 @@
                 console.log(`📁 ${parent.name}: ${parentSubcategories.length} alt kategori, ${subCategoryStores.length} alt kategori mağaza, ${directParentStores.length} doğrudan ana kategori mağaza, toplam: ${categoryStores.length} mağaza`);
 
                 if (categoryStores.length === 0) return; // Boş kategorileri gösterme
-                
+
                 // Ana kategori başlığı
                 const parentItem = document.createElement('div');
                 parentItem.className = 'category-item';
@@ -317,10 +317,10 @@
                     </div>
                     <ul class="category-stores" id="stores-${parent.id}" style="display: none;">
                         ${parentSubcategories.map(sub => {
-                            const subStores = allStores.filter(s => s.category === sub.id);
-                            if (subStores.length === 0) return '';
+                    const subStores = allStores.filter(s => s.category === sub.id);
+                    if (subStores.length === 0) return '';
 
-                            return `
+                    return `
                                 <li class="subcategory-item">
                                     <div class="subcategory-header" data-subcategory="${sub.id}">
                                         <i class="fas fa-chevron-right chevron-icon"></i>
@@ -337,7 +337,7 @@
                                     </ul>
                                 </li>
                             `;
-                        }).join('')}
+                }).join('')}
                         ${directParentStores.length > 0 ? directParentStores.map(store => `
                             <li>
                                 <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
@@ -349,14 +349,14 @@
                 `;
                 categoryMenu.appendChild(parentItem);
             });
-            
+
             // Açılır/kapanır menü event'i
             document.querySelectorAll('.category-header').forEach(header => {
                 header.addEventListener('click', () => {
                     const categoryId = header.getAttribute('data-category');
                     const storesList = document.getElementById(`stores-${categoryId}`);
                     const chevronIcon = header.querySelector('.chevron-icon');
-                    
+
                     if (storesList.style.display === 'none') {
                         storesList.style.display = 'block';
                         chevronIcon.style.transform = 'rotate(90deg)';
@@ -366,7 +366,7 @@
                     }
                 });
             });
-            
+
             // Alt kategori açılır/kapanır menü event'i
             document.querySelectorAll('.subcategory-header').forEach(subHeader => {
                 subHeader.addEventListener('click', (e) => {
@@ -374,7 +374,7 @@
                     const subcategoryId = subHeader.getAttribute('data-subcategory');
                     const subStoresList = document.getElementById(`sub-stores-${subcategoryId}`);
                     const subChevronIcon = subHeader.querySelector('.chevron-icon');
-                    
+
                     if (subStoresList.style.display === 'none') {
                         subStoresList.style.display = 'block';
                         subChevronIcon.style.transform = 'rotate(90deg)';
@@ -384,9 +384,9 @@
                     }
                 });
             });
-            
+
             console.log('✅ Kategori menüsü oluşturuldu');
-            
+
         } catch (error) {
             console.error('❌ Kategori menüsü oluşturulamadı:', error);
         }
@@ -518,7 +518,7 @@
         minPriceInput.addEventListener('input', applyPriceRange);
         maxPriceInput.addEventListener('input', applyPriceRange);
     };
-    
+
 
     const renderStorePage = (storeId, activeFilter = null) => {
         currentStoreId = storeId;
@@ -572,14 +572,14 @@
         let productsToRender = storeProducts;
         if (activeFilter) {
             switch (activeFilter.type) {
-                case 'CATEGORY': 
-                    productsToRender = storeProducts.filter(p => p.category === activeFilter.value); 
+                case 'CATEGORY':
+                    productsToRender = storeProducts.filter(p => p.category === activeFilter.value);
                     break;
-                case 'DISCOUNT': 
-                    productsToRender = storeProducts.filter(p => p.isOnSale); 
+                case 'DISCOUNT':
+                    productsToRender = storeProducts.filter(p => p.isOnSale);
                     break;
-                case 'EXPENSIVE': 
-                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500); 
+                case 'EXPENSIVE':
+                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500);
                     break;
                 case 'SORT_PRICE_ASC':
                     productsToRender = [...storeProducts];
@@ -599,7 +599,7 @@
             productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrde haryt tapylmady.</h3></div>`;
             return;
         }
-        
+
         // ✅ Sıralama kodu (daha önce eklediğiniz)
         if (activeFilter?.type === 'SORT_PRICE_ASC') {
             productsToRender.sort((a, b) => {
@@ -612,18 +612,18 @@
             productsToRender.sort((a, b) => {
                 const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
                 const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
-                
+
                 const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
                 const bHasPrice = b.price && parseFloat(b.price.replace(' TMT', '')) > 0;
-                
+
                 const aScore = (aHasImage ? 2 : 0) + (aHasPrice ? 1 : 0);
                 const bScore = (bHasImage ? 2 : 0) + (bHasPrice ? 1 : 0);
-                
+
                 return bScore - aScore;
             });
             console.log('✅ Ürünler öncelik sırasına göre sıralandı');
         }
-        
+
         // Ürün kartlarını oluştur
         productsToRender.forEach(product => {
             const productCard = document.createElement('div');
@@ -671,40 +671,40 @@
     // --- ARAMA FONKSİYONU ---
     const performSearch = () => {
         const query = searchInput.value.trim().toLowerCase();
-        if (query === '') { 
-            showNotification('Gözleýän harydyňyzyň adyny ýazyň!'); 
-            return; 
+        if (query === '') {
+            showNotification('Gözleýän harydyňyzyň adyny ýazyň!');
+            return;
         }
-        
-        let productsToSearch = currentStoreId 
+
+        let productsToSearch = currentStoreId
             ? allProducts.filter(p => p.storeId === currentStoreId)
             : allProducts;
-            
-        const filteredProducts = productsToSearch.filter(product => 
-            product.title.toLowerCase().includes(query) || 
+
+        const filteredProducts = productsToSearch.filter(product =>
+            product.title.toLowerCase().includes(query) ||
             (product.description && product.description.toLowerCase().includes(query))
         );
-        
+
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
         const storeBanner = document.getElementById('store-banner');
-        
+
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
         if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
         if (mainFiltersSection) mainFiltersSection.style.display = 'none';
-        
+
         storeBanner.style.display = 'block';
         storeBanner.innerHTML = `<h2>Gözleg: "${query}"</h2><p>${filteredProducts.length} harydy</p>`;
-        
+
         productsGrid.style.display = 'grid';
         productsGrid.innerHTML = '';
-        
-        if (filteredProducts.length === 0) { 
-            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-search"></i><h3>Haryt tapylmady</h3></div>`; 
-            return; 
+
+        if (filteredProducts.length === 0) {
+            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-search"></i><h3>Haryt tapylmady</h3></div>`;
+            return;
         }
-        
+
         filteredProducts.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
@@ -732,7 +732,7 @@
             favoritesCount.classList.toggle('show', favorites.length > 0);
         }
     };
-    
+
     // --- SEPET VE FAVORİ FONKSİYONLARI ---
     const toggleFavorite = (product) => {
         const index = favorites.findIndex(item => item.id === product.id);
@@ -746,7 +746,7 @@
         updateFavoritesCount();
         updateFavoriteButton(product.id);
     };
-    
+
     const updateFavoriteButton = (productId) => {
         const buttons = document.querySelectorAll(`.btn-favorite[data-id="${productId}"]`);
         const isFavorite = favorites.some(item => item.id === productId);
@@ -755,7 +755,7 @@
             button.innerHTML = isFavorite ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>';
         });
     };
-    
+
     const updateCartCount = () => {
         let total = 0;
         Object.values(cart).forEach(storeCart => {
@@ -1036,7 +1036,7 @@
         }
         cartModal.style.display = 'block';
     });
-    
+
     // TikTok/Instagram in-app browser için cart touch scroll tespiti
     let cartTouchStartX = 0;
     let cartTouchStartY = 0;
@@ -1246,12 +1246,35 @@
                     storeName: currentStoreCart.storeName,
                     items: [...currentStoreCart.items],
                     total: storeTotal.toFixed(2) + ' TMT',
-                    date: new Date().toISOString(),
+                    date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
+                    timestamp: Date.now(),  // Timestamp for FCM and ordering
                     status: 'pending'
                 };
 
                 await window.db.collection('orders').add(order);
                 console.log('Sipariş Firebase\'e eklendi');
+
+                // 🔔 FCM Bildirim Gönder (YENİ!)
+                try {
+                    const itemsText = currentStoreCart.items.map(item => `${item.title} (${item.quantity})`).join(', ');
+
+                    console.log('📱 FCM bildirimi gönderiliyor...');
+                    const fcmResult = await window.sendOrderNotification(
+                        currentStoreCart.storeName,  // Mağaza adı
+                        'ORDER_' + Date.now(),      // Sipariş ID (geçici)
+                        name,                        // Müşteri adı
+                        itemsText                    // Sipariş ürünleri
+                    );
+
+                    if (fcmResult && fcmResult.success) {
+                        console.log('✅ Bildirim başarıyla gönderildi!');
+                    } else {
+                        console.warn('⚠️ Bildirim gönderilemedi:', fcmResult?.error);
+                    }
+                } catch (fcmError) {
+                    console.error('❌ FCM bildirimi hatası:', fcmError);
+                    // Bildirim hatası sipariş işlemini engellemez
+                }
 
                 loadingOverlay.style.display = 'none';
                 showNotification(`✅ ${currentStoreCart.storeName} üçin sargydyňyz kabul edildi!`, true);
@@ -1296,8 +1319,8 @@
     favoritesButton.addEventListener('click', () => {
         const favoritesModal = document.getElementById('favorites-modal');
         const favoritesItems = document.getElementById('favorites-items');
-        if (favorites.length === 0) { 
-            favoritesItems.innerHTML = '<p class="empty-favorites-message">Siz harytlardan öz halanyňyzy saýlap bilersiňiz.</p>'; 
+        if (favorites.length === 0) {
+            favoritesItems.innerHTML = '<p class="empty-favorites-message">Siz harytlardan öz halanyňyzy saýlap bilersiňiz.</p>';
         } else {
             favoritesItems.innerHTML = '';
             favorites.forEach(product => {
@@ -1316,32 +1339,32 @@
                 `;
                 favoritesItems.appendChild(favItem);
             });
-        } 
+        }
         favoritesModal.style.display = 'block';
     });
-    
+
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-remove-favorite')) { 
-            favorites = favorites.filter(f => f.id !== e.target.getAttribute('data-id')); 
-            updateFavoritesCount(); 
-            favoritesButton.click(); 
+        if (e.target.classList.contains('btn-remove-favorite')) {
+            favorites = favorites.filter(f => f.id !== e.target.getAttribute('data-id'));
+            updateFavoritesCount();
+            favoritesButton.click();
         }
-        if (e.target.classList.contains('btn-add-cart-from-fav')) { 
-            const product = favorites.find(f => f.id === e.target.getAttribute('data-id')); 
-            if (product) { 
-                addToCart(product); 
-                favoritesButton.click(); 
-            } 
+        if (e.target.classList.contains('btn-add-cart-from-fav')) {
+            const product = favorites.find(f => f.id === e.target.getAttribute('data-id'));
+            if (product) {
+                addToCart(product);
+                favoritesButton.click();
+            }
         }
     });
 
     // Logo ve mağaza linkleri
-    document.getElementById('logo-link').addEventListener('click', (e) => { 
-        e.preventDefault(); 
-        history.pushState(null, null, '/'); 
-        router(); 
+    document.getElementById('logo-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        history.pushState(null, null, '/');
+        router();
     });
-    
+
     document.addEventListener('click', (e) => {
         if (e.target.closest('.store-link')) {
             e.preventDefault();
@@ -1350,11 +1373,11 @@
             router();
         }
     });
-    
-    backHomeLink?.addEventListener('click', (e) => { 
-        e.preventDefault(); 
-        history.pushState(null, null, '/'); 
-        router(); 
+
+    backHomeLink?.addEventListener('click', (e) => {
+        e.preventDefault();
+        history.pushState(null, null, '/');
+        router();
     });
 
     // Tarayıcının geri/ileri butonları
@@ -1373,16 +1396,16 @@
         document.getElementById('modal-material').textContent = product.material || '';
         modal.style.display = 'block';
     };
-    
+
     const showNotification = (message, isSuccess = true) => {
         const notification = document.createElement('div');
         notification.className = 'notification';
         notification.innerHTML = `<div class="notification-content"><i class="fas fa-check-circle"></i><span>${message}</span></div>`;
         document.body.appendChild(notification);
         setTimeout(() => notification.classList.add('show'), 10);
-        setTimeout(() => { 
-            notification.classList.remove('show'); 
-            setTimeout(() => notification.remove(), 300); 
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
         }, 3000);
     };
 
@@ -1393,13 +1416,13 @@
 // ✅ YENİ: Sahypany täzele butonu
 document.getElementById('reload-page-btn')?.addEventListener('click', (e) => {
     e.preventDefault();
-    
+
     // Loading göster
     const loadingOverlay = document.getElementById('loading-overlay');
     const loadingText = document.querySelector('.loading-text');
     loadingOverlay.style.display = 'flex';
     loadingText.textContent = 'Sahypa täzelenýär...';
-    
+
     // 500ms bekle (kullanıcının butona bastığını görmesi için)
     setTimeout(() => {
         window.location.reload();
@@ -1409,13 +1432,13 @@ document.getElementById('reload-page-btn')?.addEventListener('click', (e) => {
 // ✅ YENİ: Ana sayfaya dön butonu
 document.getElementById('back-home-link')?.addEventListener('click', (e) => {
     e.preventDefault();
-    
+
     // Loading göster
     const loadingOverlay = document.getElementById('loading-overlay');
     const loadingText = document.querySelector('.loading-text');
     loadingOverlay.style.display = 'flex';
     loadingText.textContent = 'Sahypa täzelenýär...';
-    
+
     // Ana sayfaya git
     setTimeout(() => {
         history.pushState(null, null, '/');
