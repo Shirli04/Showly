@@ -20,11 +20,11 @@ if (typeof firebase !== 'undefined') {
     try {
         db.settings({
             cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-            experimentalForceLongPolling: true,
             ignoreUndefinedProperties: true
         });
+        console.log('✅ Firestore settings configured');
     } catch (e) {
-        console.log('Settings zaten yapılandırılmış veya yapılandırılamadı:', e.message);
+        console.warn('Firestore settings already configured or failed:', e.message);
     }
 } else {
     console.error('❌ Firebase SDK yüklenemedi! İnternet bağlantınızı veya CDN linklerini kontrol edin.');

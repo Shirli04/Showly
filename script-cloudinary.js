@@ -73,9 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🔄 Firebase\'den veriler yükleniyor...');
 
     try {
-        // ✅ YENİ: 45 saniye timeout ekle
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Firebase bağlantısı zaman aşımına uğradı')), 45000);
+        // ✅ YENİ: 20 saniye timeout ekle (daha hızlı hata göstermek için)
+        const timeoutPromise = new Error('Firebase bağlantısı zaman aşımına uğradı');
+        const timeoutAction = new Promise((_, reject) => {
+            setTimeout(() => reject(timeoutPromise), 20000);
         });
 
         // ✅ PARALEL İŞLEMLER: Mağaza ve ürünleri aynı anda çek
@@ -100,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         })();
 
         // ✅ Timeout ile yarış: Hangisi önce biterse onu al
-        const { stores, products } = await Promise.race([fetchDataPromise, timeoutPromise]);
+        const { stores, products } = await Promise.race([fetchDataPromise, timeoutAction]);
 
         allStores = stores;
         allProducts = products;
@@ -139,10 +140,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (infoSection) infoSection.style.display = 'none';
 
         errorTitle.textContent = 'Baglanyşyk Ýok';
-        errorMessage.textContent = 'Firebase bilen baglanyşyk guralyp bilinmedi. Sahypany täzeleň.';
+        errorMessage.textContent = 'Firebase backendine birigip bolmady. Eğer Türkmenistanda bolsaňyz, VPN ulanmagyňyzy maslahat berýäris.';
         notFoundSection.style.display = 'block';
 
-        showNotification('Veriler yüklenemedi! Lütfen sayfayı yenileyin.', false);
+        showNotification('Bağlantı hatası! Lütfen internetinizi veya VPN-i kontrol edin.', false);
     }
 
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
