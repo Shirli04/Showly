@@ -1384,7 +1384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('popstate', router);
 
     // --- YARDIMCI FONKSİYONLAR ---
-    const openProductModal = (productId) => {
+    function openProductModal(productId) {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
         const modal = document.getElementById('product-modal');
@@ -1395,9 +1395,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-description').textContent = product.description || '';
         document.getElementById('modal-material').textContent = product.material || '';
         modal.style.display = 'block';
-    };
+    }
 
-    const showNotification = (message, isSuccess = true) => {
+    function showNotification(message, isSuccess = true) {
         const notification = document.createElement('div');
         notification.className = 'notification';
         notification.innerHTML = `<div class="notification-content"><i class="fas fa-check-circle"></i><span>${message}</span></div>`;
@@ -1407,7 +1407,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
         }, 3000);
-    };
+    }
 
     // --- İLK YÜKLEME ---
     router();

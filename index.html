@@ -1,44 +1,14 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Showly</title>
-    <script>
-        (function() {
-            // Tarih bilgisini al (YYYY-MM-DD formatında)
-            const today = new Date().toISOString().split('T')[0];
-            
-            // Firebase'e ziyaretçi kaydet
-            if (window.db) {
-                window.db.collection('visitors').add({
-                    date: today,
-                    timestamp: new Date().toISOString(),
-                    userAgent: navigator.userAgent,
-                    language: navigator.language
-                }).then(() => {
-                    console.log('✅ Ziyaretçi kaydedildi');
-                }).catch(error => {
-                    console.error('❌ Ziyaretçi kaydedilemedi:', error);
-                });
-            } else {
-                // Firebase henüz yüklenmediyse, sayfa yüklendikten sonra çalıştır
-                document.addEventListener('DOMContentLoaded', function() {
-                    if (window.db) {
-                        window.db.collection('visitors').add({
-                            date: today,
-                            timestamp: new Date().toISOString(),
-                            userAgent: navigator.userAgent,
-                            language: navigator.language
-                        });
-                    }
-                });
-            }
-        })();
-    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <header>
@@ -48,7 +18,8 @@
             </button>
             <div class="logo">
                 <a href="#" id="logo-link">
-                    <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765385200/logo_e_background_removal_b_rgb_FFFFFF_f_png_vjwprg.png" alt="Showly Logo" class="header-logo">
+                    <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765385200/logo_e_background_removal_b_rgb_FFFFFF_f_png_vjwprg.png"
+                        alt="Showly Logo" class="header-logo">
                     <h1 class="logo-text"></h1>
                 </a>
             </div>
@@ -94,7 +65,8 @@
                 <h1>Ähli görnüşli satyjylar üçin online kataloglar</h1>
                 <p>Bir sahypada ähli önümleriniz – müşderiler üçin taýýar görnüşde.</p>
                 <a class="hero-cta-link">
-                    <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765353001/showly/products/umvtosr6ijs1npjjzxuw.png" alt="Satyjy Bol" class="hero-cta-image">
+                    <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765353001/showly/products/umvtosr6ijs1npjjzxuw.png"
+                        alt="Satyjy Bol" class="hero-cta-image">
                 </a>
             </section>
 
@@ -215,31 +187,59 @@
             </div>
         </div>
     </div>
- 
+
     <!-- Yükleniyor animasyonu -->
     <div id="loading-overlay" class="loading-overlay">
-    <div class="loading-content">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Biraz garaşyň...</div>
-    </div>
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Biraz garaşyň...</div>
+        </div>
     </div>
 
 
     <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
     <script src="firebase-config.js"></script>
+
+    <!-- Ziyaretçi Kaydı (Firebase yüklendikten sonra çalışmalı) -->
+    <script>
+        (function () {
+            const today = new Date().toISOString().split('T')[0];
+            const checkDb = setInterval(() => {
+                if (window.db) {
+                    clearInterval(checkDb);
+                    window.db.collection('visitors').add({
+                        date: today,
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent,
+                        language: navigator.language
+                    }).catch(e => console.log('Ziyaretçi kaydı hatası:', e));
+                }
+            }, 1000);
+
+            // 10 saniye sonra durdur (sonsuz döngü olmasın)
+            setTimeout(() => clearInterval(checkDb), 10000);
+        })();
+    </script>
+
     <script src="r2-config.js"></script>
+
     <!-- Gerekli Kütüphaneler -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- Google Drive API -->
     <script src="https://apis.google.com/js/api.js"></script>
-    
-    <!-- FCM Bildirim Helper (YENİ!) -->
+
+    <!-- FCM Bildirim Helper -->
     <script src="fcm-helper.js"></script>
-    
+
+    <!-- Ana Script -->
     <script src="script-cloudinary.js"></script>
+
+    <!-- Excel Manager -->
     <script src="excel-manager.js"></script>
 </body>
+
 </html>
