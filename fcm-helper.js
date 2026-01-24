@@ -138,9 +138,9 @@ async function sendFCMNotificationLegacy(fcmToken, orderId, customerName, items,
             }
         };
 
-        // Google FCM API'sine doğrudan gitmek yerine kendi PHP proxy'mizi kullanıyoruz
-        // Bu, tarayıcıdaki CORS engelini aşmamızı sağlar.
-        const response = await fetch('fcm_proxy.php', {
+        // Google FCM API'sine doğrudan gitmek yerine kendi proxy'mizi kullanıyoruz
+        // Cloudflare Pages kullanıyorsanız /functions/fcm_proxy.js dosyasını çalıştırır
+        const response = await fetch('/fcm_proxy', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
