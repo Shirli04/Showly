@@ -1273,14 +1273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const store = allStores.find(s => s.id === currentStoreCart.storeId);
             const orderPhone = store?.orderPhone || '';
 
-            if (!orderPhone) {
-                loadingOverlay.style.display = 'none';
-                submitBtn.disabled = false;
-                cancelBtn.disabled = false;
-                submitBtn.innerHTML = 'Sargyt ediň';
-                showNotification('Mağaza üçin sargyt nomer ýok!', false);
-                return;
-            }
+            // Telefon numarası yoksa SMS adımını atlayacağız ancak sipariş yine de Firebase'e gidecek
 
             // Sipariş metnini oluştur (Türkmençe)
             const itemsText = currentStoreCart.items.map(item => `- ${item.title} (${item.quantity} haryt)`).join('\n');
@@ -1316,14 +1309,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateCartCount();
                 document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
 
-                // SMS URL oluştur
-                const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
+                if (orderPhone) {
+                    // SMS URL oluştur
+                    const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
 
-                console.log('📱 SMS açılıyor:', smsUrl);
-                console.log('📱 SMS içeriği:', orderText);
+                    console.log('📱 SMS açılıyor:', smsUrl);
+                    console.log('📱 SMS içeriği:', orderText);
 
-                // Direkt SMS aç (tüm yöntemleri dene)
-                openSmsUrl(smsUrl, cleanNumber, orderText);
+                    // Direkt SMS aç (tüm yöntemleri dene)
+                    openSmsUrl(smsUrl, cleanNumber, orderText);
+                } else {
+                    console.log('ℹ️ Mağaza sipariş telefonu tanımlı değil, SMS adımı atlanıyor.');
+                }
 
                 // Sipariş modal'ını kapat
                 const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
