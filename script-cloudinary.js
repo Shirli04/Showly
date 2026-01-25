@@ -1262,34 +1262,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     items: [...currentStoreCart.items],
                     total: storeTotal.toFixed(2) + ' TMT',
                     date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
-                    timestamp: Date.now(),  // Timestamp for FCM and ordering
+                    timestamp: Date.now(),  // Timestamp for ordering
                     status: 'pending'
                 };
 
                 await window.db.collection('orders').add(order);
                 console.log('Sipariş Firebase\'e eklendi');
 
-                // 🔔 FCM Bildirim Gönder (YENİ!)
-                try {
-                    const itemsText = currentStoreCart.items.map(item => `${item.title} (${item.quantity})`).join(', ');
-
-                    console.log('📱 FCM bildirimi gönderiliyor...');
-                    const fcmResult = await window.sendOrderNotification(
-                        currentStoreCart.storeName,  // Mağaza adı
-                        'ORDER_' + Date.now(),      // Sipariş ID (geçici)
-                        name,                        // Müşteri adı
-                        itemsText                    // Sipariş ürünleri
-                    );
-
-                    if (fcmResult && fcmResult.success) {
-                        console.log('✅ Bildirim başarıyla gönderildi!');
-                    } else {
-                        console.warn('⚠️ Bildirim gönderilemedi:', fcmResult?.error);
-                    }
-                } catch (fcmError) {
-                    console.error('❌ FCM bildirimi hatası:', fcmError);
-                    // Bildirim hatası sipariş işlemini engellemez
-                }
 
                 loadingOverlay.style.display = 'none';
                 showNotification(`✅ ${currentStoreCart.storeName} üçin sargydyňyz kabul edildi!`, true);

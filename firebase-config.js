@@ -4,7 +4,6 @@ const firebaseConfig = {
     authDomain: "showlytm-04.firebaseapp.com",
     projectId: "showlytm-04",
     storageBucket: "showlytm-04.firebasestorage.app",
-    messagingSenderId: "929629780738",
     appId: "1:929629780738:web:b965afeed4d6bec32d601b"
 };
 
