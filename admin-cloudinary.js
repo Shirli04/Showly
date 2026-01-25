@@ -1,7 +1,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Admin paneli yükleniyor...');
-    
+
     // ✅ LOADING EKRANINI BAŞLANGIÇTA GÖSTER
     const loadingOverlay = document.getElementById('loading-overlay');
     if (loadingOverlay) {
@@ -9,19 +9,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingText = loadingOverlay.querySelector('.loading-text');
         if (loadingText) loadingText.textContent = 'Veriler yükleniyor...';
     }
-    
+
     // ✅ sessionStorage'dan kullanıcıyı al (localStorage değil!)
     const currentUser = JSON.parse(sessionStorage.getItem('adminUser'));
-    
+
     // Eğer kullanıcı yoksa login'e yönlendir
     if (!currentUser) {
         if (loadingOverlay) loadingOverlay.style.display = 'none';
         window.location.replace('/login.html');
         return; // Kodun devam etmesini engelle
     }
-    
+
     console.log('✅ Giriş yapan kullanıcı:', currentUser.username);
-    
+
     // DOM elemanları
     const productIsOnSale = document.getElementById('product-is-on-sale');
     const originalPriceGroup = document.getElementById('original-price-group');
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Menü elemanlarını yetkiye göre gizle
     document.querySelectorAll('.nav-link').forEach(link => {
         const section = link.getAttribute('data-section');
-        
+
         // Superadmin: Her şeyi görür
         if (currentUser.role === 'superadmin') {
             link.style.display = 'flex';
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Kategori elemanları (iki seviyeli sistem)
     const storeCategorySelect = document.getElementById('store-category');
-    
+
     // Excel export/import
     const exportStoresBtn = document.getElementById('export-stores-btn');
     const importStoresBtn = document.getElementById('import-stores-btn');
@@ -82,16 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportProductsBtn = document.getElementById('export-products-btn');
     const importProductsBtn = document.getElementById('import-products-btn');
     const importProductsInput = document.getElementById('import-products-input');
-    
+
     // Dosya yükleme
     const productImage = document.getElementById('product-image');
     const productImagePreview = document.getElementById('product-image-preview');
     const productImageStatus = document.getElementById('product-image-status');
-    
+
     let editingStoreId = null;
     let editingProductId = null;
     let uploadedProductImageUrl = null;
-    
+
     // Form gönderme kontrolü
     let isSubmitting = false;
 
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // İşlenen siparişleri localStorage'dan temizle
             localStorage.removeItem('showlyPendingOrders');
-            
+
             // Siparişler tablosunu güncelle
             renderOrdersTable();
             updateDashboard();
@@ -138,15 +138,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- ÖNEMLİ: BURASI SMS GÖNDERMEK İÇİN ARKA YÜZ ÇAĞRISI YAPILACAK ---
             console.log(`Sipariş ${orderId} için numara atandı: ${orderNumber}. Müşteriye SMS gönderilecek.`);
             console.log('Müşteri Bilgileri:', order.customer);
-            
+
             // Burada bir backend API'sine istek atılacak.
             // sendSmsToCustomer(order.customer.phone, `Siparişiniz onaylandı. Sipariş No: ${orderNumber}`);
-            
+
             showNotification(`Sipariş ${orderId} için numara başarıyla atandı: ${orderNumber}`);
             renderOrdersTable(); // Tabloyu yenile
         }
     };
-    
+
     // --- YÜKLEME FONKSİYONLARI ---
 
     // Backup butonları
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Veriler Cloudinary\'ye yedeklendi!');
         }
     });
-    
+
     // Ürün resmi önizleme
     productImage.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -174,25 +174,25 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsDataURL(file);
         }
     });
-    
+
     // Dosya yükleme durumunu göster
     const showUploadStatus = (element, message, isSuccess = true) => {
         element.textContent = message;
         element.className = `upload-status show ${isSuccess ? 'success' : 'error'}`;
     };
-    
+
     // --- MAĞAZA FONKSİYONLARI ---
-    
+
     // Mağaza tablosunu güncelle
     const renderStoresTable = async () => {
         const stores = await window.showlyDB.getStores();
-        
+
         // ✅ Tüm ürünleri tek seferde çek (her mağaza için ayrı sorgu yapma)
         const allProductsSnapshot = await window.db.collection('products').get();
         const allProducts = allProductsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
+
         storesTableBody.innerHTML = '';
-        
+
         // Tüm mağaza satırlarını oluştur (hızlı ve paralel)
         const rowsHTML = stores.map(store => {
             const storeProducts = allProducts.filter(p => p.storeId === store.id);
@@ -210,36 +210,36 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = html;
             return row;
         });
-        
+
         // Tüm satırları tek seferde ekle
         storesTableBody.append(...rowsHTML);
         attachStoreEventListeners();
-        
+
         console.log(`✅ ${stores.length} mağaza tabloya eklendi`);
     };
-    
+
     // Google Sheets’e satır ekleme
     async function appendToSheet(sheetId, range, rowArray) {
-    const token = gapi.auth.getToken()?.access_token;
-    if (!token) { alert('Google ile giriş yapmalısın!'); return false; }
+        const token = gapi.auth.getToken()?.access_token;
+        if (!token) { alert('Google ile giriş yapmalısın!'); return false; }
 
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:append?valueInputOption=RAW`;
-    const body = { values: [rowArray] };
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:append?valueInputOption=RAW`;
+        const body = { values: [rowArray] };
 
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-    });
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
 
-    if (!res.ok) {
-        console.error('Sheet yazma hatası:', await res.text());
-        return false;
-    }
-    return true;
+        if (!res.ok) {
+            console.error('Sheet yazma hatası:', await res.text());
+            return false;
+        }
+        return true;
     }
     // Mağaza olay dinleyicileri
     const attachStoreEventListeners = () => {
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 editStore(e.currentTarget.getAttribute('data-id'));
             });
         });
-        
+
         document.querySelectorAll('.delete-store').forEach(button => {
             button.removeEventListener('click', null);
             button.addEventListener('click', (e) => {
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     };
-    
+
     // Mağaza düzenle
     const editStore = async (storeId) => {
         const stores = await window.showlyDB.getStores();
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         storeModal.style.display = 'block';
         editingStoreId = storeId;
     };
-    
+
     // Mağaza sil
     const deleteStore = (storeId) => {
         if (confirm('Bu mağazayı silmek istediğinizden emin misiniz?')) {
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Mağaza başarıyla silindi!');
         }
     };
-    
+
     // Mağaza modal aç
     const openStoreModal = () => {
         document.getElementById('store-modal-title').textContent = 'Yeni Mağaza Ekle';
@@ -314,30 +314,30 @@ document.addEventListener('DOMContentLoaded', () => {
         storeModal.style.display = 'block';
     };
 
-        // ==================== KATEGORİ FONKSİYONLARI ====================
- 
+    // ==================== KATEGORİ FONKSİYONLARI ====================
+
     // ==================== İKİ SEVİYELİ KATEGORİ SİSTEMİ ====================
-    
+
     // Ana kategori tablosunu güncelle
     async function renderParentCategoriesTable() {
         try {
             const categoriesSnapshot = await window.db.collection('parentCategories')
                 .orderBy('order', 'asc')
                 .get();
-            
+
             const categories = categoriesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             const tableBody = document.getElementById('parent-categories-table-body');
             tableBody.innerHTML = '';
-            
+
             if (categories.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz ana kategori eklenmemiş.</td></tr>';
                 return;
             }
-            
+
             categories.forEach(category => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -351,16 +351,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 tableBody.appendChild(row);
             });
-            
+
             // Event listeners
             document.querySelectorAll('.edit-parent-category').forEach(btn => {
                 btn.addEventListener('click', () => editParentCategory(btn.getAttribute('data-id')));
             });
-            
+
             document.querySelectorAll('.delete-parent-category').forEach(btn => {
                 btn.addEventListener('click', () => deleteParentCategory(btn.getAttribute('data-id')));
             });
-            
+
         } catch (error) {
             console.error('Ana kategori tablosu yüklenemedi:', error);
         }
@@ -372,30 +372,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const subcategoriesSnapshot = await window.db.collection('subcategories')
                 .orderBy('order', 'asc')
                 .get();
-            
+
             const subcategories = subcategoriesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             const parentsSnapshot = await window.db.collection('parentCategories').get();
             const parentCategories = parentsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             const tableBody = document.getElementById('subcategories-table-body');
             tableBody.innerHTML = '';
-            
+
             if (subcategories.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz alt kategori eklenmemiş.</td></tr>';
                 return;
             }
-            
+
             subcategories.forEach(subcategory => {
                 const parent = parentCategories.find(p => p.id === subcategory.parentId);
                 const parentName = parent ? parent.name : 'Bilinmiyor';
-                
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td data-label="Ady">${subcategory.name}</td>
@@ -408,16 +408,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 tableBody.appendChild(row);
             });
-            
+
             // Event listeners
             document.querySelectorAll('.edit-subcategory').forEach(btn => {
                 btn.addEventListener('click', () => editSubcategory(btn.getAttribute('data-id')));
             });
-            
+
             document.querySelectorAll('.delete-subcategory').forEach(btn => {
                 btn.addEventListener('click', () => deleteSubcategory(btn.getAttribute('data-id')));
             });
-            
+
         } catch (error) {
             console.error('Alt kategori tablosu yüklenemedi:', error);
         }
@@ -429,18 +429,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const subcategoriesSnapshot = await window.db.collection('subcategories')
                 .orderBy('order', 'asc')
                 .get();
-            
+
             const parentsSnapshot = await window.db.collection('parentCategories').get();
             const parentCategories = parentsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             const subcategories = subcategoriesSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             // Dropdown'u doldur (önce ana kategoriler, sonra alt kategoriler)
             storeCategorySelect.innerHTML = '<option value="">Kategoriýa saýlaň (opsiýonel)</option>';
 
@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     storeCategorySelect.appendChild(option);
                 }
             });
-            
+
             return subcategories;
         } catch (error) {
             console.error('Kategoriler yüklenemedi:', error);
@@ -478,17 +478,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification('Kategori bulunamadı!', false);
                 return;
             }
-            
+
             const category = doc.data();
-            
+
             document.getElementById('parent-category-modal-title').textContent = 'Ana Kategori Düzenle';
             document.getElementById('parent-category-id').value = categoryId;
             document.getElementById('parent-category-name').value = category.name;
             document.getElementById('parent-category-order').value = category.order;
             selectParentCategoryIcon(category.icon || 'fa-tag');
-            
+
             document.getElementById('parent-category-modal').style.display = 'block';
-            
+
         } catch (error) {
             console.error('Kategori düzenlenemedi:', error);
             showNotification('Bir hata oluştu!', false);
@@ -500,14 +500,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const subcategoriesSnapshot = await window.db.collection('subcategories')
             .where('parentId', '==', categoryId)
             .get();
-        
+
         if (!subcategoriesSnapshot.empty) {
             showNotification('Bu ana kategorinin alt kategorileri var, önce silmelisiniz!', false);
             return;
         }
-        
+
         if (!confirm('Bu ana kategoriyi silmek istediğinizden emin misiniz?')) return;
-        
+
         try {
             await window.db.collection('parentCategories').doc(categoryId).delete();
             showNotification('Ana kategori silindi!');
@@ -526,17 +526,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification('Alt kategori bulunamadı!', false);
                 return;
             }
-            
+
             const subcategory = doc.data();
-            
+
             document.getElementById('subcategory-modal-title').textContent = 'Alt Kategori Düzenle';
             document.getElementById('subcategory-id').value = subcategoryId;
             document.getElementById('subcategory-name').value = subcategory.name;
             document.getElementById('subcategory-parent').value = subcategory.parentId;
             document.getElementById('subcategory-order').value = subcategory.order;
-            
+
             document.getElementById('subcategory-modal').style.display = 'block';
-            
+
         } catch (error) {
             console.error('Alt kategori düzenlenemedi:', error);
             showNotification('Bir hata oluştu!', false);
@@ -548,14 +548,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const storesSnapshot = await window.db.collection('stores')
             .where('category', '==', subcategoryId)
             .get();
-        
+
         if (!storesSnapshot.empty) {
             showNotification('Bu alt kategoride mağazalar var, önce silmelisiniz!', false);
             return;
         }
-        
+
         if (!confirm('Bu alt kategoriyi silmek istediğinizden emin misiniz?')) return;
-        
+
         try {
             await window.db.collection('subcategories').doc(subcategoryId).delete();
             showNotification('Alt kategori silindi!');
@@ -569,17 +569,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ana kategori form submit
     document.getElementById('parent-category-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const categoryId = document.getElementById('parent-category-id').value;
         const name = document.getElementById('parent-category-name').value.trim();
         const icon = document.getElementById('parent-category-icon').value || 'fa-tag';
         const order = parseInt(document.getElementById('parent-category-order').value) || 1;
-        
+
         if (!name) {
             showNotification('Kategori adı gerekli!', false);
             return;
         }
-        
+
         // ID oluştur
         const id = categoryId || name
             .toLowerCase()
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/ü/g, 'u')
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
-        
+
         try {
             if (categoryId) {
                 await window.db.collection('parentCategories').doc(categoryId).update({
@@ -609,13 +609,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('Ana kategori eklendi!');
             }
-            
+
             document.getElementById('parent-category-modal').style.display = 'none';
             document.getElementById('parent-category-form').reset();
             renderParentCategoriesTable();
             populateSubcategoryParentDropdown();
             loadCategories();
-            
+
         } catch (error) {
             console.error('Ana kategori kaydedilemedi:', error);
             showNotification('Bir hata oluştu!', false);
@@ -625,17 +625,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Alt kategori form submit
     document.getElementById('subcategory-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const subcategoryId = document.getElementById('subcategory-id').value;
         const name = document.getElementById('subcategory-name').value.trim();
         const parentId = document.getElementById('subcategory-parent').value;
         const order = parseInt(document.getElementById('subcategory-order').value) || 1;
-        
+
         if (!name || !parentId) {
             showNotification('Kategori adı ve ana kategori gerekli!', false);
             return;
         }
-        
+
         // ID oluştur
         const id = subcategoryId || name
             .toLowerCase()
@@ -647,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/ü/g, 'u')
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-+|-+$/g, '');
-        
+
         try {
             if (subcategoryId) {
                 await window.db.collection('subcategories').doc(subcategoryId).update({
@@ -665,12 +665,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 showNotification('Alt kategori eklendi!');
             }
-            
+
             document.getElementById('subcategory-modal').style.display = 'none';
             document.getElementById('subcategory-form').reset();
             renderSubcategoriesTable();
             loadCategories();
-            
+
         } catch (error) {
             console.error('Alt kategori kaydedilemedi:', error);
             showNotification('Bir hata oluştu!', false);
@@ -681,11 +681,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateSubcategoryParentDropdown() {
         const select = document.getElementById('subcategory-parent');
         select.innerHTML = '<option value="">Ana kategori seçin</option>';
-        
+
         const snapshot = await window.db.collection('parentCategories')
             .orderBy('order', 'asc')
             .get();
-        
+
         snapshot.docs.forEach(doc => {
             const category = doc.data();
             const option = document.createElement('option');
@@ -742,34 +742,34 @@ document.addEventListener('DOMContentLoaded', () => {
         'fa-book', 'fa-newspaper', 'fa-pen', 'fa-paintbrush', 'fa-palette',
         'fa-utensils', 'fa-mug-hot', 'fa-ice-cream', 'fa-pizza-slice', 'fa-burger'
     ];
-    
+
     function loadParentCategoryIcons() {
         const iconGrid = document.getElementById('parent-category-icon-grid');
         if (!iconGrid) return;
-        
+
         iconGrid.innerHTML = categoryIcons.map(icon => `
             <div class="icon-item" data-icon="${icon}" onclick="selectParentCategoryIcon('${icon}')">
                 <i class="fas ${icon}"></i>
             </div>
         `).join('');
     }
-    
-    window.selectParentCategoryIcon = function(icon) {
+
+    window.selectParentCategoryIcon = function (icon) {
         const iconInput = document.getElementById('parent-category-icon');
         if (iconInput) iconInput.value = icon;
-        
+
         const display = document.getElementById('parent-selected-icon-display');
         if (display) {
             display.innerHTML = `<i class="fas ${icon}"></i>`;
         }
-        
+
         document.querySelectorAll('#parent-category-icon-grid .icon-item').forEach(item => {
             item.classList.toggle('selected', item.getAttribute('data-icon') === icon);
         });
     };
-    
+
     loadParentCategoryIcons();
-    
+
     const handleStoreSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
@@ -833,7 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isSubmitting = false;
         }
     };
-    
+
     // Ürün tablosunu güncelle
     async function renderProductsTable() {
         const loadingOverlay = document.getElementById('loading-overlay');
@@ -845,26 +845,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.db.collection('products').get(),
                 window.db.collection('stores').get()
             ]);
-            
+
             // ✅ Mağazaları bir objeye dönüştür (hızlı erişim için)
             const storesMap = {};
             storesSnapshot.docs.forEach(doc => {
                 storesMap[doc.id] = { id: doc.id, ...doc.data() };
             });
-            
+
             // ✅ Ürünleri işle
             const products = productsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
-            
+
             productsTableBody.innerHTML = '';
-            
+
             for (const product of products) {
                 // ✅ Mağazayı storesMap'ten al
                 const store = storesMap[product.storeId];
                 const storeName = store ? store.name : 'Mağaza Bulunamadı';
-                
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td data-label="ID">${product.id}</td>
@@ -879,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 productsTableBody.appendChild(row);
             }
-            
+
             attachProductEventListeners();
         } catch (error) {
             console.error('Ürünler yüklenemedi:', error);
@@ -888,7 +888,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingOverlay.style.display = 'none'; // Gizle
         }
     }
-    
+
     // Ürün olay dinleyicileri
     const attachProductEventListeners = () => {
         document.querySelectorAll('.edit-product').forEach(button => {
@@ -897,7 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 editProduct(e.currentTarget.getAttribute('data-id'));
             });
         });
-        
+
         document.querySelectorAll('.delete-product').forEach(button => {
             button.removeEventListener('click', null);
             button.addEventListener('click', (e) => {
@@ -946,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Ürün bilgileri yüklenemedi!', false);
         }
     };
-    
+
     // Ürün sil
     const deleteProduct = (productId) => {
         if (confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
@@ -956,7 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Ürün başarıyla silindi!');
         }
     };
-    
+
     // Ürün modal aç
     const openProductModal = () => {
         populateStoreSelect();
@@ -968,22 +968,22 @@ document.addEventListener('DOMContentLoaded', () => {
         isSubmitting = false;
         productModal.style.display = 'block';
     };
-    
+
     // Ürün form submit (FIREBASE + Cloudinary)
     const handleProductSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
         isSubmitting = true;
-        
+
         try {
-            const title    = document.getElementById('product-name').value.trim();
-            const storeId  = document.getElementById('product-store').value;
+            const title = document.getElementById('product-name').value.trim();
+            const storeId = document.getElementById('product-store').value;
             const newPrice = document.getElementById('product-price').value.trim(); // ✅ DÜZELTME
             const discountedPriceInput = document.getElementById('product-discounted-price')?.value.trim() || ''; // ✅ DÜZELTME
-            const desc     = document.getElementById('product-description').value.trim();
+            const desc = document.getElementById('product-description').value.trim();
             const material = document.getElementById('product-material').value.trim();
             const category = document.getElementById('product-category').value.trim();
-            const file     = productImage.files[0];
+            const file = productImage.files[0];
 
             if (!title || !storeId || !newPrice) {
                 showNotification('Zorunlu alanları doldurun!', false);
@@ -1006,7 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (discountedPriceInput) {
                 const normalPrice = parseFloat(newPrice.replace(' TMT', ''));
                 const discountedPrice = parseFloat(discountedPriceInput.replace(' TMT', ''));
-                
+
                 // Eğer indirimli fiyat normal fiyattan küçükse
                 if (!isNaN(normalPrice) && !isNaN(discountedPrice) && discountedPrice < normalPrice) {
                     isOnSale = true;
@@ -1018,28 +1018,28 @@ document.addEventListener('DOMContentLoaded', () => {
             if (editingProductId) {
                 // Mevcut ürünü güncelle
                 await window.db.collection('products').doc(editingProductId).update({
-                    storeId, 
-                    title, 
-                    price: newPrice, 
-                    description: desc, 
-                    material, 
+                    storeId,
+                    title,
+                    price: newPrice,
+                    description: desc,
+                    material,
                     category,
-                    isOnSale, 
-                    originalPrice, 
+                    isOnSale,
+                    originalPrice,
                     imageUrl
                 });
                 showNotification('Ürün başarıyla güncellendi!');
             } else {
                 // Yeni ürün ekle
                 await window.addProductToFirebase({
-                    storeId, 
-                    title, 
-                    price: newPrice, 
-                    description: desc, 
-                    material, 
+                    storeId,
+                    title,
+                    price: newPrice,
+                    description: desc,
+                    material,
                     category,
-                    isOnSale, 
-                    originalPrice, 
+                    isOnSale,
+                    originalPrice,
                     imageUrl
                 });
                 showNotification('Ürün Firebase\'e eklendi!');
@@ -1065,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
         return data.secure_url;
     }
-    
+
     async function renderOrdersTable() {
         try {
             const ordersSnapshot = await window.db.collection('orders').orderBy('date', 'desc').get();
@@ -1102,6 +1102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td data-label="Ady">${order.customer.name}</td>
                         <td data-label="Telefony">${order.customer.phone}</td>
                         <td data-label="Salgysy">${order.customer.address}</td>
+                        <td data-label="Bellik">${order.customer.note || ''}</td>
                         <td data-label="Magazynlar">${storeNames}</td>
                         <td data-label="Taryhy">${new Date(order.date).toLocaleString('tr-TR')}</td>
                         <td data-label="Durum"><span class="status pending">Garaşylýar</span></td>
@@ -1122,6 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td data-label="Ady">${order.customer.name}</td>
                         <td data-label="Telefony">${order.customer.phone}</td>
                         <td data-label="Salgysy">${order.customer.address}</td>
+                        <td data-label="Bellik">${order.customer.note || ''}</td>
                         <td data-label="Magazynlar">${storeNames}</td>
                         <td data-label="Taryhy">${new Date(order.date).toLocaleString('tr-TR')}</td>
                         <td data-label="Durum"><span class="status completed">Onaylandı</span></td>
@@ -1142,20 +1144,20 @@ document.addEventListener('DOMContentLoaded', () => {
             // Firebase'den mağazaları çek
             const storesSnapshot = await window.db.collection('stores').get();
             const storesCount = storesSnapshot.size;
-            
+
             // Firebase'den ürünleri çek
             const productsSnapshot = await window.db.collection('products').get();
             const productsCount = productsSnapshot.size;
-            
+
             // Firebase'den siparişleri çek
             const ordersSnapshot = await window.db.collection('orders').get();
             const ordersCount = ordersSnapshot.size;
-            
+
             // Sayıları güncelle
             document.getElementById('total-stores').textContent = storesCount;
             document.getElementById('total-products').textContent = productsCount;
             document.getElementById('total-orders').textContent = ordersCount;
-            
+
             console.log('✅ Dashboard güncellendi:', { storesCount, productsCount, ordersCount });
         } catch (error) {
             console.error('❌ Dashboard güncellenemedi:', error);
@@ -1175,22 +1177,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 date.setDate(date.getDate() - i);
                 dates.push(date.toISOString().split('T')[0]);
             }
-            
+
             // Firebase'den ziyaretçi verilerini çek
             const visitorsSnapshot = await window.db.collection('visitors').get();
             const visitors = visitorsSnapshot.docs.map(doc => doc.data());
-            
+
             // Tarihe göre grupla ve say
             const visitorCounts = dates.map(date => {
                 return visitors.filter(v => v.date === date).length;
             });
-            
+
             // Tarihleri güzelleştir (30 Ara formatında)
             const labels = dates.map(date => {
                 const d = new Date(date);
                 return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
             });
-            
+
             // Grafik verisi
             const chartData = {
                 labels: labels,
@@ -1209,7 +1211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     pointBorderWidth: 2
                 }]
             };
-            
+
             // Grafik ayarları
             const chartConfig = {
                 type: 'line',
@@ -1234,7 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             beginAtZero: true,
                             ticks: {
                                 stepSize: 1,
-                                callback: function(value) {
+                                callback: function (value) {
                                     return Math.floor(value); // Tam sayı göster
                                 }
                             },
@@ -1250,29 +1252,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             };
-            
+
             // Eski grafiği yok et (eğer varsa)
             if (visitorChartInstance) {
                 visitorChartInstance.destroy();
             }
-            
+
             // Yeni grafiği oluştur
             const ctx = document.getElementById('visitorChart').getContext('2d');
             visitorChartInstance = new Chart(ctx, chartConfig);
-            
+
             // Animasyon için active class'ı ekle
             const chartContainer = document.querySelector('.visitor-chart-container');
             if (chartContainer) {
                 chartContainer.classList.add('active');
             }
-            
+
             console.log('✅ Ziyaretçi grafiği oluşturuldu:', visitorCounts);
-            
+
         } catch (error) {
             console.error('❌ Ziyaretçi grafiği oluşturulamadı:', error);
         }
     };
-        
+
     // --- EXCEL FONKSİYONLARI ---   
     // Mağazaları Excel'e indir
     if (exportStoresBtn) {
@@ -1281,14 +1283,14 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Mağazalar indirildi!');
         });
     }
-    
+
     // Excel'den mağaza yükle
     if (importStoresBtn) {
         importStoresBtn.addEventListener('click', () => {
             importStoresInput.click();
         });
     }
-    
+
     if (importStoresInput) {
         importStoresInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -1304,7 +1306,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // Ürünleri Excel'e indir
     if (exportProductsBtn) {
         exportProductsBtn.addEventListener('click', () => {
@@ -1312,14 +1314,14 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification('Ürünler indirildi!');
         });
     }
-    
+
     // Excel'den ürün yükle
     if (importProductsBtn) {
         importProductsBtn.addEventListener('click', () => {
             importProductsInput.click();
         });
     }
-    
+
     if (importProductsInput) {
         importProductsInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -1335,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // Mağaza seçimini doldur
     async function populateStoreSelect() {
         try {
@@ -1359,17 +1361,17 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateStoreFilter() {
         const filterStoreSelect = document.getElementById('filter-store-select');
         const filterCategorySelect = document.getElementById('filter-category-select');
-        
+
         if (!filterStoreSelect) return;
-        
+
         try {
             // Firebase'den mağazaları çek
             const storesSnapshot = await window.db.collection('stores').get();
             const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
+
             // Dropdown'ı temizle ve "Tüm Mağazalar" ekle
             filterStoreSelect.innerHTML = '<option value="">Tüm Mağazalar</option>';
-            
+
             // Her mağazayı dropdown'a ekle
             stores.forEach(store => {
                 const option = document.createElement('option');
@@ -1377,9 +1379,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.textContent = store.name;
                 filterStoreSelect.appendChild(option);
             });
-            
+
             console.log(`✅ ${stores.length} mağaza filtreye yüklendi`);
-            
+
         } catch (error) {
             console.error('❌ Mağaza filtresi yüklenemedi:', error);
         }
@@ -1390,35 +1392,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterStoreSelect = document.getElementById('filter-store-select');
         const filterCategorySelect = document.getElementById('filter-category-select');
         const productsTableBody = document.getElementById('products-table-body');
-        
+
         if (!filterStoreSelect || !filterCategorySelect || !productsTableBody) {
             console.error('❌ Filtre elemanları bulunamadı!');
             return;
         }
-        
+
         // Mağaza seçilince
         filterStoreSelect.addEventListener('change', async (e) => {
             const selectedStoreId = e.target.value;
-            
+
             console.log('🔍 Seçilen mağaza:', selectedStoreId);
-            
+
             // Kategori filtresini sıfırla
             filterCategorySelect.innerHTML = '<option value="">Tüm Kategoriler</option>';
             filterCategorySelect.disabled = true;
-            
+
             if (selectedStoreId) {
                 // ✅ Seçilen mağazanın ürünlerini göster
                 await filterAndDisplayProducts(selectedStoreId, null);
-                
+
                 // ✅ Kategorileri yükle
                 try {
                     const productsSnapshot = await window.db.collection('products')
                         .where('storeId', '==', selectedStoreId)
                         .get();
-                    
+
                     const products = productsSnapshot.docs.map(doc => doc.data());
                     const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-                    
+
                     if (categories.length > 0) {
                         filterCategorySelect.disabled = false;
                         categories.forEach(cat => {
@@ -1436,17 +1438,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 await renderProductsTable();
             }
         });
-        
+
         // Kategori seçilince
         filterCategorySelect.addEventListener('change', async (e) => {
             const selectedStoreId = filterStoreSelect.value;
             const selectedCategory = e.target.value;
-            
+
             if (selectedStoreId) {
                 await filterAndDisplayProducts(selectedStoreId, selectedCategory);
             }
         });
-        
+
         console.log('✅ Ürün filtreleme sistemi hazır');
     })();
 
@@ -1454,43 +1456,43 @@ document.addEventListener('DOMContentLoaded', () => {
     async function filterAndDisplayProducts(storeId, category) {
         const loadingOverlay = document.getElementById('loading-overlay');
         const productsTableBody = document.getElementById('products-table-body');
-        
+
         if (!productsTableBody) {
             console.error('❌ products-table-body bulunamadı!');
             return;
         }
-        
+
         loadingOverlay.style.display = 'flex';
-        
+
         try {
             console.log('🔍 Filtreleme:', { storeId, category });
-            
+
             // ✅ Mağazaya göre ürünleri çek
             let query = window.db.collection('products').where('storeId', '==', storeId);
             const productsSnapshot = await query.get();
-            let products = productsSnapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                ...doc.data() 
+            let products = productsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
             }));
-            
+
             console.log(`📦 ${products.length} ürün bulundu`);
-            
+
             // ✅ Kategori filtresi varsa uygula
             if (category) {
                 products = products.filter(p => p.category === category);
                 console.log(`🏷️ Kategoriye göre: ${products.length} ürün kaldı`);
             }
-            
+
             // ✅ Mağaza bilgilerini çek
             const storesSnapshot = await window.db.collection('stores').get();
             const storesMap = {};
             storesSnapshot.docs.forEach(doc => {
                 storesMap[doc.id] = { id: doc.id, ...doc.data() };
             });
-            
+
             // ✅ Tabloyu temizle
             productsTableBody.innerHTML = '';
-            
+
             if (products.length === 0) {
                 productsTableBody.innerHTML = `
                     <tr>
@@ -1502,12 +1504,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 return;
             }
-            
+
             // ✅ Ürünleri tabloya ekle
             products.forEach(product => {
                 const store = storesMap[product.storeId];
                 const storeName = store ? store.name : 'Mağaza Bulunamadı';
-                
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${product.id}</td>
@@ -1522,12 +1524,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 productsTableBody.appendChild(row);
             });
-            
+
             // ✅ Butonları yeniden bağla
             attachProductEventListeners();
-            
+
             console.log('✅ Tablo güncellendi');
-            
+
         } catch (error) {
             console.error('❌ Filtreleme hatası:', error);
             showNotification('Ürünler filtrelenirken hata oluştu!', false);
@@ -1540,26 +1542,26 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('DOMContentLoaded', () => {
         const filterStoreSelect = document.getElementById('filter-store-select');
         const filterCategorySelect = document.getElementById('filter-category-select');
-        
+
         if (filterStoreSelect) {
             filterStoreSelect.addEventListener('change', async (e) => {
                 const selectedStoreId = e.target.value;
-                
+
                 // Kategori filtresini sıfırla
                 filterCategorySelect.innerHTML = '<option value="">Önce Mağaza Seçin</option>';
                 filterCategorySelect.disabled = true;
-                
+
                 if (selectedStoreId) {
                     // Seçilen mağazanın ürünlerini çek
                     const productsSnapshot = await window.db.collection('products')
                         .where('storeId', '==', selectedStoreId)
                         .get();
-                    
+
                     const products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    
+
                     // Kategorileri çıkar
                     const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-                    
+
                     if (categories.length > 0) {
                         filterCategorySelect.disabled = false;
                         filterCategorySelect.innerHTML = '<option value="">Tüm Kategoriler</option>';
@@ -1570,7 +1572,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             filterCategorySelect.appendChild(option);
                         });
                     }
-                    
+
                     // Ürünleri filtrele ve göster
                     filterProducts(selectedStoreId, null);
                 } else {
@@ -1579,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     startAutoRefresh();
                 }
             });
-            
+
             // Kategori değişince
             filterCategorySelect.addEventListener('change', (e) => {
                 const selectedStoreId = filterStoreSelect.value;
@@ -1591,7 +1593,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---
     function startAutoRefresh() {
-        const refreshInterval = 5 * 60 * 1000; 
+        const refreshInterval = 5 * 60 * 1000;
         setInterval(async () => {
             console.log('🔄 Veriler 5 dakikada bir otomatik olarak yenileniyor...');
             try {
@@ -1628,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 usersTableBody.innerHTML = '';
-                
+
                 if (users.length === 0) {
                     usersTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz kullanıcı eklenmemiş.</td></tr>';
                     return;
@@ -1652,12 +1654,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.addEventListener('click', async () => {
                         const userId = btn.getAttribute('data-id');
                         const user = users.find(u => u.id === userId);
-                        
+
                         if (user.role === 'superadmin') {
                             showNotification('Super Admin silinemez!', false);
                             return;
                         }
-                        
+
                         if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
                             await window.db.collection('users').doc(userId).delete();
                             renderUsersTable();
@@ -1699,7 +1701,7 @@ document.addEventListener('DOMContentLoaded', () => {
             userRoleSelect.addEventListener('change', (e) => {
                 const role = e.target.value;
                 const checkboxes = document.querySelectorAll('.permission-checkbox');
-                
+
                 if (role === 'superadmin') {
                     checkboxes.forEach(cb => cb.checked = true);
                 } else if (role === 'admin') {
@@ -1714,15 +1716,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkboxes.forEach(cb => {
                         cb.checked = ['dashboard', 'products'].includes(cb.value);
                     });
-            } else if (role === 'order_manager') {
-                checkboxes.forEach(cb => {
-                    cb.checked = ['dashboard', 'orders'].includes(cb.value);
-                });
-            } else if (role === 'superadmin') {
-                checkboxes.forEach(cb => cb.checked = true);
-            }
-        });
-    }
+                } else if (role === 'order_manager') {
+                    checkboxes.forEach(cb => {
+                        cb.checked = ['dashboard', 'orders'].includes(cb.value);
+                    });
+                } else if (role === 'superadmin') {
+                    checkboxes.forEach(cb => cb.checked = true);
+                }
+            });
+        }
 
         // Kullanıcı form submit
         if (userForm) {
@@ -1790,41 +1792,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-// ===========================================================================
+    // ===========================================================================
 
     // Ürünleri filtrele
     async function filterProducts(storeId, category) {
         const loadingOverlay = document.getElementById('loading-overlay');
         loadingOverlay.style.display = 'flex';
-        
+
         try {
             let query = window.db.collection('products');
-            
+
             if (storeId) {
                 query = query.where('storeId', '==', storeId);
             }
-            
+
             const productsSnapshot = await query.get();
             let products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
+
             // Kategori filtresi varsa
             if (category) {
                 products = products.filter(p => p.category === category);
             }
-            
+
             // Mağaza bilgilerini çek
             const storesSnapshot = await window.db.collection('stores').get();
             const storesMap = {};
             storesSnapshot.docs.forEach(doc => {
                 storesMap[doc.id] = { id: doc.id, ...doc.data() };
             });
-            
+
             // Tabloyu güncelle
             productsTableBody.innerHTML = '';
             products.forEach(product => {
                 const store = storesMap[product.storeId];
                 const storeName = store ? store.name : 'Mağaza Bulunamadı';
-                
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${product.id}</td>
@@ -1839,16 +1841,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 productsTableBody.appendChild(row);
             });
-            
+
             attachProductEventListeners();
-            
+
         } catch (error) {
             console.error('Ürünler filtrelemedi:', error);
         } finally {
             loadingOverlay.style.display = 'none';
         }
     }
-    
+
     // Bildirim göster
     const showNotification = (message, isSuccess = true) => {
         const notification = document.createElement('div');
@@ -1865,24 +1867,24 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         notification.textContent = message;
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.remove();
         }, 3000);
     };
 
     // ✅ KULLANICI YÖNETİMİ FONKSİYONLARI - BURAYA EKLE
-    
+
     // Kullanıcıları listele
     const renderUsersTable = async () => {
         if (!usersTableBody) return;
-        
+
         try {
             const usersSnapshot = await window.db.collection('users').get();
             const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             usersTableBody.innerHTML = '';
-            
+
             if (users.length === 0) {
                 usersTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz kullanıcı eklenmemiş.</td></tr>';
                 return;
@@ -1906,12 +1908,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', async () => {
                     const userId = btn.getAttribute('data-id');
                     const user = users.find(u => u.id === userId);
-                    
+
                     if (user.role === 'superadmin') {
                         showNotification('Super Admin silinemez!', false);
                         return;
                     }
-                    
+
                     if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
                         await window.db.collection('users').doc(userId).delete();
                         renderUsersTable();
@@ -1963,7 +1965,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userRoleSelect.addEventListener('change', (e) => {
             const role = e.target.value;
             const checkboxes = document.querySelectorAll('.permission-checkbox');
-            
+
             if (role === 'superadmin') {
                 checkboxes.forEach(cb => cb.checked = true);
             } else if (role === 'admin') {
@@ -2040,16 +2042,16 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedProductImageUrl = null;
         isSubmitting = false;
     };
-    
-    
+
+
     // Navigasyon
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            
+
             navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-            
+
             const sectionId = link.getAttribute('data-section');
             contentSections.forEach(section => {
                 section.classList.remove('active');
@@ -2057,16 +2059,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     section.classList.add('active');
                 }
             });
-            
+
             pageTitle.textContent = link.textContent.trim();
-            
+
             // Mobilde menüyü kapat
             if (window.innerWidth <= 768) {
                 closeSidebar();
             }
         });
     });
-    
+
     // Mağaza butonları
     if (addStoreBtn) {
         console.log('Mağaza Ekle butonu bulundu');
@@ -2112,7 +2114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     productForm.addEventListener('submit', handleProductSubmit);
-    
+
     // Modal kapatma
     closeModals.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2120,32 +2122,32 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modal) modal.style.display = 'none';
         });
     });
-    
+
     cancelStore.addEventListener('click', closeAllModals);
     cancelProduct.addEventListener('click', closeAllModals);
-    
+
     window.addEventListener('click', (e) => {
         if (e.target === storeModal || e.target === productModal) {
             closeAllModals();
         }
     });
-    
+
     // Mobil menü
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             adminSidebar.classList.toggle('active');
-            
+
             // Overlay'i göster/gizle
             const overlay = document.getElementById('sidebar-overlay');
             if (overlay) {
                 overlay.classList.toggle('active');
             }
-            
+
             // Mobilde body scroll'u engelle
             document.body.style.overflow = adminSidebar.classList.contains('active') ? 'hidden' : 'auto';
         });
     }
-    
+
     // Sidebar overlay tıklanınca kapat
     const sidebarOverlay = document.getElementById('sidebar-overlay');
     if (sidebarOverlay) {
@@ -2153,7 +2155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeSidebar();
         });
     }
-    
+
     // Sidebar'ı kapatma fonksiyonu
     function closeSidebar() {
         adminSidebar.classList.remove('active');
@@ -2164,7 +2166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Body scroll'u düzelt
         document.body.style.overflow = 'auto';
     }
-    
+
     // Mobilde sayfa yüklenince menüyü kapat
     if (window.innerWidth <= 768) {
         adminSidebar.classList.remove('active');
@@ -2173,7 +2175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.classList.remove('active');
         }
     }
-    
+
     // Sidebar kapatma butonu
     const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
     if (sidebarCloseBtn) {
@@ -2181,7 +2183,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeSidebar();
         });
     }
-    
+
     // Pencere boyutu değişince menüyü düzelt
     window.addEventListener('resize', () => {
         if (window.innerWidth > 768) {
@@ -2196,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Ürün ekle (Firestore)
-    window.addProductToFirebase = async function(product) {
+    window.addProductToFirebase = async function (product) {
         const doc = await window.db.collection('products').add({
             storeId: product.storeId,
             title: product.title,
@@ -2213,7 +2215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Mağaza sil (Firestore)
-    window.deleteStoreFromFirebase = async function(storeId) {
+    window.deleteStoreFromFirebase = async function (storeId) {
         const prods = await window.db.collection('products').where('storeId', '==', storeId).get();
         const batch = window.db.batch();
         prods.docs.forEach(d => batch.delete(d.ref));
@@ -2222,33 +2224,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Ürün sil (Firestore)
-    window.deleteProductFromFirebase = async function(productId) {
+    window.deleteProductFromFirebase = async function (productId) {
         await window.db.collection('products').doc(productId).delete();
     };
 
     // Tüm mağazaları getir (Firestore)
-    window.getStoresFromFirebase = async function() {
+    window.getStoresFromFirebase = async function () {
         const snap = await window.db.collection('stores').get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     };
 
     // Tüm ürünleri getir (Firestore)
-    window.getProductsFromFirebase = async function() {
+    window.getProductsFromFirebase = async function () {
         const snap = await window.db.collection('products').get();
         return snap.docs.map(d => ({ id: d.id, ...d.data() }));
     };
 
     // Sayfa yüklendiğinde bekleyen siparişleri kontrol et
     processPendingOrders();
-    
+
     // ✅ Tüm verileri yükleyen fonksiyon (loading ile)
     const loadAllData = async () => {
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = loadingOverlay?.querySelector('.loading-text');
-        
+
         try {
             if (loadingText) loadingText.textContent = 'Veriler yükleniyor...';
-            
+
             // ✅ PARALEL İŞLEMLER: Verileri mümkün olduğunca paralel çek
             await Promise.all([
                 loadCategories(), // Kategorileri yükle
@@ -2263,13 +2265,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 populateStoreSelect(), // Mağaza dropdown'ı
                 populateStoreFilter() // Mağaza filtresi
             ]);
-            
+
             console.log('✅ Tüm veriler başarıyla yüklendi');
-            
+
             // ✅ Otomatik yenilemeyi başlat
             startAutoRefresh();
             console.log('✅ Otomatik yenileme aktif');
-            
+
         } catch (error) {
             console.error('❌ Veriler yüklenemedi:', error);
             showNotification('Veriler yüklenemedi! Sayfayı yenileyin.', false);
@@ -2279,7 +2281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-    
+
     // ✅ Verileri yükle
     loadAllData();
 });

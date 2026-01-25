@@ -1193,6 +1193,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <label>Adresiňiz</label>
                             <textarea class="customer-address" rows="3" placeholder="Adresiňizi ýazyň" required></textarea>
                         </div>
+                        <div class="form-group">
+                            <label>Bellik (Opsiýonel)</label>
+                            <textarea class="customer-note" rows="2" placeholder="Sargyt barada belligiňizi ýazyň"></textarea>
+                        </div>
                         <div class="form-actions">
                             <button type="button" class="btn-secondary cancel-order-${currentStoreCart.storeId}">Aýyr</button>
                             <button type="submit" class="btn-primary">Sargyt ediň</button>
@@ -1244,6 +1248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const name = e.target.querySelector('.customer-name').value.trim();
             const phone = e.target.querySelector('.customer-phone').value.trim();
             const address = e.target.querySelector('.customer-address').value.trim();
+            const note = e.target.querySelector('.customer-note').value.trim();
 
             if (!name || !phone || !address) {
                 showNotification('Ähli meýdançalary dolduryň!', false);
@@ -1283,7 +1288,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Sipariş metnini oluştur (Türkmençe)
             const itemsText = currentStoreCart.items.map(item => `- ${item.title} (${item.quantity} haryt)`).join('\n');
-            const orderText = `Sargyt:\n${itemsText}\n\nAdy: ${name}\nTelefon: ${phone}\nAdres: ${address}\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
+            let orderText = `Sargyt:\n${itemsText}\n\nAdy: ${name}\nTelefon: ${phone}\nAdres: ${address}`;
+            if (note) orderText += `\nBellik: ${note}`;
+            orderText += `\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
 
             // Telefon numarasını temizle
             const cleanNumber = orderPhone.replace(/[^0-9]/g, '');
@@ -1291,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // Firebase'e siparişi kaydet
                 const order = {
-                    customer: { name, phone, address },
+                    customer: { name, phone, address, note },
                     storeId: currentStoreCart.storeId,
                     storeName: currentStoreCart.storeName,
                     items: [...currentStoreCart.items],
