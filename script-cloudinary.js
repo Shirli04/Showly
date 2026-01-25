@@ -1187,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                         <div class="form-group">
                             <label>Telefon nomeriňiz</label>
-                            <input type="tel" class="customer-phone" placeholder="Telefon nomeriňiz (:+993...)" required>
+                            <input type="tel" class="customer-phone" value="+993 " required>
                         </div>
                         <div class="form-group">
                             <label>Adresiňiz</label>
@@ -1205,122 +1205,157 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.body.insertAdjacentHTML('beforeend', formHTML);
 
         // İptal butonu
-        document.querySelector(`.cancel-order-${currentStoreCart.storeId}`).addEventListener('click', () => {
-            document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
+        const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
+        formOverlay.querySelector(`.cancel-order-${currentStoreCart.storeId}`).addEventListener('click', () => {
+            formOverlay.remove();
         });
 
-        // Form submit handler
-        document.getElementById(`order-form-${currentStoreCart.storeId}`).addEventListener('submit', async (e) => {
+        // Telefon input kısıtlamaları
+        const phoneInput = formOverlay.querySelector('.customer-phone');
+
+        phoneInput.addEventListener('keydown', (e) => {
+            // +993 kısmını silmeyi engelle
+            if (phoneInput.selectionStart < 5 \u0026\u0026(e.key === 'Backspace' || e.key === 'Delete')) {
             e.preventDefault();
-
-            const name = e.target.querySelector('.customer-name').value.trim();
-            const phone = e.target.querySelector('.customer-phone').value.trim();
-            const address = e.target.querySelector('.customer-address').value.trim();
-
-            if (!name || !phone || !address) {
-                showNotification('Ähli meýdançalary dolduryň!', false);
-                return;
-            }
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const cancelBtn = e.target.querySelector('.btn-secondary');
-            submitBtn.disabled = true;
-            cancelBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iberilýär...';
-
-            const loadingOverlay = document.getElementById('loading-overlay');
-            const loadingText = document.querySelector('.loading-text');
-            loadingOverlay.style.display = 'flex';
-            loadingText.textContent = 'Sargydyňyz işlenýär...';
-
-            // Mağazanın sipariş telefon numarasını al
-            const store = allStores.find(s => s.id === currentStoreCart.storeId);
-            const orderPhone = store?.orderPhone || '';
-
-            if (!orderPhone) {
-                loadingOverlay.style.display = 'none';
-                submitBtn.disabled = false;
-                cancelBtn.disabled = false;
-                submitBtn.innerHTML = 'Sargyt ediň';
-                showNotification('Mağaza üçin sargyt nomer ýok!', false);
-                return;
-            }
-
-            // Sipariş metnini oluştur (Türkmençe)
-            const itemsText = currentStoreCart.items.map(item => `- ${item.title} (${item.quantity} haryt)`).join('\n');
-            const orderText = `Sargyt:\n${itemsText}\n\nAdy: ${name}\nTelefon: ${phone}\nAdres: ${address}\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
-
-            // Telefon numarasını temizle
-            const cleanNumber = orderPhone.replace(/[^0-9]/g, '');
-
-            try {
-                // Firebase'e siparişi kaydet
-                const order = {
-                    customer: { name, phone, address },
-                    storeId: currentStoreCart.storeId,
-                    storeName: currentStoreCart.storeName,
-                    items: [...currentStoreCart.items],
-                    total: storeTotal.toFixed(2) + ' TMT',
-                    date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
-                    timestamp: Date.now(),  // Timestamp for ordering
-                    status: 'pending'
-                };
-
-                await window.db.collection('orders').add(order);
-                console.log('Sipariş Firebase\'e eklendi');
-
-
-                loadingOverlay.style.display = 'none';
-                showNotification(`✅ ${currentStoreCart.storeName} üçin sargydyňyz kabul edildi!`, true);
-
-                // Bu mağazayı sepetten sil
-                delete cart[currentStoreCart.storeId];
-                updateCartCount();
-                document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
-
-                // SMS URL oluştur
-                const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
-
-                console.log('📱 SMS açılıyor:', smsUrl);
-                console.log('📱 SMS içeriği:', orderText);
-
-                // Direkt SMS aç (tüm yöntemleri dene)
-                openSmsUrl(smsUrl, cleanNumber, orderText);
-
-                // Sipariş modal'ını kapat
-                const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
-                if (formOverlay) {
-                    formOverlay.remove();
-                }
-
-                // Sepet modalını güncelle
-                cartButton.click();
-
-            } catch (error) {
-                console.error('Sargyt goşulmady:', error);
-                loadingOverlay.style.display = 'none';
-
-                submitBtn.disabled = false;
-                cancelBtn.disabled = false;
-                submitBtn.innerHTML = 'Sargyt ediň';
-
-                showNotification('Sargydyňyz döredilmedi! Täzeden synanyşyň.', false);
-            }
-        });
+        }
     });
 
-    // Favoriler modalı
-    favoritesButton.addEventListener('click', () => {
-        const favoritesModal = document.getElementById('favorites-modal');
-        const favoritesItems = document.getElementById('favorites-items');
-        if (favorites.length === 0) {
-            favoritesItems.innerHTML = '<p class="empty-favorites-message">Siz harytlardan öz halanyňyzy saýlap bilersiňiz.</p>';
-        } else {
-            favoritesItems.innerHTML = '';
-            favorites.forEach(product => {
-                const favItem = document.createElement('div');
-                favItem.className = 'favorite-item';
-                favItem.innerHTML = `
+    phoneInput.addEventListener('input', (e) => {
+        if (!phoneInput.value.startsWith('+993 ')) {
+            phoneInput.value = '+993 ' + phoneInput.value.replace(/\+993\s?/g, '').replace(/[^0-9]/g, '');
+        }
+
+        // Sadece rakamlara izin ver (ön ekten sonra)
+        const prefix = '+993 ';
+        let digits = phoneInput.value.substring(prefix.length).replace(/[^0-9]/g, '');
+
+        // Maksimum 8 hane kısıtlaması
+        if (digits.length \u003e 8) {
+        digits = digits.substring(0, 8);
+    }
+
+    phoneInput.value = prefix + digits;
+});
+
+// Form submit handler
+document.getElementById(`order-form-${currentStoreCart.storeId}`).addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = e.target.querySelector('.customer-name').value.trim();
+    const phone = e.target.querySelector('.customer-phone').value.trim();
+    const address = e.target.querySelector('.customer-address').value.trim();
+
+    if (!name || !phone || !address) {
+        showNotification('Ähli meýdançalary dolduryň!', false);
+        return;
+    }
+
+    // Telefon doğrulaması (+993 6XXXXXXX formatında 8 rakam)
+    const phoneRegex = /^\+993\s\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+        showNotification('Telefon nomeriňizi dogry giriziň (+993 6XXXXXXX)!', false);
+        return;
+    }
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const cancelBtn = e.target.querySelector('.btn-secondary');
+    submitBtn.disabled = true;
+    cancelBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iberilýär...';
+
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.querySelector('.loading-text');
+    loadingOverlay.style.display = 'flex';
+    loadingText.textContent = 'Sargydyňyz işlenýär...';
+
+    // Mağazanın sipariş telefon numarasını al
+    const store = allStores.find(s => s.id === currentStoreCart.storeId);
+    const orderPhone = store?.orderPhone || '';
+
+    if (!orderPhone) {
+        loadingOverlay.style.display = 'none';
+        submitBtn.disabled = false;
+        cancelBtn.disabled = false;
+        submitBtn.innerHTML = 'Sargyt ediň';
+        showNotification('Mağaza üçin sargyt nomer ýok!', false);
+        return;
+    }
+
+    // Sipariş metnini oluştur (Türkmençe)
+    const itemsText = currentStoreCart.items.map(item => `- ${item.title} (${item.quantity} haryt)`).join('\n');
+    const orderText = `Sargyt:\n${itemsText}\n\nAdy: ${name}\nTelefon: ${phone}\nAdres: ${address}\n\nUmumy: ${storeTotal.toFixed(2)} TMT`;
+
+    // Telefon numarasını temizle
+    const cleanNumber = orderPhone.replace(/[^0-9]/g, '');
+
+    try {
+        // Firebase'e siparişi kaydet
+        const order = {
+            customer: { name, phone, address },
+            storeId: currentStoreCart.storeId,
+            storeName: currentStoreCart.storeName,
+            items: [...currentStoreCart.items],
+            total: storeTotal.toFixed(2) + ' TMT',
+            date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
+            timestamp: Date.now(),  // Timestamp for ordering
+            status: 'pending'
+        };
+
+        await window.db.collection('orders').add(order);
+        console.log('Sipariş Firebase\'e eklendi');
+
+
+        loadingOverlay.style.display = 'none';
+        showNotification(`✅ ${currentStoreCart.storeName} üçin sargydyňyz kabul edildi!`, true);
+
+        // Bu mağazayı sepetten sil
+        delete cart[currentStoreCart.storeId];
+        updateCartCount();
+        document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
+
+        // SMS URL oluştur
+        const smsUrl = `sms:${cleanNumber}?body=${encodeURIComponent(orderText)}`;
+
+        console.log('📱 SMS açılıyor:', smsUrl);
+        console.log('📱 SMS içeriği:', orderText);
+
+        // Direkt SMS aç (tüm yöntemleri dene)
+        openSmsUrl(smsUrl, cleanNumber, orderText);
+
+        // Sipariş modal'ını kapat
+        const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
+        if (formOverlay) {
+            formOverlay.remove();
+        }
+
+        // Sepet modalını güncelle
+        cartButton.click();
+
+    } catch (error) {
+        console.error('Sargyt goşulmady:', error);
+        loadingOverlay.style.display = 'none';
+
+        submitBtn.disabled = false;
+        cancelBtn.disabled = false;
+        submitBtn.innerHTML = 'Sargyt ediň';
+
+        showNotification('Sargydyňyz döredilmedi! Täzeden synanyşyň.', false);
+    }
+});
+    });
+
+// Favoriler modalı
+favoritesButton.addEventListener('click', () => {
+    const favoritesModal = document.getElementById('favorites-modal');
+    const favoritesItems = document.getElementById('favorites-items');
+    if (favorites.length === 0) {
+        favoritesItems.innerHTML = '<p class="empty-favorites-message">Siz harytlardan öz halanyňyzy saýlap bilersiňiz.</p>';
+    } else {
+        favoritesItems.innerHTML = '';
+        favorites.forEach(product => {
+            const favItem = document.createElement('div');
+            favItem.className = 'favorite-item';
+            favItem.innerHTML = `
                         <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">
                     <div class="favorite-item-info">
                         <div class="favorite-item-title">${product.title}</div>
@@ -1331,80 +1366,80 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                 `;
-                favoritesItems.appendChild(favItem);
-            });
-        }
-        favoritesModal.style.display = 'block';
-    });
+            favoritesItems.appendChild(favItem);
+        });
+    }
+    favoritesModal.style.display = 'block';
+});
 
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-remove-favorite')) {
-            favorites = favorites.filter(f => f.id !== e.target.getAttribute('data-id'));
-            updateFavoritesCount();
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-remove-favorite')) {
+        favorites = favorites.filter(f => f.id !== e.target.getAttribute('data-id'));
+        updateFavoritesCount();
+        favoritesButton.click();
+    }
+    if (e.target.classList.contains('btn-add-cart-from-fav')) {
+        const product = favorites.find(f => f.id === e.target.getAttribute('data-id'));
+        if (product) {
+            addToCart(product);
             favoritesButton.click();
         }
-        if (e.target.classList.contains('btn-add-cart-from-fav')) {
-            const product = favorites.find(f => f.id === e.target.getAttribute('data-id'));
-            if (product) {
-                addToCart(product);
-                favoritesButton.click();
-            }
-        }
-    });
-
-    // Logo ve mağaza linkleri
-    document.getElementById('logo-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        history.pushState(null, null, '/');
-        router();
-    });
-
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('.store-link')) {
-            e.preventDefault();
-            const href = e.target.closest('.store-link').getAttribute('href');
-            history.pushState(null, null, href);
-            router();
-        }
-    });
-
-    backHomeLink?.addEventListener('click', (e) => {
-        e.preventDefault();
-        history.pushState(null, null, '/');
-        router();
-    });
-
-    // Tarayıcının geri/ileri butonları
-    window.addEventListener('popstate', router);
-
-    // --- YARDIMCI FONKSİYONLAR ---
-    function openProductModal(productId) {
-        const product = allProducts.find(p => p.id === productId);
-        if (!product) return;
-        const modal = document.getElementById('product-modal');
-        modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
-        document.getElementById('modal-image').src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22500%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22400%22 height=%22500%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2218%22%3E%3C/text%3E%3C/svg%3E';
-        document.getElementById('modal-title').textContent = product.title;
-        document.getElementById('modal-price').textContent = product.price;
-        document.getElementById('modal-description').textContent = product.description || '';
-        document.getElementById('modal-material').textContent = product.material || '';
-        modal.style.display = 'block';
     }
+});
 
-    function showNotification(message, isSuccess = true) {
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.innerHTML = `<div class="notification-content"><i class="fas fa-check-circle"></i><span>${message}</span></div>`;
-        document.body.appendChild(notification);
-        setTimeout(() => notification.classList.add('show'), 10);
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
-    }
-
-    // --- İLK YÜKLEME ---
+// Logo ve mağaza linkleri
+document.getElementById('logo-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    history.pushState(null, null, '/');
     router();
+});
+
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.store-link')) {
+        e.preventDefault();
+        const href = e.target.closest('.store-link').getAttribute('href');
+        history.pushState(null, null, href);
+        router();
+    }
+});
+
+backHomeLink?.addEventListener('click', (e) => {
+    e.preventDefault();
+    history.pushState(null, null, '/');
+    router();
+});
+
+// Tarayıcının geri/ileri butonları
+window.addEventListener('popstate', router);
+
+// --- YARDIMCI FONKSİYONLAR ---
+function openProductModal(productId) {
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+    const modal = document.getElementById('product-modal');
+    modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
+    document.getElementById('modal-image').src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22500%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22400%22 height=%22500%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2218%22%3E%3C/text%3E%3C/svg%3E';
+    document.getElementById('modal-title').textContent = product.title;
+    document.getElementById('modal-price').textContent = product.price;
+    document.getElementById('modal-description').textContent = product.description || '';
+    document.getElementById('modal-material').textContent = product.material || '';
+    modal.style.display = 'block';
+}
+
+function showNotification(message, isSuccess = true) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.innerHTML = `<div class="notification-content"><i class="fas fa-check-circle"></i><span>${message}</span></div>`;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.classList.add('show'), 10);
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// --- İLK YÜKLEME ---
+router();
 });
 
 // ✅ YENİ: Sahypany täzele butonu
