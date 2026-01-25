@@ -790,12 +790,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Mevcut sepet varsa ve farklı mağazadan ürün ekleniyorsa
-        const existingStoreId = Object.keys(cart)[0];
-        if (existingStoreId && existingStoreId !== product.storeId) {
-            showNotification('Ilki bilen sebediňizi boşadyň!', false);
-            return;
-        }
+        // Artık farklı mağazadan ürün ekleme engeli kaldırıldı. 
+        // Her mağazanın kendi sepet alanı (cart[storeId]) zaten var.
 
         if (!cart[product.storeId]) {
             cart[product.storeId] = {
