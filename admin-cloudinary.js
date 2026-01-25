@@ -1100,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td data-label="Salgysy">${order.customer.address}</td>
                         <td data-label="Bellik">${order.customer.note || ''}</td>
                         <td data-label="Magazynlar">${storeNames}</td>
-                        <td data-label="Taryhy">${new Date(order.date).toLocaleString('tr-TR')}</td>
+                        <td data-label="Taryhy">${new Date(order.timestamp || order.date).toLocaleString('tr-TR')}</td>
                         <td data-label="Durum"><span class="status pending">Garaşylýar</span></td>
                         <td data-label="Etmekler">
                             <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
@@ -1121,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td data-label="Salgysy">${order.customer.address}</td>
                         <td data-label="Bellik">${order.customer.note || ''}</td>
                         <td data-label="Magazynlar">${storeNames}</td>
-                        <td data-label="Taryhy">${new Date(order.date).toLocaleString('tr-TR')}</td>
+                        <td data-label="Taryhy">${new Date(order.timestamp || order.date).toLocaleString('tr-TR')}</td>
                         <td data-label="Durum"><span class="status completed">Onaylandı</span></td>
                         <td data-label="Zakaz No"><strong>${order.orderNumber}</strong></td>
                     `;

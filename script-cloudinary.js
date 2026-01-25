@@ -1303,7 +1303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     storeName: currentStoreCart.storeName,
                     items: [...currentStoreCart.items],
                     total: storeTotal.toFixed(2) + ' TMT',
-                    date: new Date().toISOString().split('T')[0],  // YYYY-MM-DD format
+                    date: new Date().toISOString(),
                     timestamp: Date.now(),  // Timestamp for ordering
                     status: 'pending'
                 };
