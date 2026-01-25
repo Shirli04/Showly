@@ -1,743 +1,751 @@
-    <!DOCTYPE html>
-    <html lang="tr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Admin Paneli</title>
-        <script>
-            // Oturum kontrolü - sadece sayfa ilk yüklenirken bir kez çalışır
-            (function() {
-                const adminUser = sessionStorage.getItem('adminUser');
-                
-                // Eğer oturum yoksa ve login sayfasında değilsek
-                if (!adminUser && !window.location.pathname.includes('login.html')) {
-                    // Sayfanın tamamen yüklenmesini bekle
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', function() {
-                            window.location.replace('/login.html');
-                        });
-                    } else {
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Paneli</title>
+    <script>
+        // Oturum kontrolü - sadece sayfa ilk yüklenirken bir kez çalışır
+        (function () {
+            const adminUser = sessionStorage.getItem('adminUser');
+
+            // Eğer oturum yoksa ve login sayfasında değilsek
+            if (!adminUser && !window.location.pathname.includes('login.html')) {
+                // Sayfanın tamamen yüklenmesini bekle
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function () {
                         window.location.replace('/login.html');
-                    }
+                    });
+                } else {
+                    window.location.replace('/login.html');
                 }
-            })();
-        </script>
-        <style>
-            .upload-preview {
-                max-width: 200px;
-                max-height: 200px;
-                margin: 10px 0;
-                border-radius: 8px;
-                display: none;
             }
-            
-            .upload-preview.show {
-                display: block;
+        })();
+    </script>
+    <style>
+        .upload-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .upload-preview.show {
+            display: block;
+        }
+
+        .upload-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .upload-status.show {
+            display: block;
+        }
+
+        .upload-status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .upload-status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #6c5ce7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
             }
-            
-            .upload-status {
-                padding: 10px;
-                margin: 10px 0;
-                border-radius: 8px;
-                display: none;
+
+            100% {
+                transform: rotate(360deg);
             }
-            
-            .upload-status.show {
-                display: block;
-            }
-            
-            .upload-status.success {
-                background-color: #d4edda;
-                color: #155724;
-                border: 1px solid #c3e6cb;
-            }
-            
-            .upload-status.error {
-                background-color: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
-            }
-            
-            .loading-spinner {
-                display: inline-block;
-                width: 16px;
-                height: 16px;
-                border: 3px solid #f3f3f3;
-                border-top: 3px solid #6c5ce7;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin-right: 8px;
-            }
-            
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            
-            .export-buttons {
-                display: flex;
-                gap: 10px;
-                margin-bottom: 20px;
-            }
-            
-            .btn-export {
-                background-color: #28a745;
-                color: white;
-                padding: 10px 15px;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .btn-export:hover {
-                background-color: #218838;
-            }
-            
-            .file-input-wrapper {
-                position: relative;
-                overflow: hidden;
-                display: inline-block;
-            }
-            
-            .file-input-wrapper input[type=file] {
-                position: absolute;
-                left: -9999px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="admin-container">
-            <!-- Sidebar Overlay (Mobil için) -->
-            <div class="sidebar-overlay" id="sidebar-overlay"></div>
-            
-            <!-- Sidebar -->
-            <aside class="admin-sidebar" id="admin-sidebar">
-                <div class="sidebar-header">
-                    <div class="sidebar-header-left">
-                        <span class="admin-sidebar-text">Admin Paneli</span>
-                    </div>
-                    <button class="sidebar-close-btn" id="sidebar-close-btn">
-                        <i class="fas fa-times"></i>
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-export {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-export:hover {
+            background-color: #218838;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-container">
+        <!-- Sidebar Overlay (Mobil için) -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="admin-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-header-left">
+                    <span class="admin-sidebar-text">Admin Paneli</span>
+                </div>
+                <button class="sidebar-close-btn" id="sidebar-close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="nav-link active" data-section="dashboard"><i
+                                class="fas fa-tachometer-alt"></i> Panel</a></li>
+                    <li><a href="#" class="nav-link" data-section="stores"><i class="fas fa-store"></i> Magazynlar</a>
+                    </li>
+                    <li><a href="#" class="nav-link" data-section="products"><i class="fas fa-box"></i> Harytlar</a>
+                    </li>
+                    <li><a href="#" class="nav-link" data-section="orders"><i class="fas fa-shopping-cart"></i>
+                            Zakazlar</a></li>
+                    <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Sazlamalar</a>
+                    </li>
+                    <li><a href="#" class="nav-link" data-section="users"><i class="fas fa-users"></i> Admin
+                            ulanyjylar</a></li>
+                    <li><a href="#" class="nav-link" data-section="categories"><i class="fas fa-tags"></i>
+                            Kategoriyalar</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="login.html" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çyk</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Bar -->
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="menu-toggle">
+                        <i class="fas fa-bars"></i>
                     </button>
+                    <h1 id="page-title">Panel</h1>
                 </div>
-                <nav class="sidebar-nav">
-                    <ul>
-                        <li><a href="#" class="nav-link active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Panel</a></li>
-                        <li><a href="#" class="nav-link" data-section="stores"><i class="fas fa-store"></i> Magazynlar</a></li>
-                        <li><a href="#" class="nav-link" data-section="products"><i class="fas fa-box"></i> Harytlar</a></li>
-                        <li><a href="#" class="nav-link" data-section="orders"><i class="fas fa-shopping-cart"></i> Zakazlar</a></li>
-                        <li><a href="#" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Sazlamalar</a></li>
-                        <li><a href="#" class="nav-link" data-section="users"><i class="fas fa-users"></i> Admin ulanyjylar</a></li>
-                        <li><a href="#" class="nav-link" data-section="categories"><i class="fas fa-tags"></i> Kategoriyalar</a></li>
-                    </ul>
-                </nav>
-                <div class="sidebar-footer">
-                    <a href="login.html" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çyk</a>
+                <div class="header-right">
+                    <div class="admin-info">
+                        <img src="https://picsum.photos/seed/admin/40/40.jpg" alt="Admin">
+                        <span>Admin</span>
+                    </div>
                 </div>
-            </aside>
+            </header>
 
-            <!-- Main Content -->
-            <main class="admin-main">
-                <!-- Top Bar -->
-                <header class="admin-header">
-                    <div class="header-left">
-                        <button class="menu-toggle">
-                            <i class="fas fa-bars"></i>
+            <!-- Content Area -->
+            <div class="admin-content">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="content-section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background-color: #6c5ce7;"><i class="fas fa-store"></i></div>
+                            <div class="stat-info">
+                                <h3 id="total-stores">0</h3>
+                                <p>Umumy magazyn</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background-color: #00b894;"><i class="fas fa-box"></i></div>
+                            <div class="stat-info">
+                                <h3 id="total-products">0</h3>
+                                <p>Umumy haryt</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background-color: #fdcb6e;"><i
+                                    class="fas fa-shopping-cart"></i></div>
+                            <div class="stat-info">
+                                <h3 id="total-orders">0</h3>
+                                <p>Umumy zakaz</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ✅ YENİ: Ziyaretçi Grafiği -->
+                    <div class="visitor-chart-container">
+                        <h3><i class="fas fa-chart-line"></i> Ziyaretçi İstatistikleri (Son 7 Gün)</h3>
+                        <canvas id="visitorChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Stores Section -->
+                <section id="stores" class="content-section">
+                    <div class="section-header">
+                        <h2>Magazynlar</h2>
+                        <div class="header-buttons">
+                            <button class="btn-primary" id="add-store-btn">
+                                <i class="fas fa-plus"></i> Täze magazyn goš
+                            </button>
+                            <button class="btn-mobile" id="add-store-btn-mobile">
+                                <i class="fas fa-plus"></i> Täze magazyn
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Excel butonları kaldırıldı -->
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Magazyn ady</th>
+                                    <th>Haryt sany</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="stores-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Products Section -->
+                <section id="products" class="content-section">
+                    <div class="section-header">
+                        <h2>Harytlar</h2>
+                        <div class="header-buttons">
+                            <button class="btn-primary" id="add-product-btn">
+                                <i class="fas fa-plus"></i> Täze haryt goš
+                            </button>
+                            <button class="btn-mobile" id="add-product-btn-mobile">
+                                <i class="fas fa-plus"></i> Täze haryt
+                            </button>
+                        </div>
+                    </div>
+                    <div class="product-filters">
+                        <div class="form-group">
+                            <label for="filter-store-select">Magazyn filtr</label>
+                            <select id="filter-store-select">
+                                <option value="">Hemme magazynlar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter-category-select">Kategoriýa filtr</label>
+                            <select id="filter-category-select" disabled>
+                                <option value="">Ilki magazyn saýlaň</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="export-buttons">
+                        <button class="btn-export" id="export-products-btn">
+                            <i class="fas fa-download"></i> Excel al
                         </button>
-                        <h1 id="page-title">Panel</h1>
+                        <button class="btn-export" id="import-products-btn" style="background-color: #17a2b8;">
+                            <i class="fas fa-upload"></i> Excel'den goş
+                        </button>
+                        <input type="file" id="import-products-input" accept=".xlsx,.xls" style="display: none;">
                     </div>
-                    <div class="header-right">
-                        <div class="admin-info">
-                            <img src="https://picsum.photos/seed/admin/40/40.jpg" alt="Admin">
-                            <span>Admin</span>
-                        </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Haryt ady</th>
+                                    <th>Magazyn</th>
+                                    <th>Baha</th>
+                                    <th>Surat</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body">
+                            </tbody>
+                        </table>
                     </div>
-                </header>
+                </section>
 
-                <!-- Content Area -->
-                <div class="admin-content">
-                    <!-- Dashboard Section -->
-                    <section id="dashboard" class="content-section active">
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-icon" style="background-color: #6c5ce7;"><i class="fas fa-store"></i></div>
-                                <div class="stat-info">
-                                    <h3 id="total-stores">0</h3>
-                                    <p>Umumy magazyn</p>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon" style="background-color: #00b894;"><i class="fas fa-box"></i></div>
-                                <div class="stat-info">
-                                    <h3 id="total-products">0</h3>
-                                    <p>Umumy haryt</p>
-                                </div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon" style="background-color: #fdcb6e;"><i class="fas fa-shopping-cart"></i></div>
-                                <div class="stat-info">
-                                    <h3 id="total-orders">0</h3>
-                                    <p>Umumy zakaz</p>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Orders Section -->
+                <section id="orders" class="content-section">
+                    <div class="section-header">
+                        <h2>Zakazlar</h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Haryt ID-leri</th>
+                                    <th>Müşderi ady</th>
+                                    <th>Telefon</th>
+                                    <th>Adres</th>
+                                    <th>Magazyn</th>
+                                    <th>Wagt</th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
-                        <!-- ✅ YENİ: Ziyaretçi Grafiği -->
-                        <div class="visitor-chart-container">
-                            <h3><i class="fas fa-chart-line"></i> Ziyaretçi İstatistikleri (Son 7 Gün)</h3>
-                            <canvas id="visitorChart"></canvas>
-                        </div>
-                    </section>
-
-                    <!-- Stores Section -->
-                    <section id="stores" class="content-section">
-                        <div class="section-header">
-                            <h2>Magazynlar</h2>
-                            <div class="header-buttons">
-                                <button class="btn-primary" id="add-store-btn">
-                                    <i class="fas fa-plus"></i> Täze magazyn goš
-                                </button>
-                                <button class="btn-mobile" id="add-store-btn-mobile">
-                                    <i class="fas fa-plus"></i> Täze magazyn
-                                </button>
-                            </div>
-                        </div>
-                        <div class="export-buttons">
-                            <button class="btn-export" id="export-stores-btn">
-                                <i class="fas fa-download"></i> Excel al
-                            </button>
-                            <button class="btn-export" id="import-stores-btn" style="background-color: #17a2b8;">
-                                <i class="fas fa-upload"></i> Excel'den goý
-                            </button>
-                            <input type="file" id="import-stores-input" accept=".xlsx,.xls" style="display: none;">
-                        </div>
-                        <div class="table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Magazyn ady</th>
-                                        <th>Haryt sany</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="stores-table-body">
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- Products Section -->
-                    <section id="products" class="content-section">
-                        <div class="section-header">
-                            <h2>Harytlar</h2>
-                            <div class="header-buttons">
-                                <button class="btn-primary" id="add-product-btn">
-                                    <i class="fas fa-plus"></i> Täze haryt goš
-                                </button>
-                                <button class="btn-mobile" id="add-product-btn-mobile">
-                                    <i class="fas fa-plus"></i> Täze haryt
-                                </button>
-                            </div>
-                        </div>
-                        <div class="product-filters">
+                <!-- Settings Section -->
+                <section id="settings" class="content-section">
+                    <div class="settings-container">
+                        <h2>Site Ayarları</h2>
+                        <form class="settings-form">
                             <div class="form-group">
-                                <label for="filter-store-select">Magazyn filtr</label>
-                                <select id="filter-store-select">
-                                    <option value="">Hemme magazynlar</option>
-                                </select>
+                                <label>Site Adı</label>
+                                <input type="text" value="Showly">
                             </div>
                             <div class="form-group">
-                                <label for="filter-category-select">Kategoriýa filtr</label>
-                                <select id="filter-category-select" disabled>
-                                    <option value="">Ilki magazyn saýlaň</option>
+                                <label>Para Birimi</label>
+                                <select>
+                                    <option>TMT</option>
+                                    <option>USD</option>
+                                    <option>EUR</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="export-buttons">
-                            <button class="btn-export" id="export-products-btn">
-                                <i class="fas fa-download"></i> Excel al
-                            </button>
-                            <button class="btn-export" id="import-products-btn" style="background-color: #17a2b8;">
-                                <i class="fas fa-upload"></i> Excel'den goş
-                            </button>
-                            <input type="file" id="import-products-input" accept=".xlsx,.xls" style="display: none;">
-                            <button class="btn-export" id="delete-all-products-btn" style="background-color: #dc3545;">
-                                <i class="fas fa-trash-alt"></i> Hemme harytlary poz
-                            </button>
-                        </div>
-                        <div class="table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Haryt ady</th>
-                                        <th>Magazyn</th>
-                                        <th>Baha</th>
-                                        <th>Surat</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="products-table-body">
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- Orders Section -->
-                    <section id="orders" class="content-section">
-                        <div class="section-header">
-                            <h2>Zakazlar</h2>
-                        </div>
-                        <div class="table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Haryt ID-leri</th>
-                                        <th>Müşderi ady</th>
-                                        <th>Telefon</th>
-                                        <th>Adres</th>
-                                        <th>Magazyn</th>
-                                        <th>Wagt</th>
-                                        <th></th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="orders-table-body">
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- Settings Section -->
-                    <section id="settings" class="content-section">
-                        <div class="settings-container">
-                            <h2>Site Ayarları</h2>
-                            <form class="settings-form">
-                                <div class="form-group">
-                                    <label>Site Adı</label>
-                                    <input type="text" value="Showly">
-                                </div>
-                                <div class="form-group">
-                                    <label>Para Birimi</label>
-                                    <select>
-                                        <option>TMT</option>
-                                        <option>USD</option>
-                                        <option>EUR</option>
-                                    </select>
-                                </div>
-                                <div class="backup-section">
-                                    <h3>Yedek Oluştur</h3>
-                                    <p>Mağaza ve ürün verilerinizi indir ve yedekle</p>
-                                    <button class="btn-primary" id="backup-excel-btn">
-                                        <i class="fas fa-download"></i> Excel Yedek Al
-                                    </button>
-                                    <button class="btn-primary" id="backup-csv-btn" style="background-color: #17a2b8;">
-                                        <i class="fas fa-cloud-download-alt"></i> Cloudinary'ye Yedekle
-                                    </button>
-                                </div>
-                                <button type="submit" class="btn-primary">Kaydet</button>
-                            </form>
-                        </div>
-                    </section>
-
-                    <!-- Users Section -->
-                    <section id="users" class="content-section">
-                        <div class="section-header">
-                            <h2>Admin kontrol</h2>
-                            <div class="header-buttons">
-                                <button class="btn-primary" id="add-user-btn">
-                                    <i class="fas fa-user-plus"></i> Täze ulanyjy goš
+                            <div class="backup-section">
+                                <h3>Yedek Oluştur</h3>
+                                <p>Mağaza ve ürün verilerinizi indir ve yedekle</p>
+                                <button class="btn-primary" id="backup-excel-btn">
+                                    <i class="fas fa-download"></i> Excel Yedek Al
                                 </button>
-                                <button class="btn-mobile" id="add-user-btn-mobile">
-                                    <i class="fas fa-user-plus"></i> Täze ulanyjy
+                                <button class="btn-primary" id="backup-csv-btn" style="background-color: #17a2b8;">
+                                    <i class="fas fa-cloud-download-alt"></i> Cloudinary'ye Yedekle
                                 </button>
                             </div>
-                        </div>
-                        <div class="table-container">
-                            <table class="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Ulanyjy ady</th>
-                                        <th>Rol</th>
-                                        <th>Rugsatlar</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="users-table-body">
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
+                            <button type="submit" class="btn-primary">Kaydet</button>
+                        </form>
+                    </div>
+                </section>
 
-                    <!-- Kategori Yönetimi Section -->
-                    <section id="categories" class="content-section">
-                        <div class="section-header">
-                            <h2>Kategoriýa dolandyryş</h2>
-                        </div>
-                        
-                        <div class="categories-wrapper">
-                            <!-- Sol Taraf: Ana Kategoriler -->
-                            <div class="category-column">
-                                <div class="category-column-header">
-                                    <h3><i class="fas fa-folder"></i> Ana Kategoriler</h3>
-                                    <button class="btn-primary btn-sm" id="add-parent-category-btn">
-                                        <i class="fas fa-plus"></i> Täze goş
-                                    </button>
-                                </div>
-                                <div class="table-container">
-                                    <table class="admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Ady</th>
-                                                <th>Icon</th>
-                                                <th>Sıra</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="parent-categories-table-body"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Sağ Taraf: Alt Kategoriler -->
-                            <div class="category-column">
-                                <div class="category-column-header">
-                                    <h3><i class="fas fa-folder-open"></i> Alt Kategoriler</h3>
-                                    <button class="btn-primary btn-sm" id="add-subcategory-btn">
-                                        <i class="fas fa-plus"></i> Täze goš
-                                    </button>
-                                </div>
-                                <div class="table-container">
-                                    <table class="admin-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Ady</th>
-                                                <th>Ana Kategori</th>
-                                                <th>Sıra</th>
-                                                <th></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="subcategories-table-body"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                     <!-- Ana Kategori Modalı -->
-                    <div id="parent-category-modal" class="modal">
-                        <div class="modal-content" style="max-width: 500px;">
-                            <div class="modal-header">
-                                <h3 id="parent-category-modal-title">Ana Kategori Ekle</h3>
-                                <span class="close-modal">&times;</span>
-                            </div>
-                            <form id="parent-category-form">
-                                <input type="hidden" id="parent-category-id">
-                                <div class="form-group">
-                                    <label>Ana Kategori Ady *</label>
-                                    <input type="text" id="parent-category-name" required placeholder="Örn: Giyim, Yemek, Elektronik">
-                                </div>
-                                <div class="form-group">
-                                    <label>İkon *</label>
-                                    <div class="icon-grid" id="parent-category-icon-grid">
-                                        <!-- İkonlar JavaScript ile buraya eklenecek -->
-                                    </div>
-                                    <input type="hidden" id="parent-category-icon" required value="fa-tag">
-                                    <p class="selected-icon-display">Seçilen: <span id="parent-selected-icon-display"><i class="fas fa-tag"></i></span></p>
-                                </div>
-                                <div class="form-group">
-                                    <label>Sıra</label>
-                                    <input type="number" id="parent-category-order" min="1" value="1">
-                                </div>
-                                <div class="form-actions">
-                                    <button type="button" class="btn-secondary" id="cancel-parent-category">Aýyr</button>
-                                    <button type="submit" class="btn-primary">Ýatda sakla</button>
-                                </div>
-                            </form>
+                <!-- Users Section -->
+                <section id="users" class="content-section">
+                    <div class="section-header">
+                        <h2>Admin kontrol</h2>
+                        <div class="header-buttons">
+                            <button class="btn-primary" id="add-user-btn">
+                                <i class="fas fa-user-plus"></i> Täze ulanyjy goš
+                            </button>
+                            <button class="btn-mobile" id="add-user-btn-mobile">
+                                <i class="fas fa-user-plus"></i> Täze ulanyjy
+                            </button>
                         </div>
                     </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Ulanyjy ady</th>
+                                    <th>Rol</th>
+                                    <th>Rugsatlar</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
 
-                    <!-- Alt Kategori Modalı -->
-                    <div id="subcategory-modal" class="modal">
-                        <div class="modal-content" style="max-width: 500px;">
-                            <div class="modal-header">
-                                <h3 id="subcategory-modal-title">Alt Kategori Ekle</h3>
-                                <span class="close-modal">&times;</span>
+                <!-- Kategori Yönetimi Section -->
+                <section id="categories" class="content-section">
+                    <div class="section-header">
+                        <h2>Kategoriýa dolandyryş</h2>
+                    </div>
+
+                    <div class="categories-wrapper">
+                        <!-- Sol Taraf: Ana Kategoriler -->
+                        <div class="category-column">
+                            <div class="category-column-header">
+                                <h3><i class="fas fa-folder"></i> Ana Kategoriler</h3>
+                                <button class="btn-primary btn-sm" id="add-parent-category-btn">
+                                    <i class="fas fa-plus"></i> Täze goş
+                                </button>
                             </div>
-                            <form id="subcategory-form">
-                                <input type="hidden" id="subcategory-id">
-                                <div class="form-group">
-                                    <label>Alt Kategori Ady *</label>
-                                    <input type="text" id="subcategory-name" required placeholder="Örn: Erkek, Kadın, Çocuk">
-                                </div>
-                                <div class="form-group">
-                                    <label>Ana Kategori *</label>
-                                    <select id="subcategory-parent" required>
-                                        <option value="">Ana kategori seçin</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label>Sıra</label>
-                                    <input type="number" id="subcategory-order" min="1" value="1">
-                                </div>
-                                <div class="form-actions">
-                                    <button type="button" class="btn-secondary" id="cancel-subcategory">Aýyr</button>
-                                    <button type="submit" class="btn-primary">Ýatda sakla</button>
-                                </div>
-                            </form>
+                            <div class="table-container">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ady</th>
+                                            <th>Icon</th>
+                                            <th>Sıra</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="parent-categories-table-body"></tbody>
+                                </table>
+                            </div>
                         </div>
+
+                        <!-- Sağ Taraf: Alt Kategoriler -->
+                        <div class="category-column">
+                            <div class="category-column-header">
+                                <h3><i class="fas fa-folder-open"></i> Alt Kategoriler</h3>
+                                <button class="btn-primary btn-sm" id="add-subcategory-btn">
+                                    <i class="fas fa-plus"></i> Täze goš
+                                </button>
+                            </div>
+                            <div class="table-container">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ady</th>
+                                            <th>Ana Kategori</th>
+                                            <th>Sıra</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="subcategories-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ana Kategori Modalı -->
+                <div id="parent-category-modal" class="modal">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3 id="parent-category-modal-title">Ana Kategori Ekle</h3>
+                            <span class="close-modal">&times;</span>
+                        </div>
+                        <form id="parent-category-form">
+                            <input type="hidden" id="parent-category-id">
+                            <div class="form-group">
+                                <label>Ana Kategori Ady *</label>
+                                <input type="text" id="parent-category-name" required
+                                    placeholder="Örn: Giyim, Yemek, Elektronik">
+                            </div>
+                            <div class="form-group">
+                                <label>İkon *</label>
+                                <div class="icon-grid" id="parent-category-icon-grid">
+                                    <!-- İkonlar JavaScript ile buraya eklenecek -->
+                                </div>
+                                <input type="hidden" id="parent-category-icon" required value="fa-tag">
+                                <p class="selected-icon-display">Seçilen: <span id="parent-selected-icon-display"><i
+                                            class="fas fa-tag"></i></span></p>
+                            </div>
+                            <div class="form-group">
+                                <label>Sıra</label>
+                                <input type="number" id="parent-category-order" min="1" value="1">
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="cancel-parent-category">Aýyr</button>
+                                <button type="submit" class="btn-primary">Ýatda sakla</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </main>
+
+                <!-- Alt Kategori Modalı -->
+                <div id="subcategory-modal" class="modal">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3 id="subcategory-modal-title">Alt Kategori Ekle</h3>
+                            <span class="close-modal">&times;</span>
+                        </div>
+                        <form id="subcategory-form">
+                            <input type="hidden" id="subcategory-id">
+                            <div class="form-group">
+                                <label>Alt Kategori Ady *</label>
+                                <input type="text" id="subcategory-name" required
+                                    placeholder="Örn: Erkek, Kadın, Çocuk">
+                            </div>
+                            <div class="form-group">
+                                <label>Ana Kategori *</label>
+                                <select id="subcategory-parent" required>
+                                    <option value="">Ana kategori seçin</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Sıra</label>
+                                <input type="number" id="subcategory-order" min="1" value="1">
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" id="cancel-subcategory">Aýyr</button>
+                                <button type="submit" class="btn-primary">Ýatda sakla</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Mağaza Ekleme Modalı -->
+    <div id="store-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="store-modal-title">Täze magazyn goş</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="store-form">
+                <input type="hidden" id="store-id">
+                <div class="form-group">
+                    <label>Magazyn ady</label>
+                    <input type="text" id="store-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Magazyn düşündirilişi</label>
+                    <textarea id="store-description" rows="3"></textarea>
+                </div>
+                <!-- ✅ YENİ: Kategori Seçimi -->
+                <div class="form-group">
+                    <label>Kategoriýa</label>
+                    <select id="store-category">
+                        <option value="">Kategoriýa saýlaň (opsiýonel)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Magazyn tekst</label>
+                    <input type="text" id="store-custom-banner-text" placeholder="Mağaza üstünde gösterilecek metin">
+                </div>
+
+                <!-- ✅ YENİ: TikTok ve Instagram -->
+                <div class="form-group">
+                    <label>TikTok URL</label>
+                    <input type="url" id="store-tiktok" placeholder="https://tiktok.com/@magazaadi">
+                </div>
+                <div class="form-group">
+                    <label>Instagram URL</label>
+                    <input type="url" id="store-instagram" placeholder="https://instagram.com/magazaadi">
+                </div>
+                <div class="form-group">
+                    <label>Magazyn belgisi (telefon)</label>
+                    <input type="tel" id="store-phone" placeholder="+993 XX XX XX XX">
+                </div>
+                <div class="form-group">
+                    <label>Magazyn ýerleşýän ýeri</label>
+                    <input type="text" id="store-location" placeholder="Aşgabat, Koňratgüzar 5-ji jaý">
+                </div>
+                <div class="form-group">
+                    <label>Sargyt üçin telefon *</label>
+                    <input type="tel" id="store-order-phone" placeholder="+993 XX XX XX XX" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancel-store">Aýyr</button>
+                    <button type="submit" class="btn-primary">Ýatda sakla</button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Mağaza Ekleme Modalı -->
-        <div id="store-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="store-modal-title">Täze magazyn goş</h3>
-                    <span class="close-modal">&times;</span>
-                </div>
-                <form id="store-form">
-                    <input type="hidden" id="store-id">
+    <!-- Ürün Ekleme Modalı -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Täze haryt goş</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="product-form">
                     <div class="form-group">
-                        <label>Magazyn ady</label>
-                        <input type="text" id="store-name" required>
+                        <label>Haryt ady</label>
+                        <input type="text" id="product-name" required>
                     </div>
                     <div class="form-group">
-                        <label>Magazyn düşündirilişi</label>
-                        <textarea id="store-description" rows="3"></textarea>
-                    </div>
-                    <!-- ✅ YENİ: Kategori Seçimi -->
-                    <div class="form-group">
-                        <label>Kategoriýa</label>
-                        <select id="store-category">
-                            <option value="">Kategoriýa saýlaň (opsiýonel)</option>
+                        <label>Magazyn</label>
+                        <select id="product-store" required>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Magazyn tekst</label>
-                        <input type="text" id="store-custom-banner-text" placeholder="Mağaza üstünde gösterilecek metin">
-                    </div>
-                     
-                    <!-- ✅ YENİ: TikTok ve Instagram -->
-                    <div class="form-group">
-                        <label>TikTok URL</label>
-                        <input type="url" id="store-tiktok" placeholder="https://tiktok.com/@magazaadi">
+                        <label>Düşündiriş</label>
+                        <textarea id="product-description" rows="3"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Instagram URL</label>
-                        <input type="url" id="store-instagram" placeholder="https://instagram.com/magazaadi">
+                        <label>Material</label>
+                        <input type="text" id="product-material">
                     </div>
                     <div class="form-group">
-                        <label>Magazyn belgisi (telefon)</label>
-                        <input type="tel" id="store-phone" placeholder="+993 XX XX XX XX">
+                        <label>Kategoriýa</label>
+                        <input type="text" id="product-category" placeholder="Switer, Balaklar">
                     </div>
                     <div class="form-group">
-                        <label>Magazyn ýerleşýän ýeri</label>
-                        <input type="text" id="store-location" placeholder="Aşgabat, Koňratgüzar 5-ji jaý">
+                        <label>Baha (TMT)</label>
+                        <input type="text" id="product-price" placeholder="Baha ýazyň" required>
                     </div>
                     <div class="form-group">
-                        <label>Sargyt üçin telefon *</label>
-                        <input type="tel" id="store-order-phone" placeholder="+993 XX XX XX XX" required>
+                        <label>Arzanladyş bahasy (TMT)</label>
+                        <input type="text" id="product-discounted-price" placeholder="Arzanladyş bahasyny ýazyň">
                     </div>
-
+                    <!-- Eski fiyat alanı artık gizli olacak, sadece hesaplama için kullanılır -->
+                    <input type="hidden" id="product-original-price">
+                    <div class="form-group">
+                        <label>Haryt suraty</label>
+                        <input type="file" id="product-image" accept="image/*">
+                        <img id="product-image-preview" class="upload-preview" alt="Ürün">
+                        <div id="product-image-status" class="upload-status"></div>
+                    </div>
                     <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancel-store">Aýyr</button>
+                        <button type="button" class="btn-secondary" id="cancel-product">Aýyr</button>
                         <button type="submit" class="btn-primary">Ýatda sakla</button>
                     </div>
                 </form>
             </div>
         </div>
+    </div>
 
-        <!-- Ürün Ekleme Modalı -->
-        <div id="product-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Täze haryt goş</h3>
-                    <span class="close-modal">&times;</span>
+    <!-- Kullanıcı Ekleme Modalı -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content user-modal-content">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <i class="fas fa-user-plus"></i>
+                    <h3 id="user-modal-title">Täze ulanyjy goş</h3>
                 </div>
-                <div class="modal-body">
-                    <form id="product-form">
-                        <div class="form-group">
-                            <label>Haryt ady</label>
-                            <input type="text" id="product-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Magazyn</label>
-                            <select id="product-store" required>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Düşündiriş</label>
-                            <textarea id="product-description" rows="3"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Material</label>
-                            <input type="text" id="product-material">
-                        </div>
-                        <div class="form-group">
-                            <label>Kategoriýa</label>
-                            <input type="text" id="product-category" placeholder="Switer, Balaklar">
-                        </div>  
-                        <div class="form-group">
-                            <label>Baha (TMT)</label>
-                            <input type="text" id="product-price" placeholder="Baha ýazyň" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Arzanladyş bahasy (TMT)</label>
-                            <input type="text" id="product-discounted-price" placeholder="Arzanladyş bahasyny ýazyň">
-                        </div>
-                        <!-- Eski fiyat alanı artık gizli olacak, sadece hesaplama için kullanılır -->
-                        <input type="hidden" id="product-original-price">                               
-                        <div class="form-group">
-                            <label>Haryt suraty</label>
-                            <input type="file" id="product-image" accept="image/*">
-                            <img id="product-image-preview" class="upload-preview" alt="Ürün">
-                            <div id="product-image-status" class="upload-status"></div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" class="btn-secondary" id="cancel-product">Aýyr</button>
-                            <button type="submit" class="btn-primary">Ýatda sakla</button>
-                        </div>
-                    </form>
-                </div>
+                <span class="close-modal">&times;</span>
             </div>
-        </div>
-
-        <!-- Kullanıcı Ekleme Modalı -->
-        <div id="user-modal" class="modal">
-            <div class="modal-content user-modal-content">
-                <div class="modal-header">
-                    <div class="modal-header-left">
-                        <i class="fas fa-user-plus"></i>
-                        <h3 id="user-modal-title">Täze ulanyjy goş</h3>
+            <form id="user-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Ulanyjy ady</label>
+                        <input type="text" id="user-username" placeholder="Ulanyjy adyny giriziň" required>
                     </div>
-                    <span class="close-modal">&times;</span>
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Kody</label>
+                        <input type="password" id="user-password" placeholder="Kody giriziň" required>
+                    </div>
                 </div>
-                <form id="user-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label><i class="fas fa-user"></i> Ulanyjy ady</label>
-                            <input type="text" id="user-username" placeholder="Ulanyjy adyny giriziň" required>
-                        </div>
-                        <div class="form-group">
-                            <label><i class="fas fa-lock"></i> Kody</label>
-                            <input type="password" id="user-password" placeholder="Kody giriziň" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label><i class="fas fa-crown"></i> Rol</label>
-                        <select id="user-role" required class="role-select">
-                            <option value="">Rol saýlaň</option>
-                            <option value="superadmin" data-color="#ff6b6b">Super Admin (Ähli rugsatlar)</option>
-                            <option value="admin" data-color="#4ecdc4">Admin (User dişinde)</option>
-                            <option value="store_manager" data-color="#45b7d1">Magazyn Manager</option>
-                            <option value="product_manager" data-color="#96ceb4">Haryt Manager</option>
-                            <option value="order_manager" data-color="#dfe6e9">Zakaz Manager</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label><i class="fas fa-key"></i> Rugsatlar</label>
-                        <div class="permissions-grid">
-                            <label class="permission-item">
-                                <input type="checkbox" value="dashboard" class="permission-checkbox">
-                                <div class="permission-card">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                    <span>Panel</span>
-                                </div>
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="stores" class="permission-checkbox">
-                                <div class="permission-card">
-                                    <i class="fas fa-store"></i>
-                                    <span>Magazynlar</span>
-                                </div>
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="products" class="permission-checkbox">
-                                <div class="permission-card">
-                                    <i class="fas fa-box"></i>
-                                    <span>Harytlar</span>
-                                </div>
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="orders" class="permission-checkbox">
-                                <div class="permission-card">
-                                    <i class="fas fa-shopping-cart"></i>
-                                    <span>Zakazlar</span>
-                                </div>
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="settings" class="permission-checkbox">
-                                <div class="permission-card">
-                                    <i class="fas fa-cog"></i>
-                                    <span>Sazlamalar</span>
-                                </div>
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="users" class="permission-checkbox">
-                                <div class="permission-card">
-                                    <i class="fas fa-users-cog"></i>
-                                    <span>Ulanyjylar</span>
-                                </div>
-                            </label>
-                            <label class="permission-item">
-                                <input type="checkbox" value="categories" class="permission-checkbox">
-                                <div class="permission-card">
-                                    <i class="fas fa-tags"></i>
-                                    <span>Kategoriýalar</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" id="cancel-user">
-                            <i class="fas fa-times"></i> Aýyr
-                        </button>
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-save"></i> Ýatda sakla
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-        <!-- Yükleniyor animasyonu -->
-        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+                <div class="form-group">
+                    <label><i class="fas fa-crown"></i> Rol</label>
+                    <select id="user-role" required class="role-select">
+                        <option value="">Rol saýlaň</option>
+                        <option value="superadmin" data-color="#ff6b6b">Super Admin (Ähli rugsatlar)</option>
+                        <option value="admin" data-color="#4ecdc4">Admin (User dişinde)</option>
+                        <option value="store_manager" data-color="#45b7d1">Magazyn Manager</option>
+                        <option value="product_manager" data-color="#96ceb4">Haryt Manager</option>
+                        <option value="order_manager" data-color="#dfe6e9">Zakaz Manager</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Rugsatlar</label>
+                    <div class="permissions-grid">
+                        <label class="permission-item">
+                            <input type="checkbox" value="dashboard" class="permission-checkbox">
+                            <div class="permission-card">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Panel</span>
+                            </div>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" value="stores" class="permission-checkbox">
+                            <div class="permission-card">
+                                <i class="fas fa-store"></i>
+                                <span>Magazynlar</span>
+                            </div>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" value="products" class="permission-checkbox">
+                            <div class="permission-card">
+                                <i class="fas fa-box"></i>
+                                <span>Harytlar</span>
+                            </div>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" value="orders" class="permission-checkbox">
+                            <div class="permission-card">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span>Zakazlar</span>
+                            </div>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" value="settings" class="permission-checkbox">
+                            <div class="permission-card">
+                                <i class="fas fa-cog"></i>
+                                <span>Sazlamalar</span>
+                            </div>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" value="users" class="permission-checkbox">
+                            <div class="permission-card">
+                                <i class="fas fa-users-cog"></i>
+                                <span>Ulanyjylar</span>
+                            </div>
+                        </label>
+                        <label class="permission-item">
+                            <input type="checkbox" value="categories" class="permission-checkbox">
+                            <div class="permission-card">
+                                <i class="fas fa-tags"></i>
+                                <span>Kategoriýalar</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancel-user">
+                        <i class="fas fa-times"></i> Aýyr
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Ýatda sakla
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Yükleniyor animasyonu -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
         <div class="loading-content">
             <div class="loading-spinner"></div>
             <div class="loading-text">Biraz garaşyň...</div>
         </div>
-        </div>
-        
-        <script src="excel-manager.js"></script>
+    </div>
 
-        <!-- Firebase Compat SDK -->
-        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-        <script src="firebase-config.js"></script>
-        <script src="r2-config.js"></script>
-        <!-- Gerekli Kütüphaneler -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <link rel="stylesheet" href="admin.css">
+    <script src="excel-manager.js"></script>
 
-        <!-- Google Drive API -->
-        <script src="https://apis.google.com/js/api.js"></script>
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="r2-config.js"></script>
+    <!-- Gerekli Kütüphaneler -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="admin.css">
 
-        <!-- Chart.js Kütüphanesi -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Google Drive API -->
+    <script src="https://apis.google.com/js/api.js"></script>
 
-        <!-- Diğer Scriptleriniz (Versiyon Parametresi İLE) -->
-        <script src="admin-cloudinary.js"></script>
-    </body>
+    <!-- Chart.js Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Diğer Scriptleriniz (Versiyon Parametresi İLE) -->
+    <script src="admin-cloudinary.js"></script>
+</body>
+
 </html>

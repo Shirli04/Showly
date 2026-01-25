@@ -1195,7 +1195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                         <div class="form-group">
                             <label>Bellik (Opsiýonel)</label>
-                            <textarea class="customer-note" rows="2" placeholder="Sargyt barada belligiňizi ýazyň"></textarea>
+                            <textarea class="customer-note" rows="2" placeholder="Bellik"></textarea>
                         </div>
                         <div class="form-actions">
                             <button type="button" class="btn-secondary cancel-order-${currentStoreCart.storeId}">Aýyr</button>

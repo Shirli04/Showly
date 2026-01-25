@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Admin paneli yükleniyor...');
 
@@ -76,9 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const storeCategorySelect = document.getElementById('store-category');
 
     // Excel export/import
-    const exportStoresBtn = document.getElementById('export-stores-btn');
-    const importStoresBtn = document.getElementById('import-stores-btn');
-    const importStoresInput = document.getElementById('import-stores-input');
     const exportProductsBtn = document.getElementById('export-products-btn');
     const importProductsBtn = document.getElementById('import-products-btn');
     const importProductsInput = document.getElementById('import-products-input');
@@ -1275,38 +1271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- EXCEL FONKSİYONLARI ---   
-    // Mağazaları Excel'e indir
-    if (exportStoresBtn) {
-        exportStoresBtn.addEventListener('click', () => {
-            ExcelManager.exportStoresToExcel();
-            showNotification('Mağazalar indirildi!');
-        });
-    }
-
-    // Excel'den mağaza yükle
-    if (importStoresBtn) {
-        importStoresBtn.addEventListener('click', () => {
-            importStoresInput.click();
-        });
-    }
-
-    if (importStoresInput) {
-        importStoresInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                try {
-                    const result = await ExcelManager.importStoresFromExcel(file);
-                    showNotification(result.message);
-                    renderStoresTable();
-                    updateDashboard();
-                } catch (error) {
-                    showNotification('Hata: ' + error.error, false);
-                }
-            }
-        });
-    }
-
+    // --- EXCEL FONKSİYONLARI (Ürünler İçin Geri Getirildi) ---
     // Ürünleri Excel'e indir
     if (exportProductsBtn) {
         exportProductsBtn.addEventListener('click', () => {
@@ -1337,6 +1302,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- MAĞAZA EXCEL FONKSİYONLARI KALDIRILDI ---
 
     // Mağaza seçimini doldur
     async function populateStoreSelect() {
