@@ -8,10 +8,10 @@ class ExcelManager {
             const stores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             const excelData = stores.map(store => ({
-                'Mağaza ID': store.id,
-                'Mağaza Adı': store.name,
-                'Açıklama': store.description || '',
-                'Oluşturulma Tarihi': store.createdAt || ''
+                'Magazyn ID': store.id,
+                'Magazyn Ady': store.name,
+                'Düşündiriş': store.description || '',
+                'Döredilen Senesi': store.createdAt || ''
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -37,14 +37,14 @@ class ExcelManager {
             const excelData = products.map(product => {
                 const store = stores.find(s => s.id === product.storeId);
                 return {
-                    'Mağaza Adı': store ? store.name : 'Bilinmiyor',
-                    'Ürün Adı': product.title,
-                    'Normal Fiyat': product.price ? product.price.replace(' TMT', '') : '',
-                    'İndirimli Fiyat': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
-                    'Kategori': product.category || '',
-                    'Malzeme': product.material || '',
-                    'Açıklama': product.description || '',
-                    'Resim URL': product.imageUrl || ''
+                    'Magazyn Ady': store ? store.name : 'Bilinmiyor',
+                    'Haryt Ady': product.title,
+                    'Baha': product.price ? product.price.replace(' TMT', '') : '',
+                    'Arzanladyş Bahasy': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
+                    'Kategoriýa': product.category || '',
+                    'Material': product.material || '',
+                    'Düşündiriş': product.description || '',
+                    'Surat URL': product.imageUrl || ''
                 };
             });
 
@@ -75,23 +75,23 @@ class ExcelManager {
 
                     for (const row of jsonData) {
                         try {
-                            const storeName = (row['Mağaza Adı'] || '').trim();
-                            
+                            const storeName = (row['Magazyn Ady'] || row['Mağaza Adı'] || '').trim();
+
                             if (!storeName) {
                                 console.warn('Boş mağaza adı atlandı');
                                 continue;
                             }
 
                             const slug = storeName.toLowerCase().replace(/[^a-z0-9çğıöşü]+/g, '-').replace(/^-+|-+$/g, '');
-                            
+
                             await window.db.collection('stores').add({
                                 name: storeName,
                                 slug: slug,
-                                description: row['Açıklama'] || '',
-                                customBannerText: row['Banner Metni'] || '',
+                                description: row['Düşündiriş'] || row['Açıklama'] || '',
+                                customBannerText: row['Banner Teksti'] || row['Banner Metni'] || '',
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
-                            
+
                             successCount++;
                         } catch (err) {
                             console.error('Mağaza eklenirken hata:', err);
@@ -117,7 +117,7 @@ class ExcelManager {
     static async importProductsFromExcel(file) {
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.querySelector('.loading-text');
-        
+
         loadingOverlay.style.display = 'flex';
         loadingText.textContent = 'Excel dosyası okunuyor...';
 
@@ -150,8 +150,8 @@ class ExcelManager {
 
                         try {
                             // ✅ Mağaza adını temizle ve bul
-                            const storeName = (row['Mağaza Adı'] || row['Magaza Adi'] || '').trim();
-                            
+                            const storeName = (row['Magazyn Ady'] || row['Mağaza Adı'] || row['Magaza Adi'] || '').trim();
+
                             if (!storeName) {
                                 errorCount++;
                                 errors.push(`Satır ${i + 1}: Mağaza adı boş`);
@@ -159,7 +159,7 @@ class ExcelManager {
                             }
 
                             // ✅ Mağazayı bul (büyük/küçük harf duyarsız)
-                            const store = stores.find(s => 
+                            const store = stores.find(s =>
                                 s.name.toLowerCase() === storeName.toLowerCase()
                             );
 
@@ -170,7 +170,7 @@ class ExcelManager {
                             }
 
                             // ✅ Ürün adını al
-                            const title = (row['Ürün Adı'] || row['Urun Adi'] || '').trim();
+                            const title = (row['Haryt Ady'] || row['Ürün Adı'] || row['Urun Adi'] || '').trim();
                             if (!title) {
                                 errorCount++;
                                 errors.push(`Satır ${i + 1}: Ürün adı boş`);
@@ -178,9 +178,9 @@ class ExcelManager {
                             }
 
                             // ✅ Normal fiyatı al ve formatla (opsiyonel)
-                            let normalPriceValue = row['Normal Fiyat'] || row['Normal Fiyat'] || '';
+                            let normalPriceValue = row['Baha'] || row['Normal Fiyat'] || '';
                             normalPriceValue = String(normalPriceValue).trim().replace('TMT', '').replace(' ', '');
-                            
+
                             // Fiyat yoksa veya geçersizse 0 TMT olarak ayarla
                             let price = '0 TMT';
                             if (normalPriceValue && !isNaN(normalPriceValue) && parseFloat(normalPriceValue) > 0) {
@@ -188,7 +188,7 @@ class ExcelManager {
                             }
 
                             // ✅ İndirimli fiyatı al (opsiyonel)
-                            let discountedPriceValue = row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '';
+                            let discountedPriceValue = row['Arzanladyş Bahasy'] || row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '';
                             discountedPriceValue = String(discountedPriceValue).trim().replace('TMT', '').replace(' ', '');
 
                             let originalPrice = '';
@@ -201,7 +201,7 @@ class ExcelManager {
                             }
 
                             // ✅ Resim URL'sini al
-                            const imageUrl = (row['Resim URL'] || row['Image URL'] || '').trim();
+                            const imageUrl = (row['Surat URL'] || row['Resim URL'] || row['Image URL'] || '').trim();
 
                             // ✅ Ürün verisini oluştur
                             const productData = {
@@ -210,9 +210,9 @@ class ExcelManager {
                                 price: price,
                                 originalPrice: originalPrice,
                                 isOnSale: isOnSale,
-                                category: (row['Kategori'] || '').trim(),
-                                material: (row['Malzeme'] || '').trim(),
-                                description: (row['Açıklama'] || row['Aciklama'] || '').trim(),
+                                category: (row['Kategoriýa'] || row['Kategori'] || '').trim(),
+                                material: (row['Material'] || row['Malzeme'] || '').trim(),
+                                description: (row['Düşündiriş'] || row['Açıklama'] || row['Aciklama'] || '').trim(),
                                 imageUrl: imageUrl,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             };
@@ -231,18 +231,18 @@ class ExcelManager {
                     }
 
                     loadingText.textContent = 'Ürünler başarıyla yüklendi!';
-                    
+
                     // ✅ 2 saniye bekle, sonra loading'i kapat
                     setTimeout(() => {
                         loadingOverlay.style.display = 'none';
-                        
+
                         // Sonuçları göster
                         let resultMessage = `✅ ${successCount} ürün başarıyla yüklendi`;
-                        
+
                         if (errorCount > 0) {
                             resultMessage += `\n❌ ${errorCount} ürün yüklenemedi`;
                             console.error('Hatalar:', errors);
-                            
+
                             // İlk 5 hatayı göster
                             if (errors.length > 0) {
                                 alert(resultMessage + '\n\nİlk hatalar:\n' + errors.slice(0, 5).join('\n'));
@@ -251,10 +251,10 @@ class ExcelManager {
                             alert(resultMessage);
                         }
 
-                        resolve({ 
-                            success: true, 
-                            successCount, 
-                            errorCount, 
+                        resolve({
+                            success: true,
+                            successCount,
+                            errorCount,
                             errors,
                             message: resultMessage
                         });
@@ -271,7 +271,7 @@ class ExcelManager {
                 loadingOverlay.style.display = 'none';
                 reject({ success: false, error: 'Dosya okunamadı' });
             };
-            
+
             reader.readAsArrayBuffer(file);
         });
     }
