@@ -1437,9 +1437,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const materialRow = document.getElementById('modal-material-row');
         if (product.material && product.material.trim() !== '') {
             document.getElementById('modal-material').textContent = product.material;
-            materialRow.style.display = 'block';
+            if (materialRow) materialRow.style.display = 'block';
         } else {
-            materialRow.style.display = 'none';
+            if (materialRow) materialRow.style.display = 'none';
         }
         
         modal.style.display = 'block';
@@ -1494,4 +1494,5 @@ document.getElementById('back-home-link')?.addEventListener('click', (e) => {
         window.location.reload();
     }, 500);
 });
+
 
