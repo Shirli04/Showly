@@ -187,10 +187,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const store = allStores.find(s => s.slug === path);
 
         if (store) {
+        window.scrollTo(0, 0);
             renderStorePage(store.id);
             document.title = `${store.name} - Showly`;
         } else {
             if (storeBanner) storeBanner.style.display = 'none';
+        window.scrollTo(0, 0);
             if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
             if (mainFiltersSection) mainFiltersSection.style.display = 'none';
             if (productsGrid) productsGrid.style.display = 'none';
