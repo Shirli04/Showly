@@ -1433,7 +1433,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-title').textContent = product.title;
         document.getElementById('modal-price').textContent = product.price;
         document.getElementById('modal-description').textContent = product.description || '';
-        document.getElementById('modal-material').textContent = product.material || '';
+        // Material kontrolu - bossa sat?r? gizle
+        const materialRow = document.getElementById('modal-material-row');
+        if (product.material && product.material.trim() !== '') {
+            document.getElementById('modal-material').textContent = product.material;
+            materialRow.style.display = 'block';
+        } else {
+            materialRow.style.display = 'none';
+        }
+        
         modal.style.display = 'block';
         document.body.classList.add('modal-open');
     }
@@ -1486,3 +1494,4 @@ document.getElementById('back-home-link')?.addEventListener('click', (e) => {
         window.location.reload();
     }, 500);
 });
+
