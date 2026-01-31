@@ -986,15 +986,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (product) {
             addToCart(product);
             modal.style.display = 'none';
+            document.body.classList.remove('modal-open');
         }
     });
 
     document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', () => btn.closest('.modal').style.display = 'none');
+        btn.addEventListener('click', () => {
+            btn.closest('.modal').style.display = 'none';
+            document.body.classList.remove('modal-open');
+        });
     });
 
     window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) e.target.style.display = 'none';
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
     });
 
     // Sepet modalı
@@ -1046,6 +1053,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('cart-total-price').textContent = storeTotal.toFixed(2) + ' TMT';
         }
         cartModal.style.display = 'block';
+        document.body.classList.add('modal-open');
     });
 
     // TikTok/Instagram in-app browser için cart touch scroll tespiti
@@ -1370,6 +1378,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
         favoritesModal.style.display = 'block';
+        document.body.classList.add('modal-open');
     });
 
     document.addEventListener('click', (e) => {
@@ -1424,6 +1433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-description').textContent = product.description || '';
         document.getElementById('modal-material').textContent = product.material || '';
         modal.style.display = 'block';
+        document.body.classList.add('modal-open');
     }
 
     function showNotification(message, isSuccess = true) {
