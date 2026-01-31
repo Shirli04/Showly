@@ -16,28 +16,36 @@
 
         .modal .close-modal {
             position: absolute !important;
-            top: 15px !important;
-            right: 15px !important;
-            width: 40px !important;
-            height: 40px !important;
-            background-color: rgba(255, 255, 255, 0.95) !important;
+            top: 12px !important;
+            right: 12px !important;
+            width: 44px !important;
+            height: 44px !important;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85)) !important;
+            backdrop-filter: blur(10px) !important;
             border-radius: 50% !important;
+            border: 2px solid rgba(255, 255, 255, 0.3) !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            color: #333 !important;
-            font-size: 24px !important;
-            font-weight: bold !important;
+            color: #2d2d2d !important;
+            font-size: 22px !important;
+            font-weight: 600 !important;
             cursor: pointer !important;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
-            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
             z-index: 10002 !important;
         }
 
         .modal .close-modal:hover {
-            color: #000 !important;
-            background-color: #fff !important;
-            transform: scale(1.1) !important;
+            background: linear-gradient(135deg, #ffffff, #f8f8f8) !important;
+            border: 2px solid rgba(255, 255, 255, 0.6) !important;
+            color: #1a1a1a !important;
+            transform: scale(1.08) rotate(90deg) !important;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .modal .close-modal:active {
+            transform: scale(0.95) rotate(90deg) !important;
         }
     </style>
 </head>
