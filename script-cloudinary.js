@@ -493,10 +493,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <i class="fas fa-percentage"></i> Arzanladyş <span class="category-count">${discountedProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'SORT_PRICE_ASC' ? 'active' : ''}" data-filter-type="SORT_PRICE_ASC">
-                        <i class="fas fa-sort-amount-up"></i> Ucuzdan pahalya <span class="category-count">${storeProducts.length}</span>
+                        <i class="fas fa-sort-amount-up"></i> Arzandan gymmada <span class="category-count">${storeProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'SORT_PRICE_DESC' ? 'active' : ''}" data-filter-type="SORT_PRICE_DESC">
-                        <i class="fas fa-sort-amount-down"></i> Pahalydan uza <span class="category-count">${storeProducts.length}</span>
+                        <i class="fas fa-sort-amount-down"></i> Gymmatdan arzana <span class="category-count">${storeProducts.length}</span>
                     </button>
                 </div>
             </div>
