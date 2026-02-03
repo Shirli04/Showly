@@ -179,17 +179,26 @@
                     userData = userDoc.data();
                     userId = userDoc.id;
 
-                    // Hashing kontrolü
+                    // Hashing kontrolü ve Plain-text fallback
                     try {
                         const bcryptObj = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
                         if (bcryptObj) {
-                            isValid = bcryptObj.compareSync(password, userData.password);
+                            // Önce bcrypt ile dene
+                            try {
+                                isValid = bcryptObj.compareSync(password, userData.password);
+                            } catch (e) {
+                                isValid = false;
+                            }
+
+                            // Eğer bcrypt başarısızsa veya hata verdiyse, düz metin olarak dene (geçiş süreci için)
+                            if (!isValid) {
+                                isValid = (password === userData.password);
+                            }
                         } else {
                             console.error('Bcrypt library not loaded!');
                             isValid = (password === userData.password); // Fallback
                         }
                     } catch (err) {
-                        // Eğer plain-text ise compareSync hata verebilir, veya hashing formatı yanlışsa fallback yapıyoruz
                         isValid = (password === userData.password);
                     }
                 }
