@@ -246,26 +246,7 @@
 
     <script src="firebase-config.js"></script>
 
-    <!-- Ziyaretçi Kaydı (Firebase yüklendikten sonra çalışmalı) -->
-    <script>
-        (function () {
-            const today = new Date().toISOString().split('T')[0];
-            const checkDb = setInterval(() => {
-                if (window.db) {
-                    clearInterval(checkDb);
-                    window.db.collection('visitors').add({
-                        date: today,
-                        timestamp: new Date().toISOString(),
-                        userAgent: navigator.userAgent,
-                        language: navigator.language
-                    }).catch(e => console.log('Ziyaretçi kaydı hatası:', e));
-                }
-            }, 1000);
 
-            // 10 saniye sonra durdur (sonsuz döngü olmasın)
-            setTimeout(() => clearInterval(checkDb), 10000);
-        })();
-    </script>
 
     <script src="r2-config.js"></script>
 

@@ -91,9 +91,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Form gönderme kontrolü
     let isSubmitting = false;
 
-    let visitorChartInstance = null; // Global değişken
 
-    // --- YENİ: BEKLEYEN SİPARİŞLERİ İŞLEME FONKSİYONU ---
+
+    function getOptimizedImageUrl(url, width = 400) {
+        if (!url || typeof url !== 'string') return '';
+        url = url.trim();
+        // HTTP'yi HTTPS'e zorla
+        if (url.startsWith('http://')) url = url.replace('http://', 'https://');
+
+        // Eğer Cloudinary URL'si ise optimizasyon yap
+        if (url.includes('cloudinary.com')) {
+            if (url.includes('/upload/')) {
+                const parts = url.split('/upload/');
+                if (parts[1].includes('w_')) return url;
+                return `${parts[0]}/upload/f_auto,q_auto,w_${width}/${parts[1]}`;
+            }
+        }
+        // Cloudflare R2 veya diğer URL'leri olduğu gibi döndür (HTTPS zorunlu)
+        return url;
+    }
     const processPendingOrders = () => {
         const pendingOrders = JSON.parse(localStorage.getItem('showlyPendingOrders')) || [];
 
@@ -180,12 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- MAĞAZA FONKSİYONLARI ---
 
     // Mağaza tablosunu güncelle
-    const renderStoresTable = async () => {
-        const stores = await window.showlyDB.getStores();
-
-        // ✅ Tüm ürünleri tek seferde çek (her mağaza için ayrı sorgu yapma)
-        const allProductsSnapshot = await window.db.collection('products').get();
-        const allProducts = allProductsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const renderStoresTable = async (cachedStores, cachedProducts) => {
+        const stores = cachedStores || await window.showlyDB.getStores();
+        const allProducts = cachedProducts || (await window.db.collection('products').get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         storesTableBody.innerHTML = '';
 
@@ -837,30 +850,30 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Ürün tablosunu güncelle
-    async function renderProductsTable() {
-        const loadingOverlay = document.getElementById('loading-overlay');
-        loadingOverlay.style.display = 'flex'; // Göster
-
+    async function renderProductsTable(cachedProducts, cachedStores) {
         try {
-            // ✅ DÜZELTME: Firebase'den mağazaları ve ürünleri çek
-            const [productsSnapshot, storesSnapshot] = await Promise.all([
-                window.db.collection('products').get(),
-                window.db.collection('stores').get()
-            ]);
+            // ✅ Verileri önbellekten veya Firebase'den al
+            let products = cachedProducts;
+            let storesMap = {};
 
-            // ✅ Mağazaları bir objeye dönüştür (hızlı erişim için)
-            const storesMap = {};
-            storesSnapshot.docs.forEach(doc => {
-                storesMap[doc.id] = { id: doc.id, ...doc.data() };
-            });
+            if (!products || !cachedStores) {
+                const [productsSnapshot, storesSnapshot] = await Promise.all([
+                    window.db.collection('products').get(),
+                    window.db.collection('stores').get()
+                ]);
+                products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                storesSnapshot.docs.forEach(doc => {
+                    storesMap[doc.id] = { id: doc.id, ...doc.data() };
+                });
+            } else {
+                cachedStores.forEach(store => {
+                    storesMap[store.id] = store;
+                });
+            }
 
             // ✅ Ürünleri işle
-            const products = productsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
             productsTableBody.innerHTML = '';
+            const fragment = document.createDocumentFragment();
 
             for (const product of products) {
                 // ✅ Mağazayı storesMap'ten al
@@ -884,26 +897,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.querySelector('.product-store-cell').textContent = storeName;
                 row.querySelector('.product-price-cell').textContent = product.price;
 
-                if (product.imageUrl) {
+                const imageCell = row.querySelector('.product-image-cell');
+                const finalImageUrl = getOptimizedImageUrl(product.imageUrl, 100);
+
+                if (finalImageUrl) {
                     const img = document.createElement('img');
-                    img.src = product.imageUrl;
+                    img.src = finalImageUrl;
                     img.style.width = '40px';
                     img.style.height = '40px';
                     img.style.objectFit = 'cover';
                     img.style.borderRadius = '4px';
-                    row.querySelector('.product-image-cell').appendChild(img);
+                    imageCell.appendChild(img);
                 } else {
-                    row.querySelector('.product-image-cell').textContent = 'Resim yok';
+                    imageCell.textContent = 'Resim yok';
                 }
-                productsTableBody.appendChild(row);
+                fragment.appendChild(row);
             }
+            productsTableBody.appendChild(fragment);
 
             attachProductEventListeners();
         } catch (error) {
             console.error('Ürünler yüklenemedi:', error);
             showNotification('Ürünler yüklenemedi!', false);
-        } finally {
-            loadingOverlay.style.display = 'none'; // Gizle
         }
     }
 
@@ -1011,10 +1026,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let imageUrl = uploadedProductImageUrl; // Mevcut resmi koru
             if (file) {
-                showUploadStatus(productImageStatus, 'Resim yükleniyor...', true);
-                const uploadResult = await uploadToCloudinary(file);
-                imageUrl = uploadResult;
-                showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
+                showUploadStatus(productImageStatus, 'Resim Cloudflare R2\'ye yükleniyor...', true);
+
+                // Mağaza ismini dropdown'dan al (R2 klasörleme için)
+                const storeSelect = document.getElementById('product-store');
+                const storeName = storeSelect.options[storeSelect.selectedIndex].text;
+
+                try {
+                    const uploadResult = await window.uploadToR2(file, storeName);
+                    imageUrl = uploadResult;
+                    showUploadStatus(productImageStatus, '✓ Resim yüklendi!', true);
+                } catch (uploadError) {
+                    console.error('R2 Upload error:', uploadError);
+                    showUploadStatus(productImageStatus, '❌ Yükleme hatası!', false);
+                    throw uploadError;
+                }
             }
 
             // ✅ DÜZELTME: İndirim hesaplaması
@@ -1074,27 +1100,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    async function uploadToCloudinary(file) {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('upload_preset', 'my_product_uploads');
-        const res = await fetch(`https://api.cloudinary.com/v1_1/domv6ullp/image/upload`, { method: 'POST', body: fd });
-        if (!res.ok) throw new Error('Cloudinary yükleme hatası');
-        const data = await res.json();
-        return data.secure_url;
-    }
 
-    async function renderOrdersTable() {
+
+    const renderOrdersTable = async (cachedOrders, cachedProducts, cachedStores) => {
         try {
-            const ordersSnapshot = await window.db.collection('orders').orderBy('date', 'desc').get();
-            const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // Firebase'den ürün ve mağaza verilerini çek
-            const productsSnapshot = await window.db.collection('products').get();
-            const allProducts = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            const storesSnapshot = await window.db.collection('stores').get();
-            const allStores = storesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const orders = cachedOrders || (await window.db.collection('orders').orderBy('date', 'desc').get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const allProducts = cachedProducts || (await window.db.collection('products').get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const allStores = cachedStores || (await window.db.collection('stores').get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             ordersTableBody.innerHTML = '';
             if (orders.length === 0) {
@@ -1102,7 +1114,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            orders.forEach(order => {
+            const fragment = document.createDocumentFragment();
+            for (const order of orders) {
                 const storeNames = [...new Set(order.items.map(item => {
                     const product = allProducts.find(p => p.id === item.id);
                     const store = allStores.find(s => s.id === product?.storeId);
@@ -1170,28 +1183,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                ordersTableBody.appendChild(row);
-            });
+                fragment.appendChild(row);
+            }
+
+            ordersTableBody.appendChild(fragment);
         } catch (error) {
             console.error('Siparişler yüklenemedi:', error);
             showNotification('Siparişler yüklenemedi!', false);
         }
-    }
+    };
 
-    // Dashboard güncelle - Firebase'den verileri çeker
-    const updateDashboard = async () => {
+    // Dashboard güncelle - Verileri parametre olarak alabilir
+    const updateDashboard = async (cachedStores, cachedProducts, cachedOrders) => {
         try {
-            // Firebase'den mağazaları çek
-            const storesSnapshot = await window.db.collection('stores').get();
-            const storesCount = storesSnapshot.size;
-
-            // Firebase'den ürünleri çek
-            const productsSnapshot = await window.db.collection('products').get();
-            const productsCount = productsSnapshot.size;
-
-            // Firebase'den siparişleri çek
-            const ordersSnapshot = await window.db.collection('orders').get();
-            const ordersCount = ordersSnapshot.size;
+            const storesCount = cachedStores ? cachedStores.length : (await window.db.collection('stores').get()).size;
+            const productsCount = cachedProducts ? cachedProducts.length : (await window.db.collection('products').get()).size;
+            const ordersCount = cachedOrders ? cachedOrders.length : (await window.db.collection('orders').get()).size;
 
             // Sayıları güncelle
             document.getElementById('total-stores').textContent = storesCount;
@@ -1207,113 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const renderVisitorChart = async () => {
-        try {
-            // Son 7 günün tarihlerini hazırla
-            const dates = [];
-            const today = new Date();
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date(today);
-                date.setDate(date.getDate() - i);
-                dates.push(date.toISOString().split('T')[0]);
-            }
 
-            // Firebase'den ziyaretçi verilerini çek
-            const visitorsSnapshot = await window.db.collection('visitors').get();
-            const visitors = visitorsSnapshot.docs.map(doc => doc.data());
-
-            // Tarihe göre grupla ve say
-            const visitorCounts = dates.map(date => {
-                return visitors.filter(v => v.date === date).length;
-            });
-
-            // Tarihleri güzelleştir (30 Ara formatında)
-            const labels = dates.map(date => {
-                const d = new Date(date);
-                return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
-            });
-
-            // Grafik verisi
-            const chartData = {
-                labels: labels,
-                datasets: [{
-                    label: 'Ziyaretçi Sayısı',
-                    data: visitorCounts,
-                    backgroundColor: 'rgba(108, 92, 231, 0.2)',
-                    borderColor: 'rgba(108, 92, 231, 1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4, // Yumuşak eğri
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: 'rgba(108, 92, 231, 1)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2
-                }]
-            };
-
-            // Grafik ayarları
-            const chartConfig = {
-                type: 'line',
-                data: chartData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 13 },
-                            displayColors: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 1,
-                                callback: function (value) {
-                                    return Math.floor(value); // Tam sayı göster
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            };
-
-            // Eski grafiği yok et (eğer varsa)
-            if (visitorChartInstance) {
-                visitorChartInstance.destroy();
-            }
-
-            // Yeni grafiği oluştur
-            const ctx = document.getElementById('visitorChart').getContext('2d');
-            visitorChartInstance = new Chart(ctx, chartConfig);
-
-            // Animasyon için active class'ı ekle
-            const chartContainer = document.querySelector('.visitor-chart-container');
-            if (chartContainer) {
-                chartContainer.classList.add('active');
-            }
-
-            console.log('✅ Ziyaretçi grafiği oluşturuldu:', visitorCounts);
-
-        } catch (error) {
-            console.error('❌ Ziyaretçi grafiği oluşturulamadı:', error);
-        }
-    };
 
     // --- EXCEL FONKSİYONLARI (Ürünler İçin Geri Getirildi) ---
     // Ürünleri Excel'e indir
@@ -2309,19 +2210,29 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (loadingText) loadingText.textContent = 'Veriler yükleniyor...';
 
-            // ✅ PARALEL İŞLEMLER: Verileri mümkün olduğunca paralel çek
+            // ✅ TEK SEFERDE TÜM VERİLERİ ÇEK (Paralel)
+            const [storesSnap, productsSnap, ordersSnap] = await Promise.all([
+                window.db.collection('stores').get(),
+                window.db.collection('products').get(),
+                window.db.collection('orders').orderBy('date', 'desc').get()
+            ]);
+
+            const stores = storesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const products = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // ✅ TABLOLARI ÖNBELLEKTEKİ VERİYLE DOLDUR
             await Promise.all([
-                loadCategories(), // Kategorileri yükle
-                updateDashboard(), // Dashboard istatistikleri
-                renderVisitorChart(), // Ziyaretçi grafiği
-                renderStoresTable(), // Mağazalar
-                renderProductsTable(), // Ürünler
-                renderOrdersTable(), // Siparişler
-                renderUsersTable(), // Kullanıcılar
-                renderParentCategoriesTable(), // Ana kategori tablosu
-                renderSubcategoriesTable(), // Alt kategori tablosu
-                populateStoreSelect(), // Mağaza dropdown'ı
-                populateStoreFilter() // Mağaza filtresi
+                loadCategories(),
+                updateDashboard(stores, products, orders),
+                renderStoresTable(stores, products),
+                renderProductsTable(products, stores),
+                renderOrdersTable(orders, products, stores),
+                renderUsersTable(),
+                renderParentCategoriesTable(),
+                renderSubcategoriesTable(),
+                populateStoreSelect(),
+                populateStoreFilter()
             ]);
 
             console.log('✅ Tüm veriler başarıyla yüklendi');

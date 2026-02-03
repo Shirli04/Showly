@@ -732,7 +732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
-                    <img src="${getOptimizedCloudinaryUrl(product.imageUrl) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" 
+                    <img src="${getOptimizedImageUrl(product.imageUrl)}" 
                          class="product-img"
                          loading="lazy">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
@@ -814,7 +814,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    <img src="${getOptimizedCloudinaryUrl(product.imageUrl) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" 
+                    <img src="${getOptimizedImageUrl(product.imageUrl)}" 
                          class="product-img"
                          loading="lazy">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
@@ -1534,21 +1534,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('popstate', router);
 
     // --- YARDIMCI FONKSİYONLAR ---
-    function getOptimizedCloudinaryUrl(url, width = 400) {
-        if (!url || !url.includes('cloudinary.com')) return url;
+    function getOptimizedImageUrl(url, width = 400) {
+        if (!url || typeof url !== 'string') return '';
+        url = url.trim();
 
-        // Cloudinary URL formatını kontrol et ve f_auto, q_auto, w_X ekle
-        if (url.includes('/upload/')) {
-            const parts = url.split('/upload/');
-            const versionPart = parts[1].split('/')[0];
+        // HTTP'yi HTTPS'e zorla (Mixed Content hatasını önlemek için)
+        if (url.startsWith('http://')) {
+            url = url.replace('http://', 'https://');
+        }
 
-            // Eğer URL zaten bir versiyon (v123...) içeriyorsa araya ekle
-            if (versionPart.startsWith('v')) {
-                return `${parts[0]}/upload/f_auto,q_auto,w_${width}/${parts[1]}`;
-            } else {
+        // Eğer Cloudinary URL'si ise optimizasyon yap
+        if (url.includes('cloudinary.com')) {
+            if (url.includes('/upload/')) {
+                const parts = url.split('/upload/');
+                if (parts[1].includes('w_') || parts[1].includes('q_auto')) {
+                    return url;
+                }
                 return `${parts[0]}/upload/f_auto,q_auto,w_${width}/${parts[1]}`;
             }
         }
+
+        // Cloudflare R2 veya diğer URL'leri olduğu gibi döndür
         return url;
     }
 
@@ -1557,7 +1563,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!product) return;
         const modal = document.getElementById('product-modal');
         modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
-        document.getElementById('modal-image').src = getOptimizedCloudinaryUrl(product.imageUrl, 800) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22500%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22400%22 height=%22500%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2218%22%3E%3C/text%3E%3C/svg%3E';
+        const modalImage = document.getElementById('modal-image');
+        modalImage.src = getOptimizedImageUrl(product.imageUrl, 800);
         document.getElementById('modal-title').textContent = product.title;
         document.getElementById('modal-price').textContent = product.price;
         document.getElementById('modal-description').textContent = product.description || '';
