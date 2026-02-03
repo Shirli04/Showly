@@ -1527,5 +1527,3 @@ document.getElementById('back-home-link')?.addEventListener('click', (e) => {
         window.location.reload();
     }, 500);
 });
-
-
