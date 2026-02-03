@@ -187,12 +187,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const store = allStores.find(s => s.slug === path);
 
         if (store) {
-        window.scrollTo(0, 0);
+            window.scrollTo(0, 0);
             renderStorePage(store.id);
             document.title = `${store.name} - Showly`;
         } else {
             if (storeBanner) storeBanner.style.display = 'none';
-        window.scrollTo(0, 0);
+            window.scrollTo(0, 0);
             if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
             if (mainFiltersSection) mainFiltersSection.style.display = 'none';
             if (productsGrid) productsGrid.style.display = 'none';
@@ -617,15 +617,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // ✅ Sıralama kodu (daha önce eklediğiniz)
+        // ✅ Sıralama kodu
         if (activeFilter?.type === 'SORT_PRICE_ASC') {
+            // Ucuzdan pahalıya sırala
             productsToRender.sort((a, b) => {
                 const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
                 const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
                 return priceA - priceB;
             });
             console.log('✅ Ürünler ucuzdan pahalıya sıralandı');
+        } else if (activeFilter?.type === 'SORT_PRICE_DESC') {
+            // Pahalıdan ucuza sırala
+            productsToRender.sort((a, b) => {
+                const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
+                const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
+                return priceB - priceA; // Ters sıralama
+            });
+            console.log('✅ Ürünler pahalıdan ucuza sıralandı');
         } else {
+            // Varsayılan sıralama (resimli ve fiyatlı ürünler önce)
             productsToRender.sort((a, b) => {
                 const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
                 const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
@@ -670,7 +680,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
-                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">
+                    <img src="${getOptimizedCloudinaryUrl(product.imageUrl) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" 
+                         alt="${product.title}" 
+                         loading="lazy">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -727,7 +739,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.className = 'product-card';
             productCard.innerHTML = `
                 <div class="product-image-container">
-                    <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                    <img src="${getOptimizedCloudinaryUrl(product.imageUrl) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" 
+                         alt="${product.title}" 
+                         loading="lazy">
+                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
@@ -1424,12 +1439,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('popstate', router);
 
     // --- YARDIMCI FONKSİYONLAR ---
+    function getOptimizedCloudinaryUrl(url, width = 400) {
+        if (!url || !url.includes('cloudinary.com')) return url;
+
+        // Cloudinary URL formatını kontrol et ve f_auto, q_auto, w_X ekle
+        if (url.includes('/upload/')) {
+            const parts = url.split('/upload/');
+            const versionPart = parts[1].split('/')[0];
+
+            // Eğer URL zaten bir versiyon (v123...) içeriyorsa araya ekle
+            if (versionPart.startsWith('v')) {
+                return `${parts[0]}/upload/f_auto,q_auto,w_${width}/${parts[1]}`;
+            } else {
+                return `${parts[0]}/upload/f_auto,q_auto,w_${width}/${parts[1]}`;
+            }
+        }
+        return url;
+    }
+
     function openProductModal(productId) {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
         const modal = document.getElementById('product-modal');
         modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
-        document.getElementById('modal-image').src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22500%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22400%22 height=%22500%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2218%22%3E%3C/text%3E%3C/svg%3E';
+        document.getElementById('modal-image').src = getOptimizedCloudinaryUrl(product.imageUrl, 800) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22500%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22400%22 height=%22500%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2218%22%3E%3C/text%3E%3C/svg%3E';
         document.getElementById('modal-title').textContent = product.title;
         document.getElementById('modal-price').textContent = product.price;
         document.getElementById('modal-description').textContent = product.description || '';
@@ -1441,7 +1474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             if (materialRow) materialRow.style.display = 'none';
         }
-        
+
         modal.style.display = 'block';
         document.body.classList.add('modal-open');
     }
