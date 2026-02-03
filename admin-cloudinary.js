@@ -192,18 +192,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Tüm mağaza satırlarını oluştur (hızlı ve paralel)
         const rowsHTML = stores.map(store => {
             const storeProducts = allProducts.filter(p => p.storeId === store.id);
-            return `
-                <td data-label="ID">${store.id}</td>
-                <td data-label="Magazyn Ady">${store.name}</td>
-                <td data-label="Haryt Sany">${storeProducts.length}</td>
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td data-label="ID" class="store-id-cell"></td>
+                <td data-label="Magazyn Ady" class="store-name-cell"></td>
+                <td data-label="Haryt Sany" class="store-products-count-cell"></td>
                 <td data-label="Etmekler">
                     <button class="btn-icon edit-store" data-id="${store.id}"><i class="fas fa-edit"></i></button>
                     <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
                 </td>
             `;
-        }).map(html => {
-            const row = document.createElement('tr');
-            row.innerHTML = html;
+            row.querySelector('.store-id-cell').textContent = store.id;
+            row.querySelector('.store-name-cell').textContent = store.name;
+            row.querySelector('.store-products-count-cell').textContent = storeProducts.length;
             return row;
         });
 
@@ -337,14 +338,16 @@ document.addEventListener('DOMContentLoaded', () => {
             categories.forEach(category => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td data-label="Ady">${category.name}</td>
+                    <td data-label="Ady" class="cat-name-cell"></td>
                     <td data-label="Icon"><i class="fas ${category.icon || 'fa-tag'}"></i></td>
-                    <td data-label="Tertip">${category.order}</td>
+                    <td data-label="Tertip" class="cat-order-cell"></td>
                     <td data-label="Etmekler">
                         <button class="btn-icon edit-parent-category" data-id="${category.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon danger delete-parent-category" data-id="${category.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
+                row.querySelector('.cat-name-cell').textContent = category.name;
+                row.querySelector('.cat-order-cell').textContent = category.order;
                 tableBody.appendChild(row);
             });
 
@@ -394,14 +397,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td data-label="Ady">${subcategory.name}</td>
-                    <td data-label="Ana Kategori">${parentName}</td>
-                    <td data-label="Tertip">${subcategory.order}</td>
+                    <td data-label="Ady" class="subcat-name-cell"></td>
+                    <td data-label="Ana Kategori" class="subcat-parent-cell"></td>
+                    <td data-label="Tertip" class="subcat-order-cell"></td>
                     <td data-label="Etmekler">
                         <button class="btn-icon edit-subcategory" data-id="${subcategory.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon danger delete-subcategory" data-id="${subcategory.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
+                row.querySelector('.subcat-name-cell').textContent = subcategory.name;
+                row.querySelector('.subcat-parent-cell').textContent = parentName;
+                row.querySelector('.subcat-order-cell').textContent = subcategory.order;
                 tableBody.appendChild(row);
             });
 
@@ -863,16 +869,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td data-label="ID">${product.id}</td>
-                    <td data-label="Haryt Ady">${product.title}</td>
-                    <td data-label="Magazyn">${storeName}</td>
-                    <td data-label="Bahasy">${product.price}</td>
-                    <td data-label="Surat">${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
+                    <td data-label="ID" class="product-id-cell"></td>
+                    <td data-label="Haryt Ady" class="product-title-cell"></td>
+                    <td data-label="Magazyn" class="product-store-cell"></td>
+                    <td data-label="Bahasy" class="product-price-cell"></td>
+                    <td data-label="Surat" class="product-image-cell"></td>
                     <td data-label="Etmekler">
                         <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
+                row.querySelector('.product-id-cell').textContent = product.id;
+                row.querySelector('.product-title-cell').textContent = product.title;
+                row.querySelector('.product-store-cell').textContent = storeName;
+                row.querySelector('.product-price-cell').textContent = product.price;
+
+                if (product.imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = product.imageUrl;
+                    img.style.width = '40px';
+                    img.style.height = '40px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '4px';
+                    row.querySelector('.product-image-cell').appendChild(img);
+                } else {
+                    row.querySelector('.product-image-cell').textContent = 'Resim yok';
+                }
                 productsTableBody.appendChild(row);
             }
 
@@ -1091,20 +1113,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (order.status === 'pending') {
                     row.innerHTML = `
                         <td data-label="Harytlar">
-                            <ul style="list-style: none; padding: 0; margin: 0;">
-                                ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
-                            </ul>
+                            <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0;"></ul>
                         </td>
-                        <td data-label="Ady">${order.customer.name}</td>
-                        <td data-label="Telefony">${order.customer.phone}</td>
-                        <td data-label="Salgysy">${order.customer.address}</td>
-                        <td data-label="Bellik">${order.customer.note || ''}</td>
-                        <td data-label="Magazynlar">${storeNames}</td>
-                        <td data-label="Taryhy">${new Date(order.timestamp || order.date).toLocaleString('tr-TR')}</td>
+                        <td data-label="Ady" class="order-customer-name"></td>
+                        <td data-label="Telefony" class="order-customer-phone"></td>
+                        <td data-label="Salgysy" class="order-customer-address"></td>
+                        <td data-label="Bellik" class="order-customer-note"></td>
+                        <td data-label="Magazynlar" class="order-stores"></td>
+                        <td data-label="Taryhy" class="order-date"></td>
                         <td data-label="Durum"><span class="status pending">Garaşylýar</span></td>
                         <td data-label="Etmekler">
                             <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
-                            <button class="btn-icon" onclick="assignOrderNumber('${order.id}')" title="Numara Ata ve SMS Gönder">
+                            <button class="btn-icon order-action-btn" data-id="${order.id}" title="Numara Ata we SMS Gönder">
                                 <i class="fas fa-check"></i>
                             </button>
                         </td>
@@ -1112,20 +1132,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     row.innerHTML = `
                         <td data-label="Harytlar">
-                            <ul style="list-style: none; padding: 0; margin: 0;">
-                                ${order.items.map(item => `<li>ID: ${item.id}</li>`).join('')}
-                            </ul>
+                            <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0;"></ul>
                         </td>
-                        <td data-label="Ady">${order.customer.name}</td>
-                        <td data-label="Telefony">${order.customer.phone}</td>
-                        <td data-label="Salgysy">${order.customer.address}</td>
-                        <td data-label="Bellik">${order.customer.note || ''}</td>
-                        <td data-label="Magazynlar">${storeNames}</td>
-                        <td data-label="Taryhy">${new Date(order.timestamp || order.date).toLocaleString('tr-TR')}</td>
+                        <td data-label="Ady" class="order-customer-name"></td>
+                        <td data-label="Telefony" class="order-customer-phone"></td>
+                        <td data-label="Salgysy" class="order-customer-address"></td>
+                        <td data-label="Bellik" class="order-customer-note"></td>
+                        <td data-label="Magazynlar" class="order-stores"></td>
+                        <td data-label="Taryhy" class="order-date"></td>
                         <td data-label="Durum"><span class="status completed">Onaylandı</span></td>
-                        <td data-label="Zakaz No"><strong>${order.orderNumber}</strong></td>
+                        <td data-label="Zakaz No" class="order-number-cell"><strong></strong></td>
                     `;
+                    row.querySelector('.order-number-cell strong').textContent = order.orderNumber;
                 }
+
+                // Ortak verileri doldur
+                const itemsList = row.querySelector('.order-items-list');
+                order.items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = `ID: ${item.id}`;
+                    itemsList.appendChild(li);
+                });
+
+                row.querySelector('.order-customer-name').textContent = order.customer.name;
+                row.querySelector('.order-customer-phone').textContent = order.customer.phone;
+                row.querySelector('.order-customer-address').textContent = order.customer.address;
+                row.querySelector('.order-customer-note').textContent = order.customer.note || '';
+                row.querySelector('.order-stores').textContent = storeNames;
+                row.querySelector('.order-date').textContent = new Date(order.timestamp || order.date).toLocaleString('tr-TR');
+
+                // Action button listener
+                const actionBtn = row.querySelector('.order-action-btn');
+                if (actionBtn) {
+                    actionBtn.addEventListener('click', () => {
+                        const orderId = actionBtn.getAttribute('data-id');
+                        assignOrderNumber(orderId);
+                    });
+                }
+
                 ordersTableBody.appendChild(row);
             });
         } catch (error) {
@@ -1479,16 +1523,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${product.id}</td>
-                    <td>${product.title}</td>
-                    <td>${storeName}</td>
-                    <td>${product.price}</td>
-                    <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
-                    <td>
+                    <td data-label="ID" class="product-id-cell"></td>
+                    <td data-label="Haryt Ady" class="product-title-cell"></td>
+                    <td data-label="Magazyn" class="product-store-cell"></td>
+                    <td data-label="Bahasy" class="product-price-cell"></td>
+                    <td data-label="Surat" class="product-image-cell"></td>
+                    <td data-label="Etmekler">
                         <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
+                row.querySelector('.product-id-cell').textContent = product.id;
+                row.querySelector('.product-title-cell').textContent = product.title;
+                row.querySelector('.product-store-cell').textContent = storeName;
+                row.querySelector('.product-price-cell').textContent = product.price;
+
+                if (product.imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = product.imageUrl;
+                    img.style.width = '40px';
+                    img.style.height = '40px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '4px';
+                    row.querySelector('.product-image-cell').appendChild(img);
+                } else {
+                    row.querySelector('.product-image-cell').textContent = 'Resim yok';
+                }
                 productsTableBody.appendChild(row);
             });
 
@@ -1606,13 +1666,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 users.forEach(user => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td data-label="Ulanyjy Ady">${user.username}</td>
-                        <td data-label="Rol"><span class="status ${user.role}">${getRoleName(user.role)}</span></td>
-                        <td data-label="Rugsatlar">${user.permissions ? user.permissions.join(', ') : 'Yok'}</td>
+                        <td data-label="Ulanyjy Ady" class="user-name-cell"></td>
+                        <td data-label="Rol"><span class="status ${user.role} user-role-badge"></span></td>
+                        <td data-label="Rugsatlar" class="user-permissions-cell"></td>
                         <td data-label="Etmekler">
                             <button class="btn-icon danger delete-user" data-id="${user.id}"><i class="fas fa-trash"></i></button>
                         </td>
                     `;
+                    row.querySelector('.user-name-cell').textContent = user.username;
+                    const roleBadge = row.querySelector('.user-role-badge');
+                    roleBadge.textContent = getRoleName(user.role);
+                    row.querySelector('.user-permissions-cell').textContent = user.permissions ? user.permissions.join(', ') : 'Yok';
                     usersTableBody.appendChild(row);
                 });
 
@@ -1708,9 +1772,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 try {
+                    // Şifreyi hash'le (Salt round: 10)
+                    const bcryptObj = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
+                    let passwordToStore = password;
+
+                    if (bcryptObj) {
+                        const salt = bcryptObj.genSaltSync(10);
+                        passwordToStore = bcryptObj.hashSync(password, salt);
+                    } else {
+                        console.error('Bcrypt library not loaded! Storing plain-text (NOT RECOMMENDED)');
+                    }
+
                     await window.db.collection('users').add({
                         username,
-                        password, // ⚠️ Gerçek projede şifreyi hash'le!
+                        password: passwordToStore,
                         role,
                         permissions,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1796,16 +1871,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${product.id}</td>
-                    <td>${product.title}</td>
-                    <td>${storeName}</td>
-                    <td>${product.price}</td>
-                    <td>${product.imageUrl ? `<img src="${product.imageUrl}" style="width:40px;height:40px;object-fit:cover;border-radius:4px">` : 'Resim yok'}</td>
-                    <td>
+                    <td data-label="ID" class="product-id-cell"></td>
+                    <td data-label="Haryt Ady" class="product-title-cell"></td>
+                    <td data-label="Magazyn" class="product-store-cell"></td>
+                    <td data-label="Bahasy" class="product-price-cell"></td>
+                    <td data-label="Surat" class="product-image-cell"></td>
+                    <td data-label="Etmekler">
                         <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
                         <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
+                row.querySelector('.product-id-cell').textContent = product.id;
+                row.querySelector('.product-title-cell').textContent = product.title;
+                row.querySelector('.product-store-cell').textContent = storeName;
+                row.querySelector('.product-price-cell').textContent = product.price;
+
+                if (product.imageUrl) {
+                    const img = document.createElement('img');
+                    img.src = product.imageUrl;
+                    img.style.width = '40px';
+                    img.style.height = '40px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '4px';
+                    row.querySelector('.product-image-cell').appendChild(img);
+                } else {
+                    row.querySelector('.product-image-cell').textContent = 'Resim yok';
+                }
                 productsTableBody.appendChild(row);
             });
 

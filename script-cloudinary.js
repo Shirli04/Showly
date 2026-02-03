@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            categoryMenu.innerHTML = ''; // Önce temizle
+            while (categoryMenu.firstChild) categoryMenu.removeChild(categoryMenu.firstChild); // Önce temizle
 
             // Kategorileri çek (iki seviyeli sistem)
             const [parentCategoriesSnapshot, subcategoriesSnapshot] = await Promise.all([
@@ -244,7 +244,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }));
 
                 if (oldCategories.length === 0) {
-                    categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
+                    const noCategoryMsg = document.createElement('p');
+                    noCategoryMsg.style.cssText = 'padding: 20px; color: rgba(255,255,255,0.7); text-align: center;';
+                    noCategoryMsg.textContent = 'Henüz kategori eklenmemiş.';
+                    categoryMenu.appendChild(noCategoryMsg);
                     return;
                 }
 
@@ -260,18 +263,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="category-header" data-category="${category.id}">
                             <i class="fas fa-chevron-right chevron-icon"></i>
                             <i class="fas ${categoryIcon} category-logo-icon"></i>
-                            <span>${category.name}</span>
+                            <span class="category-name-text"></span>
                         </div>
                         <ul class="category-stores" id="stores-${category.id}" style="display: none;">
                             ${categoryStores.map(store => `
                                 <li>
                                     <a href="/${store.slug}" class="store-link" data-store-id="${store.id}">
-                                        ${store.name}
+                                        <span class="store-name-text"></span>
                                     </a>
                                 </li>
                             `).join('')}
                         </ul>
                     `;
+
+                    categoryItem.querySelector('.category-name-text').textContent = category.name;
+                    categoryItem.querySelectorAll('.store-name-text').forEach((span, i) => {
+                        span.textContent = categoryStores[i].name;
+                    });
                     categoryMenu.appendChild(categoryItem);
                 });
 
@@ -296,13 +304,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            if (parentCategories.length === 0) {
-                categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz kategori eklenmemiş.</p>';
-                return;
-            }
-
             if (allStores.length === 0) {
-                categoryMenu.innerHTML = '<p style="padding: 20px; color: rgba(255,255,255,0.7); text-align: center;">Henüz mağaza eklenmemiş.</p>';
+                const noStoreMsg = document.createElement('p');
+                noStoreMsg.style.cssText = 'padding: 20px; color: rgba(255,255,255,0.7); text-align: center;';
+                noStoreMsg.textContent = 'Henüz mağaza eklenmemiş.';
+                categoryMenu.appendChild(noStoreMsg);
                 return;
             }
 
@@ -417,7 +423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const activeCategoryName = activeFilter?.type === 'CATEGORY' ? activeFilter.value : 'Ähli harytlar';
 
-        container.innerHTML = '';
+        while (container.firstChild) container.removeChild(container.firstChild);
 
         // Dropdown butonu
         const dropdownBtn = document.createElement('button');
@@ -435,7 +441,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // "Tüm ürünler" seçeneği
         const allOption = document.createElement('button');
         allOption.className = 'category-dropdown-item ' + (!activeFilter ? 'active' : '');
-        allOption.innerHTML = `Ähli harytlar <span class="category-count">${storeProducts.length}</span>`;
+        allOption.textContent = 'Ähli harytlar ';
+        const allOptionCount = document.createElement('span');
+        allOptionCount.className = 'category-count';
+        allOptionCount.textContent = storeProducts.length;
+        allOption.appendChild(allOptionCount);
         allOption.addEventListener('click', () => {
             renderStorePage(storeId, null);
             dropdownContent.style.display = 'none';
@@ -447,7 +457,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const count = storeProducts.filter(p => p.category === category).length;
             const option = document.createElement('button');
             option.className = 'category-dropdown-item ' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === category ? 'active' : '');
-            option.innerHTML = `${category} <span class="category-count">${count}</span>`;
+            option.textContent = category + ' ';
+            const optionCount = document.createElement('span');
+            optionCount.className = 'category-count';
+            optionCount.textContent = count;
+            option.appendChild(optionCount);
             option.addEventListener('click', () => {
                 renderStorePage(storeId, { type: 'CATEGORY', value: category });
                 dropdownContent.style.display = 'none';
@@ -546,41 +560,59 @@ document.addEventListener('DOMContentLoaded', async () => {
         storeBanner.style.display = 'block';
 
         // ✅ YENİ: TikTok ve Instagram butonları
-        let socialButtonsHTML = '';
-        if (store.tiktok || store.instagram || store.phone || store.location) {
-            socialButtonsHTML = '<div class="store-social-buttons">';
-            if (store.tiktok) {
-                socialButtonsHTML += `<a href="${store.tiktok}" target="_blank" class="social-button tiktok-button"><i class="fab fa-tiktok"></i></a>`;
-            }
-            if (store.instagram) {
-                socialButtonsHTML += `<a href="${store.instagram}" target="_blank" class="social-button instagram-button"><i class="fab fa-instagram"></i></a>`;
-            }
-            if (store.phone) {
-                socialButtonsHTML += `<a href="tel:${store.phone}" class="social-button phone-button"><i class="fas fa-phone"></i></a>`;
-            }
-            if (store.location) {
-                socialButtonsHTML += `<a href="https://maps.google.com/?q=${encodeURIComponent(store.location)}" target="_blank" class="social-button location-button"><i class="fas fa-map-marker-alt"></i></a>`;
-            }
-            socialButtonsHTML += '</div>';
-        }
+        // Sosyal medya butonları aşağıda güvenli bir şekilde oluşturulacak
 
         storeBanner.innerHTML = `
             <div class="store-banner-content">
                 <div class="store-info">
-                    <h2>${store.name}</h2>
-                    <p>${store.customBannerText || ''}</p>
+                    <h2 id="store-banner-name"></h2>
+                    <p id="store-banner-text"></p>
                 </div>
-                <div class="store-social-buttons-container">
-                    ${socialButtonsHTML}
+                <div class="store-social-buttons-container" id="social-buttons-grid">
                 </div>
             </div>
         `;
+        document.getElementById('store-banner-name').textContent = store.name;
+        document.getElementById('store-banner-text').textContent = store.customBannerText || '';
+
+        const socialGrid = document.getElementById('social-buttons-grid');
+        if (store.tiktok) {
+            const link = document.createElement('a');
+            link.href = store.tiktok;
+            link.target = '_blank';
+            link.className = 'social-button tiktok-button';
+            link.innerHTML = '<i class="fab fa-tiktok"></i>';
+            socialGrid.appendChild(link);
+        }
+        if (store.instagram) {
+            const link = document.createElement('a');
+            link.href = store.instagram;
+            link.target = '_blank';
+            link.className = 'social-button instagram-button';
+            link.innerHTML = '<i class="fab fa-instagram"></i>';
+            socialGrid.appendChild(link);
+        }
+        if (store.phone) {
+            const link = document.createElement('a');
+            link.href = `tel:${store.phone}`;
+            link.className = 'social-button phone-button';
+            link.innerHTML = '<i class="fas fa-phone"></i>';
+            socialGrid.appendChild(link);
+        }
+        if (store.location) {
+            const link = document.createElement('a');
+            link.href = `https://maps.google.com/?q=${encodeURIComponent(store.location)}`;
+            link.target = '_blank';
+            link.className = 'social-button location-button';
+            link.innerHTML = '<i class="fas fa-map-marker-alt"></i>';
+            socialGrid.appendChild(link);
+        }
 
         // ✅ BURAYI EKLEYİN - Kategori ve filtreleri göster
         categoryFiltersSection.style.display = 'block';
         mainFiltersSection.style.display = 'block';
         productsGrid.style.display = 'grid';
-        productsGrid.innerHTML = '';
+        while (productsGrid.firstChild) productsGrid.removeChild(productsGrid.firstChild);
 
         // ✅ BURAYI EKLEYİN - Fonksiyonları çağır
         renderCategories(storeId, activeFilter);
@@ -613,7 +645,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (productsToRender.length === 0) {
-            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-box-open"></i><h3>Bu filtrde haryt tapylmady.</h3></div>`;
+            const noResults = document.createElement('div');
+            noResults.className = 'no-results';
+            noResults.innerHTML = '<i class="fas fa-box-open"></i><h3></h3>';
+            noResults.querySelector('h3').textContent = 'Bu filtrde haryt tapylmady.';
+            productsGrid.appendChild(noResults);
             return;
         }
 
@@ -656,7 +692,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
 
-            let priceDisplay = `<p class="product-price">${product.price}</p>`;
+            let priceDisplayElement = null;
 
             if (product.isOnSale && product.originalPrice) {
                 const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
@@ -665,15 +701,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
                     const discountPercentage = Math.round(((normalPriceValue - discountedPriceValue) / normalPriceValue) * 100);
 
-                    priceDisplay = `
-                        <div class="price-container">
-                            <div class="price-info">
-                                <span class="current-price">${product.originalPrice}</span>
-                                <span class="original-price">${product.price}</span>
-                            </div>
-                            <span class="discount-percentage-badge">-%${discountPercentage}</span>
-                        </div>
-                    `;
+                    const priceContainer = document.createElement('div');
+                    priceContainer.className = 'price-container';
+
+                    const priceInfo = document.createElement('div');
+                    priceInfo.className = 'price-info';
+
+                    const currentPrice = document.createElement('span');
+                    currentPrice.className = 'current-price';
+                    currentPrice.textContent = product.originalPrice;
+
+                    const originalPrice = document.createElement('span');
+                    originalPrice.className = 'original-price';
+                    originalPrice.textContent = product.price;
+
+                    priceInfo.appendChild(currentPrice);
+                    priceInfo.appendChild(originalPrice);
+
+                    const badge = document.createElement('span');
+                    badge.className = 'discount-percentage-badge';
+                    badge.textContent = `-%${discountPercentage}`;
+
+                    priceContainer.appendChild(priceInfo);
+                    priceContainer.appendChild(badge);
+
+                    priceDisplayElement = priceContainer;
                 }
             }
 
@@ -681,17 +733,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="product-image-container">
                     ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
                     <img src="${getOptimizedCloudinaryUrl(product.imageUrl) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" 
-                         alt="${product.title}" 
+                         class="product-img"
                          loading="lazy">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
-                    <h3 class="product-title">${product.title}</h3>
-                    <span class="product-category-label">${product.category || ''}</span>
-                    ${priceDisplay}
+                    <h3 class="product-title"></h3>
+                    <span class="product-category-label"></span>
+                    <div class="price-display-wrapper"></div>
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
             `;
+            productCard.querySelector('.product-img').alt = product.title;
+            productCard.querySelector('.product-title').textContent = product.title;
+            productCard.querySelector('.product-category-label').textContent = product.category || '';
+
+            const wrapper = productCard.querySelector('.price-display-wrapper');
+            if (priceDisplayElement) {
+                wrapper.appendChild(priceDisplayElement);
+            } else {
+                const priceSpan = document.createElement('span');
+                priceSpan.className = 'product-price';
+                priceSpan.textContent = product.price;
+                wrapper.appendChild(priceSpan);
+            }
             productsGrid.appendChild(productCard);
             updateFavoriteButton(product.id);
         });
@@ -724,13 +789,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (mainFiltersSection) mainFiltersSection.style.display = 'none';
 
         storeBanner.style.display = 'block';
-        storeBanner.innerHTML = `<h2>Gözleg: "${query}"</h2><p>${filteredProducts.length} harydy</p>`;
+        while (storeBanner.firstChild) storeBanner.removeChild(storeBanner.firstChild);
+        const searchTitle = document.createElement('h2');
+        searchTitle.textContent = `Gözleg: "${query}"`;
+        const searchSub = document.createElement('p');
+        searchSub.textContent = `${filteredProducts.length} harydy`;
+        storeBanner.appendChild(searchTitle);
+        storeBanner.appendChild(searchSub);
 
         productsGrid.style.display = 'grid';
-        productsGrid.innerHTML = '';
+        while (productsGrid.firstChild) productsGrid.removeChild(productsGrid.firstChild);
 
         if (filteredProducts.length === 0) {
-            productsGrid.innerHTML = `<div class="no-results"><i class="fas fa-search"></i><h3>Haryt tapylmady</h3></div>`;
+            const noResults = document.createElement('div');
+            noResults.className = 'no-results';
+            noResults.innerHTML = '<i class="fas fa-search"></i><h3></h3>';
+            noResults.querySelector('h3').textContent = 'Haryt tapylmady';
+            productsGrid.appendChild(noResults);
             return;
         }
 
@@ -740,17 +815,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             productCard.innerHTML = `
                 <div class="product-image-container">
                     <img src="${getOptimizedCloudinaryUrl(product.imageUrl) || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22300%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2216%22%3E%3C/text%3E%3C/svg%3E'}" 
-                         alt="${product.title}" 
+                         class="product-img"
                          loading="lazy">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
-                    <h3 class="product-title">${product.title}</h3>
-                    <span class="product-category-label">${product.category || ''}</span>
-                    <p class="product-price">${product.price}</p>
+                    <h3 class="product-title"></h3>
+                    <span class="product-category-label"></span>
+                    <p class="product-price"></p>
                     <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                 </div>
             `;
+            productCard.querySelector('.product-img').alt = product.title;
+            productCard.querySelector('.product-title').textContent = product.title;
+            productCard.querySelector('.product-category-label').textContent = product.category || '';
+            productCard.querySelector('.product-price').textContent = product.price;
             productsGrid.appendChild(productCard);
             updateFavoriteButton(product.id);
         });
@@ -1030,10 +1109,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentStoreCart = currentStoreId ? cart[currentStoreId] : null;
 
         if (!currentStoreCart || currentStoreCart.items.length === 0) {
-            cartItems.innerHTML = '<p class="empty-cart-message">Siz öz sargyt etjek harytlaryňyzy şu sebede goşup bilersiňiz.</p>';
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'empty-cart-message';
+            emptyMsg.textContent = 'Siz öz sargyt etjek harytlaryňyzy şu sebede goşup bilersiňiz.';
+            cartItems.appendChild(emptyMsg);
             document.getElementById('cart-total-price').textContent = '0.00 TMT';
         } else {
-            cartItems.innerHTML = '';
+            while (cartItems.firstChild) cartItems.removeChild(cartItems.firstChild);
             const storeSection = document.createElement('div');
             storeSection.className = 'cart-store-section';
 
@@ -1191,15 +1273,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const itemsPreview = currentStoreCart.items.map(item => `${item.title} (${item.quantity})`).join(', ');
 
-        const formHTML = `
-            <div class="order-form-overlay" data-store-id="${currentStoreCart.storeId}">
+        const formOverlay = document.createElement('div');
+        formOverlay.className = 'order-form-overlay';
+        formOverlay.setAttribute('data-store-id', currentStoreCart.storeId);
+        formOverlay.innerHTML = `
                 <div class="order-form-modal">
                     <div class="order-form-header">
-                        <h3>${currentStoreCart.storeName}</h3>
-                        <p>Umumy: ${storeTotal.toFixed(2)} TMT</p>
+                        <h3 class="order-store-name"></h3>
+                        <p class="order-total-text"></p>
                     </div>
                     <div class="order-items-preview">
-                        <strong>Harytlar:</strong> ${itemsPreview}
+                        <strong>Harytlar:</strong> <span class="order-items-text"></span>
                     </div>
                     <form id="order-form-${currentStoreCart.storeId}">
                         <div class="form-group">
@@ -1224,13 +1308,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </form>
                 </div>
-            </div>
         `;
-
-        document.body.insertAdjacentHTML('beforeend', formHTML);
+        formOverlay.querySelector('.order-store-name').textContent = currentStoreCart.storeName;
+        formOverlay.querySelector('.order-total-text').textContent = `Umumy: ${storeTotal.toFixed(2)} TMT`;
+        formOverlay.querySelector('.order-items-text').textContent = itemsPreview;
+        document.body.appendChild(formOverlay);
 
         // İptal butonu
-        const formOverlay = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
         formOverlay.querySelector(`.cancel-order-${currentStoreCart.storeId}`).addEventListener('click', () => {
             formOverlay.remove();
         });
@@ -1374,23 +1458,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         const favoritesModal = document.getElementById('favorites-modal');
         const favoritesItems = document.getElementById('favorites-items');
         if (favorites.length === 0) {
-            favoritesItems.innerHTML = '<p class="empty-favorites-message">Siz harytlardan öz halanyňyzy saýlap bilersiňiz.</p>';
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'empty-favorites-message';
+            emptyMsg.textContent = 'Siz harytlardan öz halanyňyzy saýlap bilersiňiz.';
+            favoritesItems.appendChild(emptyMsg);
         } else {
-            favoritesItems.innerHTML = '';
+            while (favoritesItems.firstChild) favoritesItems.removeChild(favoritesItems.firstChild);
             favorites.forEach(product => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
-                        <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3E%3C/text%3E%3C/svg%3E'}" alt="${product.title}">
+                    <div class="fav-img-container"></div>
                     <div class="favorite-item-info">
-                        <div class="favorite-item-title">${product.title}</div>
-                        <div class="favorite-item-price">${product.price}</div>
+                        <div class="favorite-item-title"></div>
+                        <div class="favorite-item-price"></div>
                         <div class="favorite-item-actions">
                             <button class="btn-remove-favorite" data-id="${product.id}">Aýyr</button>
                             <button class="btn-add-cart-from-fav" data-id="${product.id}">Sebede goş</button>
                         </div>
                     </div>
                 `;
+
+                const img = document.createElement('img');
+                img.src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3E%3C/text%3E%3C/svg%3E';
+                img.alt = product.title || 'Product';
+                favItem.querySelector('.fav-img-container').appendChild(img);
+
+                favItem.querySelector('.favorite-item-title').textContent = product.title;
+                favItem.querySelector('.favorite-item-price').textContent = product.price;
                 favoritesItems.appendChild(favItem);
             });
         }
@@ -1482,7 +1577,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     function showNotification(message, isSuccess = true) {
         const notification = document.createElement('div');
         notification.className = 'notification';
-        notification.innerHTML = `<div class="notification-content"><i class="fas fa-check-circle"></i><span>${message}</span></div>`;
+
+        const content = document.createElement('div');
+        content.className = 'notification-content';
+
+        const icon = document.createElement('i');
+        icon.className = `fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle'}`;
+
+        const text = document.createElement('span');
+        text.textContent = message;
+
+        content.appendChild(icon);
+        content.appendChild(text);
+        notification.appendChild(content);
+
         document.body.appendChild(notification);
         setTimeout(() => notification.classList.add('show'), 10);
         setTimeout(() => {

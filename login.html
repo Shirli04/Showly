@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Showly</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -15,40 +21,48 @@
             justify-content: center;
             align-items: center;
         }
+
         .login-container {
             background: white;
             padding: 40px;
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 90%;
             max-width: 400px;
         }
+
         .login-header {
             text-align: center;
             margin-bottom: 30px;
         }
+
         .login-header img {
             height: 50px;
             margin-bottom: 15px;
         }
+
         .login-header h2 {
             color: #1a1a1a;
             font-size: 24px;
             margin-bottom: 5px;
         }
+
         .login-header p {
             color: #666;
             font-size: 14px;
         }
+
         .form-group {
             margin-bottom: 20px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
             color: #333;
         }
+
         .form-group input {
             width: 100%;
             padding: 14px;
@@ -57,11 +71,13 @@
             font-size: 15px;
             transition: all 0.3s;
         }
+
         .form-group input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
+
         .btn-login {
             width: 100%;
             padding: 14px;
@@ -74,10 +90,12 @@
             cursor: pointer;
             transition: all 0.3s;
         }
+
         .btn-login:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
         }
+
         .error-message {
             background: #fee;
             color: #c00;
@@ -87,38 +105,25 @@
             display: none;
             font-size: 14px;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
+
         .fa-spin {
             animation: spin 1s linear infinite;
         }
     </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
-            <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765385200/logo_e_background_removal_b_rgb_FFFFFF_f_png_vjwprg.png" alt="Showly">
-        </div>
-        
-        <div class="error-message" id="error-message"></div>
-        
-        <form id="login-form">
-            <div class="form-group">
-                <label><i class="fas fa-user"></i> Adyňyz</label>
-                <input type="text" id="username" required autocomplete="username">
-            </div>
-            <div class="form-group">
-                <label><i class="fas fa-lock"></i> Koduňyz</label>
-                <input type="password" id="password" required autocomplete="current-password">
-            </div>
-            <button type="submit" class="btn-login">
-                <i class="fas fa-sign-in-alt"></i> Gir
-            </button>
-        </form>
-    </div>
 
+<body>
+    <script src="https://unpkg.com/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
@@ -128,7 +133,7 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
             const submitBtn = loginForm.querySelector('.btn-login');
@@ -139,18 +144,42 @@
             submitBtn.style.opacity = '0.7';
 
             try {
+                // Sadece username ile arama yap (Password'e göre arama yapmak güvenli değil ve hashing ile çalışmaz)
                 const usersSnapshot = await window.db.collection('users')
                     .where('username', '==', username)
-                    .where('password', '==', password)
                     .get();
 
-                if (usersSnapshot.empty) {
+                let isValid = false;
+                let userData = null;
+                let userId = null;
+
+                if (!usersSnapshot.empty) {
+                    const userDoc = usersSnapshot.docs[0];
+                    userData = userDoc.data();
+                    userId = userDoc.id;
+
+                    // Hashing kontrolü
+                    try {
+                        const bcryptObj = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
+                        if (bcryptObj) {
+                            isValid = bcryptObj.compareSync(password, userData.password);
+                        } else {
+                            console.error('Bcrypt library not loaded!');
+                            isValid = (password === userData.password); // Fallback
+                        }
+                    } catch (err) {
+                        // Eğer plain-text ise compareSync hata verebilir, veya hashing formatı yanlışsa fallback yapıyoruz
+                        isValid = (password === userData.password);
+                    }
+                }
+
+                if (!isValid) {
                     submitBtn.innerHTML = '<i class="fas fa-times-circle"></i> Ýalňyş giriş!';
                     submitBtn.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
-                    
+
                     errorMessage.textContent = 'Adyňyz ýada koduňyz ýalňyş!';
                     errorMessage.style.display = 'block';
-                    
+
                     setTimeout(() => {
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = originalText;
@@ -163,8 +192,9 @@
                 submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Dogry!';
                 submitBtn.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';
 
-                const userData = usersSnapshot.docs[0].data();
-                
+                // userData zaten yukarıda tanımlandı ve dolduruldu 
+                // userId de zaten yukarıda tanımlandı ve dolduruldu
+
                 // ✅ sessionStorage kullan (tarayıcı kapanınca silinir)
                 sessionStorage.setItem('adminUser', JSON.stringify({
                     id: usersSnapshot.docs[0].id,
@@ -179,13 +209,13 @@
 
             } catch (error) {
                 console.error('Giriş näsazlygy:', error);
-                
+
                 submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Bağlantı hatası!';
                 submitBtn.style.background = 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)';
-                
+
                 errorMessage.textContent = 'Bir näsazlyk ýüze çykdy. Täzeden synanyşyň';
                 errorMessage.style.display = 'block';
-                
+
                 setTimeout(() => {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
@@ -196,4 +226,5 @@
         });
     </script>
 </body>
+
 </html>
