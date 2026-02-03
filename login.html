@@ -240,10 +240,20 @@
             } catch (error) {
                 console.error('Giriş näsazlygy:', error);
 
-                submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Bağlantı hatası!';
-                submitBtn.style.background = 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)';
+                // ✅ Bağımlılık/Bağlantı hatası kontrolü
+                const isConnError = error.message.includes('reach Cloud Firestore') ||
+                    error.message.includes('unavailable') ||
+                    error.message.includes('network');
 
-                errorMessage.textContent = 'Bir näsazlyk ýüze çykdy. Täzeden synanyşyň';
+                if (isConnError) {
+                    submitBtn.innerHTML = '<i class="fas fa-wifi"></i> Baglanyşyk Ýok!';
+                    errorMessage.innerHTML = 'Firebase baglanyşygy başarmady. <br><b>VPN ulanmagyňyzy maslahat berýäris!</b>';
+                } else {
+                    submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Näsazlyk!';
+                    errorMessage.textContent = 'Giriş wagtynda bir hata ýüze çykdy. Täzeden synanyşyň.';
+                }
+
+                submitBtn.style.background = 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)';
                 errorMessage.style.display = 'block';
 
                 setTimeout(() => {
@@ -251,7 +261,7 @@
                     submitBtn.innerHTML = originalText;
                     submitBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     submitBtn.style.opacity = '1';
-                }, 2000);
+                }, 3000);
             }
         });
     </script>

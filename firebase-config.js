@@ -20,10 +20,10 @@ if (typeof firebase !== 'undefined') {
         db.settings({
             cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
             ignoreUndefinedProperties: true,
-            experimentalForceLongPolling: true, // ✅ ÖNEMLİ: Kısıtlı ağlarda bağlantı için gerekli
-            experimentalAutoDetectLongPolling: true
+            experimentalForceLongPolling: true, // ✅ ZORUNLU: Kısıtlı ağlarda bağlantı için sadece Long Polling kullan
+            useFetchStreams: false              // ✅ YENİ: Bazı güvenlik duvarlarını aşmak için fetch stream'leri kapat
         });
-        console.log('✅ Firestore settings configured with Long Polling');
+        console.log('🚀 Firestore: Long Polling zorunlu kılındı (Kısıtlı ağ modu)');
     } catch (e) {
         console.warn('Firestore settings already configured or failed:', e.message);
     }
