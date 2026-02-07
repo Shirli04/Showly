@@ -73,10 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🔄 Firebase\'den veriler yükleniyor...');
 
     try {
-        // ✅ YENİ: 30 saniye timeout ekle (Long Polling için biraz daha süre tanıyalım)
+        // ✅ YENİ: 60 saniye timeout ekle (Kısıtlı ağlarda veri çekmek zaman alabilir)
         const timeoutPromiseString = 'Firebase bağlantısı zaman aşımına uğradı';
         const timeoutAction = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error(timeoutPromiseString)), 30000);
+            setTimeout(() => reject(new Error(timeoutPromiseString)), 60000);
         });
 
         // ✅ PARALEL İŞLEMLER: Mağaza ve ürünleri aynı anda çek
@@ -154,10 +154,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (infoSection) infoSection.style.display = 'none';
 
         errorTitle.textContent = 'Baglanyşyk Ýok';
-        errorMessage.textContent = 'Firebase backendine birigip bolmady. Eğer Türkmenistanda bolsaňyz, VPN ulanmagyňyzy maslahat berýäris.';
+        errorMessage.textContent = 'Internediňizi kontrol ediň!';
         notFoundSection.style.display = 'block';
 
-        showNotification('Bağlantı hatası! Lütfen internetinizi veya VPN-i kontrol edin.', false);
+        showNotification('Baglanyp bilmedi. Internediňizi ýa-da VPN-i kontrol ediň.', false);
     }
 
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (mainFiltersSection) mainFiltersSection.style.display = 'none';
             if (productsGrid) productsGrid.style.display = 'none';
             if (notFoundSection) notFoundSection.style.display = 'block';
-            document.title = 'Sayfa Bulunamadı - Showly';
+            document.title = 'Sahypa tapylmady - Showly';
         }
     };
 

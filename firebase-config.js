@@ -24,6 +24,19 @@ if (typeof firebase !== 'undefined') {
             useFetchStreams: false              // ✅ YENİ: Bazı güvenlik duvarlarını aşmak için fetch stream'leri kapat
         });
         console.log('🚀 Firestore: Long Polling zorunlu kılındı (Kısıtlı ağ modu)');
+
+        // ✅ Çevrimdışı Kalıcılığı Etkinleştir
+        db.enablePersistence({ synchronizeTabs: true })
+            .then(() => {
+                console.log('📦 Firestore: Çevrimdışı kalıcılık etkinleşti');
+            })
+            .catch((err) => {
+                if (err.code === 'failed-precondition') {
+                    console.warn('Persistence failed: Multiple tabs open');
+                } else if (err.code === 'unimplemented') {
+                    console.warn('Persistence is not available in this browser');
+                }
+            });
     } catch (e) {
         console.warn('Firestore settings already configured or failed:', e.message);
     }
