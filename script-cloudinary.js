@@ -70,69 +70,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadingOverlay.style.display = 'flex';
     }
 
-    console.log('🔄 Firebase\'den veriler yükleniyor...');
-
     try {
-        // ✅ YENİ: 60 saniye timeout ekle (Kısıtlı ağlarda veri çekmek zaman alabilir)
-        const timeoutPromiseString = 'Firebase bağlantısı zaman aşımına uğradı';
-        const timeoutAction = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error(timeoutPromiseString)), 60000);
-        });
+        // ✅ YENİ: Cloudflare Worker API üzerinden veri çek
+        const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
+        console.log('🔄 Worker API üzerinden veriler yükleniyor:', WORKER_URL);
 
-        // ✅ PARALEL İŞLEMLER: Mağaza ve ürünleri aynı anda çek
-        const fetchDataPromise = (async () => {
-            // Mağaza ve ürünleri paralel çek (Promise.all ile)
-            try {
-                const [storesSnapshot, productsSnapshot] = await Promise.all([
-                    window.db.collection('stores').get(),
-                    window.db.collection('products').get()
-                ]);
-
-                const stores = storesSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                const products = productsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                // Eğer veri gelmediyse hata fırlat (offline/restricted case)
-                if (stores.length === 0 && products.length === 0) {
-                    throw new Error('Veri çekilemedi (Boş veri)');
-                }
-
-                return { stores, products };
-            } catch (err) {
-                console.error('Fetch error:', err);
-                throw err;
-            }
-        })();
-
-        // ✅ Timeout ile yarış: Hangisi önce biterse onu al
-        const result = await Promise.race([fetchDataPromise, timeoutAction]);
-
-        if (!result || !result.stores) {
-            throw new Error('Geçersiz veri formatı');
+        const response = await fetch(WORKER_URL);
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
         }
 
-        allStores = result.stores;
-        allProducts = result.products;
+        const data = await response.json();
 
-        console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi`);
+        if (!data || !data.stores) {
+            throw new Error('Geçersiz veri formatı (Worker)');
+        }
+
+        allStores = data.stores;
+        allProducts = data.products;
+        // Global state'e kategorileri de ekleyelim ki renderCategoryMenu kullanabilsin
+        window.allParentCategories = data.parentCategories || [];
+        window.allSubcategories = data.subcategories || [];
+        window.allOldCategories = data.categories || [];
+
+        console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Worker üzerinden)`);
 
         console.log('📂 Kategori menüsü oluşturuluyor...');
-        // ✅ Kategorili menüyü oluştur
+        // ✅ Kategorili menüyü oluştur (Worker verilerini kullanacak)
         await renderCategoryMenu();
         console.log('✅ Kategori menüsü tamamlandı');
 
         console.log('🔄 Loading kapatılıyor...');
         if (loadingOverlay) {
             loadingOverlay.style.display = 'none';
-            console.log('✅ Loading kapatıldı');
-        } else {
-            console.warn('⚠️ loadingOverlay elementi bulunamadı!');
+        }
+    } catch (error) {
+        console.error('❌ Veri yükleme hatası (Worker/Firebase):', error);
+
+        // ✅ Loading'i gizle
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
         }
 
     } catch (error) {
@@ -214,34 +191,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             while (categoryMenu.firstChild) categoryMenu.removeChild(categoryMenu.firstChild); // Önce temizle
 
-            // Kategorileri çek (iki seviyeli sistem)
-            const [parentCategoriesSnapshot, subcategoriesSnapshot] = await Promise.all([
-                window.db.collection('parentCategories').orderBy('order', 'asc').get(),
-                window.db.collection('subcategories').orderBy('order', 'asc').get()
-            ]);
+            // ✅ Worker'dan gelen verileri kullan
+            const parentCategories = window.allParentCategories || [];
+            const subcategories = window.allSubcategories || [];
 
-            const parentCategories = parentCategoriesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            const subcategories = subcategoriesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            console.log('📂 Ana Kategoriler:', parentCategories);
-            console.log('📂 Alt Kategoriler:', subcategories);
+            console.log('📂 Ana Kategoriler (Worker):', parentCategories);
+            console.log('📂 Alt Kategoriler (Worker):', subcategories);
 
             // Eğer hiç kategori yoksa, eski tek seviyeli sistemden veri çekmeye çalış
             if (parentCategories.length === 0) {
                 console.log('⚠️ Ana kategori bulunamadı, eski sistem deneniyor...');
 
-                const oldCategoriesSnapshot = await window.db.collection('categories').orderBy('order', 'asc').get();
-                const oldCategories = oldCategoriesSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const oldCategories = window.allOldCategories || [];
 
                 if (oldCategories.length === 0) {
                     const noCategoryMsg = document.createElement('p');

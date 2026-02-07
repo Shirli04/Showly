@@ -446,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .get();
 
             const parentsSnapshot = await window.db.collection('parentCategories').get();
+
             const parentCategories = parentsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
