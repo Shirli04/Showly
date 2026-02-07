@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- DURUM DEĞİŞKENLERİ (STATE) ---
     let cart = JSON.parse(localStorage.getItem('showlyCart')) || {}; // Mağaza bazlı sepet: { storeId: { storeName, items: [] } }
-    let favorites = [];
+    let favorites = JSON.parse(localStorage.getItem('showlyFavorites')) || [];
     let currentStoreId = null;
     let allStores = [];
     let allProducts = [];
@@ -794,7 +794,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (favoritesCount) {
             favoritesCount.textContent = favorites.length;
             favoritesCount.classList.toggle('show', favorites.length > 0);
+            favoritesCount.style.display = favorites.length > 0 ? 'flex' : 'none';
         }
+        localStorage.setItem('showlyFavorites', JSON.stringify(favorites));
     };
 
     // --- SEPET VE FAVORİ FONKSİYONLARI ---
@@ -825,10 +827,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.values(cart).forEach(storeCart => {
             total += storeCart.items.reduce((sum, item) => sum + item.quantity, 0);
         });
-        cartCount.textContent = total;
-        cartCount.classList.toggle('show', total > 0);
+        if (cartCount) {
+            cartCount.textContent = total;
+            cartCount.classList.toggle('show', total > 0);
+            cartCount.style.display = total > 0 ? 'flex' : 'none';
+        }
         localStorage.setItem('showlyCart', JSON.stringify(cart));
     };
+
+    // ✅ YENİ: Sepeti kaydet ve eşitle
+    function saveCart() {
+        updateCartCount();
+    }
 
     const addToCart = (product) => {
         console.log('🛒 Sepete ekle çalışıyor:', product);
@@ -838,9 +848,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('❌ Mağaza bulunamadı:', product.storeId);
             return;
         }
-
-        // Artık farklı mağazadan ürün ekleme engeli kaldırıldı. 
-        // Her mağazanın kendi sepet alanı (cart[storeId]) zaten var.
 
         if (!cart[product.storeId]) {
             cart[product.storeId] = {
@@ -856,7 +863,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             cart[product.storeId].items.push({ ...product, quantity: 1 });
         }
-        updateCartCount();
+
+        saveCart(); // ✅ Kalıcı hale getir
         showNotification(product.title + ' sebede goşuldy!');
         console.log('✅ Sepete eklendi:', product.title);
     };
@@ -1058,6 +1066,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartModal = document.getElementById('cart-modal');
         const cartItems = document.getElementById('cart-items');
 
+        // ✅ ÖNCE TEMİZLE (Mükerrer mesajları önlemek için)
+        while (cartItems.firstChild) cartItems.removeChild(cartItems.firstChild);
+
         // Sadece mevcut mağazanın sepetini göster
         const currentStoreCart = currentStoreId ? cart[currentStoreId] : null;
 
@@ -1068,13 +1079,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             cartItems.appendChild(emptyMsg);
             document.getElementById('cart-total-price').textContent = '0.00 TMT';
         } else {
-            while (cartItems.firstChild) cartItems.removeChild(cartItems.firstChild);
             const storeSection = document.createElement('div');
             storeSection.className = 'cart-store-section';
 
             let storeTotal = 0;
             const itemsHTML = currentStoreCart.items.map(item => {
-                const price = parseFloat(item.price.replace(' TMT', ''));
+                const priceMatch = item.price ? item.price.toString().replace(/[^0-9.]/g, '') : '0';
+                const price = parseFloat(priceMatch);
                 storeTotal += price * item.quantity;
                 return `
                     <div class="cart-item">
@@ -1152,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (item) {
                     if (action === 'increase') item.quantity++;
                     else if (action === 'decrease' && item.quantity > 1) item.quantity--;
-                    updateCartCount();
+                    saveCart(); // ✅ Güncelle ve kaydet
                     cartButton.click();
                 }
             }
@@ -1168,7 +1179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (cart[storeId].items.length === 0) {
                     delete cart[storeId];
                 }
-                updateCartCount();
+                saveCart(); // ✅ Güncelle ve kaydet
                 cartButton.click();
             }
             return;
@@ -1187,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (item) {
                     if (action === 'increase') item.quantity++;
                     else if (action === 'decrease' && item.quantity > 1) item.quantity--;
-                    updateCartCount();
+                    saveCart(); // ✅ Güncelle ve kaydet
                     cartButton.click();
                 }
             }
@@ -1203,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (cart[storeId].items.length === 0) {
                     delete cart[storeId];
                 }
-                updateCartCount();
+                saveCart(); // ✅ Güncelle ve kaydet
                 cartButton.click();
             }
             return;
@@ -1406,25 +1417,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // Favoriler modalı
-    favoritesButton.addEventListener('click', () => {
-        const favoritesModal = document.getElementById('favorites-modal');
+    // ✅ YENİ: Favorileri render eden fonksiyon
+    function renderFavorites() {
         const favoritesItems = document.getElementById('favorites-items');
+        if (!favoritesItems) return;
+
+        // Önce içeriği temizle (Mükerrer mesajları önlemek için)
+        while (favoritesItems.firstChild) favoritesItems.removeChild(favoritesItems.firstChild);
+
         if (favorites.length === 0) {
             const emptyMsg = document.createElement('p');
             emptyMsg.className = 'empty-favorites-message';
             emptyMsg.textContent = 'Siz harytlardan öz halanyňyzy saýlap bilersiňiz.';
             favoritesItems.appendChild(emptyMsg);
         } else {
-            while (favoritesItems.firstChild) favoritesItems.removeChild(favoritesItems.firstChild);
             favorites.forEach(product => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
                     <div class="fav-img-container"></div>
                     <div class="favorite-item-info">
-                        <div class="favorite-item-title"></div>
-                        <div class="favorite-item-price"></div>
+                        <div class="favorite-item-title">${product.title}</div>
+                        <div class="favorite-item-price">${product.price}</div>
                         <div class="favorite-item-actions">
                             <button class="btn-remove-favorite" data-id="${product.id}">Aýyr</button>
                             <button class="btn-add-cart-from-fav" data-id="${product.id}">Sebede goş</button>
@@ -1436,12 +1450,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 img.src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3E%3C/text%3E%3C/svg%3E';
                 img.alt = product.title || 'Product';
                 favItem.querySelector('.fav-img-container').appendChild(img);
-
-                favItem.querySelector('.favorite-item-title').textContent = product.title;
-                favItem.querySelector('.favorite-item-price').textContent = product.price;
                 favoritesItems.appendChild(favItem);
             });
         }
+    }
+
+    // Favoriler modalı
+    favoritesButton.addEventListener('click', () => {
+        const favoritesModal = document.getElementById('favorites-modal');
+        renderFavorites();
         favoritesModal.style.display = 'block';
         document.body.classList.add('modal-open');
     });
@@ -1450,13 +1467,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.target.classList.contains('btn-remove-favorite')) {
             favorites = favorites.filter(f => f.id !== e.target.getAttribute('data-id'));
             updateFavoritesCount();
-            favoritesButton.click();
+            renderFavorites(); // ✅ Modal açıkken anında güncelle
         }
         if (e.target.classList.contains('btn-add-cart-from-fav')) {
             const product = favorites.find(f => f.id === e.target.getAttribute('data-id'));
             if (product) {
                 addToCart(product);
-                favoritesButton.click();
+                // Burayı kapatmak istersen: document.getElementById('favorites-modal').style.display = 'none';
             }
         }
     });
