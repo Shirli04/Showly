@@ -112,15 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingOverlay.style.display = 'none';
         }
 
-    } catch (error) {
-        console.error('❌ Firebase hatası:', error);
-
-        // ✅ Loading'i gizle
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-        }
-
-        // ✅ YENİ: Hata mesajını 404 sayfasında göster
+        // ✅ Hata mesajını 404 sayfasında göster
         const notFoundSection = document.getElementById('not-found');
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
@@ -130,9 +122,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (heroSection) heroSection.style.display = 'none';
         if (infoSection) infoSection.style.display = 'none';
 
-        errorTitle.textContent = 'Baglanyşyk Ýok';
-        errorMessage.textContent = 'Internediňizi kontrol ediň!';
-        notFoundSection.style.display = 'block';
+        if (errorTitle) errorTitle.textContent = 'Baglanyşyk Ýok';
+        if (errorMessage) errorMessage.textContent = 'Internediňizi kontrol ediň!';
+        if (notFoundSection) notFoundSection.style.display = 'block';
 
         showNotification('Baglanyp bilmedi. Internediňizi ýa-da VPN-i kontrol ediň.', false);
     }
