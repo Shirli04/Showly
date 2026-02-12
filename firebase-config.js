@@ -244,6 +244,7 @@ window.addStoreToFirebase = async function (store) {
         phone: store.phone || '',
         location: store.location || '',
         orderPhone: store.orderPhone || '',
+        hasReservation: store.hasReservation || false, // ✅ YENİ
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -259,7 +260,8 @@ window.addStoreToFirebase = async function (store) {
         instagram: store.instagram,
         phone: store.phone,
         location: store.location,
-        orderPhone: store.orderPhone
+        orderPhone: store.orderPhone,
+        hasReservation: store.hasReservation || false // ✅ YENİ
     };
 };
 

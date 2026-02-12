@@ -27,6 +27,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const productOriginalPrice = document.getElementById('product-original-price');
     const navLinks = document.querySelectorAll('.nav-link');
 
+    // Rezervasyon elemanları
+    const reservationStoreSelect = document.getElementById('reservation-store-select');
+    const addReservationPackageBtn = document.getElementById('add-reservation-package-btn');
+    const reservationPackagesContainer = document.getElementById('reservation-packages-container');
+    const reservationPackagesList = document.getElementById('reservation-packages-list');
+    const reservationPackagesTableBody = document.getElementById('reservation-packages-table-body');
+    const reservationPackageModal = document.getElementById('reservation-package-modal');
+    const reservationPackageForm = document.getElementById('reservation-package-form');
+    const cancelPackage = document.getElementById('cancel-package');
+
+    let currentReservationStoreId = null;
+    let editingPackageId = null;
+
     // Menü elemanlarını yetkiye göre gizle
     document.querySelectorAll('.nav-link').forEach(link => {
         const section = link.getAttribute('data-section');
@@ -70,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const userForm = document.getElementById('user-form');
     const usersTableBody = document.getElementById('users-table-body');
     const cancelUser = document.getElementById('cancel-user');
+
+    // Rezervasyon Butonları
+    const addReservationPackageBtn_2 = document.getElementById('add-reservation-package-btn'); // Duplicate for safety if needed, but I'll use the one above
 
     // Kategori elemanları (iki seviyeli sistem)
     const storeCategorySelect = document.getElementById('store-category');
@@ -226,6 +242,22 @@ document.addEventListener('DOMContentLoaded', () => {
         attachStoreEventListeners();
 
         console.log(`✅ ${stores.length} mağaza tabloya eklendi`);
+        renderReservationStores(); // Rezervasyon mağazalarını da güncelle
+    };
+
+    // Rezervasyon mağazalarını seçeneğe ekle
+    const renderReservationStores = async () => {
+        if (!reservationStoreSelect) return;
+        const stores = await window.showlyDB.getStores();
+        const reservationStores = stores.filter(s => s.hasReservation);
+
+        reservationStoreSelect.innerHTML = '<option value="">Magazyn saýlaň...</option>';
+        reservationStores.forEach(store => {
+            const option = document.createElement('option');
+            option.value = store.id;
+            option.textContent = store.name;
+            reservationStoreSelect.appendChild(option);
+        });
     };
 
     // Google Sheets’e satır ekleme
@@ -298,6 +330,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const categorySelect = document.getElementById('store-category');
         if (categorySelect && store.category) {
             categorySelect.value = store.category;
+        }
+
+        // ✅ YENİ: Rezervasyon checkbox'ını yükle
+        const hasReservationCheckbox = document.getElementById('store-has-reservation');
+        if (hasReservationCheckbox) {
+            hasReservationCheckbox.checked = store.hasReservation || false;
         }
 
         storeModal.style.display = 'block';
@@ -800,6 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const phone = document.getElementById('store-phone')?.value.trim() || '';
         const location = document.getElementById('store-location')?.value.trim() || '';
         const orderPhone = document.getElementById('store-order-phone')?.value.trim() || '';
+        const hasReservation = document.getElementById('store-has-reservation')?.checked || false; // ✅ YENİ
 
         if (!name) {
             showNotification('Mağaza ady gerekli!', false);
@@ -819,7 +858,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     instagram,
                     phone,
                     location,
-                    orderPhone
+                    orderPhone,
+                    hasReservation // ✅ YENİ
                 });
                 showNotification('Mağaza güncellendi!');
             } else {
@@ -833,7 +873,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     instagram,
                     phone,
                     location,
-                    orderPhone
+                    orderPhone,
+                    hasReservation // ✅ YENİ
                 });
                 showNotification('Mağaza eklendi!');
             }
@@ -1117,14 +1158,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const fragment = document.createDocumentFragment();
             for (const order of orders) {
-                const storeNames = [...new Set(order.items.map(item => {
-                    const product = allProducts.find(p => p.id === item.id);
-                    const store = allStores.find(s => s.id === product?.storeId);
-                    return store?.name || 'Bilinmiyor';
-                }))].join(', ');
+                let storeNames = '';
+                if (order.orderType === 'reservation' && order.storeId) {
+                    const store = allStores.find(s => s.id === order.storeId);
+                    storeNames = store ? store.name : 'Bilinmiyor';
+                } else {
+                    storeNames = [...new Set(order.items.map(item => {
+                        const product = allProducts.find(p => p.id === item.id);
+                        const store = allStores.find(s => s.id === product?.storeId);
+                        return store?.name || 'Bilinmiyor';
+                    }))].join(', ');
+                }
 
                 const row = document.createElement('tr');
                 if (order.status === 'pending') {
+                    const isReservation = order.orderType === 'reservation';
                     row.innerHTML = `
                         <td data-label="Harytlar">
                             <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0;"></ul>
@@ -1135,7 +1183,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td data-label="Bellik" class="order-customer-note"></td>
                         <td data-label="Magazynlar" class="order-stores"></td>
                         <td data-label="Taryhy" class="order-date"></td>
-                        <td data-label="Durum"><span class="status pending">Garaşylýar</span></td>
+                        <td data-label="Durum">
+                            ${isReservation ? '<span class="status reservation-label" style="background: #6c5ce7; color: white; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; margin-bottom: 5px; display: inline-block;">REZEW</span><br>' : ''}
+                            <span class="status pending">Garaşylýar</span>
+                        </td>
                         <td data-label="Etmekler">
                             <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
                             <button class="btn-icon order-action-btn" data-id="${order.id}" title="Numara Ata we SMS Gönder">
@@ -1144,6 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </td>
                     `;
                 } else {
+                    const isReservation = order.orderType === 'reservation';
                     row.innerHTML = `
                         <td data-label="Harytlar">
                             <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0;"></ul>
@@ -1154,8 +1206,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td data-label="Bellik" class="order-customer-note"></td>
                         <td data-label="Magazynlar" class="order-stores"></td>
                         <td data-label="Taryhy" class="order-date"></td>
-                        <td data-label="Durum"><span class="status completed">Onaylandı</span></td>
-                        <td data-label="Zakaz No" class="order-number-cell"><strong></strong></td>
+                        <td data-label="Durum">
+                            ${isReservation ? '<span class="status reservation-label" style="background: #6c5ce7; color: white; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; margin-bottom: 5px; display: inline-block;">REZEW</span><br>' : ''}
+                            <span class="status completed">Onaylandı</span>
+                        </td>
+                        <td data-label="Zakaz No" class="order-number-cell">
+                            ${isReservation ? '<span style="color: #6c5ce7; font-weight: 800;">REZERWE </span>' : ''}
+                            <strong></strong>
+                        </td>
                     `;
                     row.querySelector('.order-number-cell strong').textContent = order.orderNumber;
                 }
@@ -1164,7 +1222,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemsList = row.querySelector('.order-items-list');
                 order.items.forEach(item => {
                     const li = document.createElement('li');
-                    li.textContent = `ID: ${item.id}`;
+                    // Eğer ürün adı varsa onu göster, yoksa ID göster
+                    li.textContent = item.title || item.name || `ID: ${item.id}`;
                     itemsList.appendChild(li);
                 });
 
@@ -1173,7 +1232,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.querySelector('.order-customer-address').textContent = order.customer.address;
                 row.querySelector('.order-customer-note').textContent = order.customer.note || '';
                 row.querySelector('.order-stores').textContent = storeNames;
-                row.querySelector('.order-date').textContent = new Date(order.timestamp || order.date).toLocaleString('tr-TR');
+
+                // Zamanı göster (Firestore Timestamp veya String ISO)
+                let displayDate = 'Bilinmiyor';
+                if (order.timestamp) {
+                    const dateObj = order.timestamp.toDate ? order.timestamp.toDate() : new Date(order.timestamp);
+                    displayDate = dateObj.toLocaleString('tr-TR');
+                } else if (order.date) {
+                    displayDate = new Date(order.date).toLocaleString('tr-TR');
+                }
+                row.querySelector('.order-date').textContent = displayDate;
 
                 // Action button listener
                 const actionBtn = row.querySelector('.order-action-btn');
@@ -1992,6 +2060,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeAllModals = () => {
         storeModal.style.display = 'none';
         productModal.style.display = 'none';
+        if (userModal) userModal.style.display = 'none';
+        if (reservationPackageModal) reservationPackageModal.style.display = 'none';
         storeForm.reset();
         productForm.reset();
         productImage.value = '';
@@ -2000,6 +2070,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editingStoreId = null;
         editingProductId = null;
         uploadedProductImageUrl = null;
+        editingPackageId = null;
         isSubmitting = false;
     };
 
@@ -2022,11 +2093,298 @@ document.addEventListener('DOMContentLoaded', () => {
 
             pageTitle.textContent = link.textContent.trim();
 
+            // ✅ YENİ: Rezervasyon sekmesi açıldığında mağazaları yenile
+            if (sectionId === 'reservations') {
+                renderReservationStores();
+            }
+
             // Mobilde menüyü kapat
             if (window.innerWidth <= 768) {
                 closeSidebar();
             }
         });
+    });
+
+    // ==================== REZERVASYON YÖNETİMİ ====================
+
+    // Paket toplam fiyatını hesapla (Tüm fiyatları toplar)
+    function updatePackageTotal() {
+        const menuPriceInputs = document.querySelectorAll('.menu-item-price');
+        let total = 0;
+
+        menuPriceInputs.forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+
+        // NOT: Kapasite fiyatları artık toplama eklenmez, 
+        // çünkü her kapasite farklı bir seçenektir ve frontend'de seçime göre eklenir.
+
+        const packagePriceInput = document.getElementById('package-price');
+        if (packagePriceInput) {
+            packagePriceInput.value = total.toFixed(2);
+        }
+    }
+
+    // Dinamik satır ekleme yardımcısı (Ad + Fiyat)
+    function createDynamicRowWithPrice(nameValue = '', priceValue = '', nameClass = '', priceClass = '', placeholder = 'Ady') {
+        const row = document.createElement('div');
+        row.className = 'dynamic-row';
+
+        // Menü maddesi ise textarea kullan, kapasite ise input kullan
+        const isMenu = nameClass === 'menu-item-input';
+        const inputHtml = isMenu
+            ? `<textarea class="${nameClass}" required placeholder="${placeholder}" style="flex: 2; min-height: 80px; padding: 10px; resize: vertical;">${nameValue}</textarea>`
+            : `<input type="text" class="${nameClass}" required value="${nameValue}" placeholder="${placeholder}" style="flex: 2;">`;
+
+        row.innerHTML = `
+            ${inputHtml}
+            <div style="display: flex; flex-direction: column; gap: 5px; flex: 1;">
+                <input type="number" class="${priceClass}" required value="${priceValue}" placeholder="Baha" step="0.01" style="width: 100%;">
+                <button type="button" class="btn-remove-row" style="align-self: flex-end;"><i class="fas fa-minus-circle"></i> Poz</button>
+            </div>
+        `;
+
+        // Fiyat değişince toplamı güncelle
+        const priceInput = row.querySelector(`.${priceClass}`);
+        priceInput.addEventListener('input', updatePackageTotal);
+
+        row.querySelector('.btn-remove-row').addEventListener('click', () => {
+            row.remove();
+            updatePackageTotal();
+        });
+
+        return row;
+    }
+
+    const addMenuRowBtn = document.getElementById('add-menu-item');
+    const addCapacityRowBtn = document.getElementById('add-capacity-item');
+    const menuItemsContainer = document.getElementById('package-menu-items');
+    const capacityItemsContainer = document.getElementById('package-capacity-items');
+
+    addMenuRowBtn?.addEventListener('click', () => {
+        menuItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'menu-item-input', 'menu-item-price', 'Örn: 2 sany tike'));
+    });
+
+    addCapacityRowBtn?.addEventListener('click', () => {
+        capacityItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'capacity-item-input', 'capacity-item-price', 'Örn: 2 Adamlyk'));
+    });
+
+    // Rezervasyon mağazası seçildiğinde
+    reservationStoreSelect?.addEventListener('change', (e) => {
+        currentReservationStoreId = e.target.value;
+        if (currentReservationStoreId) {
+            if (addReservationPackageBtn) addReservationPackageBtn.style.display = 'block';
+            if (reservationPackagesContainer) reservationPackagesContainer.style.display = 'none';
+            if (reservationPackagesList) reservationPackagesList.style.display = 'block';
+            renderReservationPackages(currentReservationStoreId);
+        } else {
+            if (addReservationPackageBtn) addReservationPackageBtn.style.display = 'none';
+            if (reservationPackagesContainer) reservationPackagesContainer.style.display = 'block';
+            if (reservationPackagesList) reservationPackagesList.style.display = 'none';
+        }
+    });
+
+    // Rezervasyon paketleri tablosunu güncelle
+    const renderReservationPackages = async (storeId) => {
+        try {
+            const packagesSnapshot = await window.db.collection('reservationPackages')
+                .where('storeId', '==', storeId)
+                .get();
+
+            const packages = packagesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            if (reservationPackagesTableBody) {
+                reservationPackagesTableBody.innerHTML = '';
+                if (packages.length === 0) {
+                    reservationPackagesTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">Henüz paket eklenmemiş.</td></tr>';
+                } else {
+                    packages.forEach(pkg => {
+                        const row = document.createElement('tr');
+
+                        // Menü Maddeleri listesi (Ad - Baha)
+                        const menuText = Array.isArray(pkg.menuItems)
+                            ? pkg.menuItems.map(m => `${m.name}: ${m.price} TMT`).join('\n')
+                            : (pkg.menu || '');
+
+                        // Kapasite listesi (Ad - Baha)
+                        const capacityText = Array.isArray(pkg.capacities)
+                            ? pkg.capacities.map(c => `${c.name} (${c.price} TMT)`).join(', ')
+                            : '';
+
+                        // Hizmet Türleri
+                        const serviceTypesText = Array.isArray(pkg.serviceTypes) ? pkg.serviceTypes.join(', ') : 'Saýlanmadyk';
+
+                        // İlk hizmet türünü veya varsayılan bir başlık göster (Çünkü Paket Adı kalktı)
+                        const mainTitle = (Array.isArray(pkg.serviceTypes) && pkg.serviceTypes.length > 0)
+                            ? pkg.serviceTypes[0]
+                            : 'Ziyafet Paketi';
+
+                        row.innerHTML = `
+                            <td data-label="Başlıca Hizmet" style="font-weight: 700; color: var(--primary-color);"></td>
+                            <td data-label="Jemi Baha"></td>
+                            <td data-label="Görnüşleri ve Menýu" style="max-width: 300px; white-space: pre-line;"></td>
+                            <td data-label="Etmekler">
+                                <button class="btn-icon edit-package" data-id="${pkg.id}"><i class="fas fa-edit"></i></button>
+                                <button class="btn-icon danger delete-package" data-id="${pkg.id}"><i class="fas fa-trash"></i></button>
+                            </td>
+                        `;
+                        row.querySelector('td:nth-child(1)').textContent = mainTitle;
+                        row.querySelector('td:nth-child(2)').textContent = `${pkg.totalPrice || pkg.price} TMT`;
+                        row.querySelector('td:nth-child(3)').textContent = `Görnüşleri: ${serviceTypesText}\n\nMenýu:\n${menuText}\n\nKapasite Seçekleri: ${capacityText}`;
+                        reservationPackagesTableBody.appendChild(row);
+                    });
+
+                    // Olay dinleyicileri ekle
+                    document.querySelectorAll('.edit-package').forEach(btn => {
+                        btn.addEventListener('click', (e) => editReservationPackage(e.currentTarget.getAttribute('data-id')));
+                    });
+                    document.querySelectorAll('.delete-package').forEach(btn => {
+                        btn.addEventListener('click', (e) => deleteReservationPackage(e.currentTarget.getAttribute('data-id')));
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Rezervasyon paketleri yükleme hatası:', error);
+        }
+    };
+
+    const editReservationPackage = async (packageId) => {
+        try {
+            const doc = await window.db.collection('reservationPackages').doc(packageId).get();
+            if (!doc.exists) return;
+            const pkg = doc.data();
+
+            document.getElementById('reservation-package-modal-title').textContent = 'Paketi Düzenle';
+            document.getElementById('package-id').value = packageId;
+            // Paket adı kalktı
+            document.getElementById('package-price').value = pkg.totalPrice || pkg.price;
+
+            // Hizmet türlerini yükle (Textarea)
+            const serviceTypesManual = document.getElementById('service-types-manual');
+            if (serviceTypesManual) {
+                serviceTypesManual.value = Array.isArray(pkg.serviceTypes) ? pkg.serviceTypes.join(', ') : '';
+            }
+
+            // Dinamik alanları temizle ve doldur
+            menuItemsContainer.innerHTML = '';
+            if (Array.isArray(pkg.menuItems) && pkg.menuItems.length > 0) {
+                pkg.menuItems.forEach(item => {
+                    menuItemsContainer.appendChild(createDynamicRowWithPrice(item.name, item.price, 'menu-item-input', 'menu-item-price', 'Örn: 2 sany tike'));
+                });
+            } else {
+                menuItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'menu-item-input', 'menu-item-price', 'Örn: 2 sany tike'));
+            }
+
+            capacityItemsContainer.innerHTML = '';
+            if (Array.isArray(pkg.capacities) && pkg.capacities.length > 0) {
+                pkg.capacities.forEach(item => {
+                    capacityItemsContainer.appendChild(createDynamicRowWithPrice(item.name, item.price, 'capacity-item-input', 'capacity-item-price', 'Örn: 2 Adamlyk'));
+                });
+            } else {
+                capacityItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'capacity-item-input', 'capacity-item-price', 'Örn: 2 Adamlyk'));
+            }
+
+            editingPackageId = packageId;
+            reservationPackageModal.style.display = 'block';
+            updatePackageTotal();
+        } catch (error) {
+            console.error('Paket düzenleme hatası:', error);
+        }
+    };
+
+    const deleteReservationPackage = async (packageId) => {
+        if (confirm('Bu rezervasyon paketini silmek istediğinizden emin misiniz?')) {
+            try {
+                await window.db.collection('reservationPackages').doc(packageId).delete();
+                showNotification('Paket başarıyla silindi!');
+                renderReservationPackages(currentReservationStoreId);
+            } catch (error) {
+                console.error('Paket silme hatası:', error);
+            }
+        }
+    };
+
+    addReservationPackageBtn?.addEventListener('click', () => {
+        document.getElementById('reservation-package-modal-title').textContent = 'Täze paket goş';
+        reservationPackageForm.reset();
+        document.getElementById('package-id').value = '';
+        // Paket adı kalktı
+
+        // Dinamik alanları sıfırla (başlangıçta birer boş satır)
+        menuItemsContainer.innerHTML = '';
+        menuItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'menu-item-input', 'menu-item-price', 'Örn: 2 sany tike'));
+        capacityItemsContainer.innerHTML = '';
+        capacityItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'capacity-item-input', 'capacity-item-price', 'Örn: 2 Adamlyk'));
+
+        editingPackageId = null;
+        reservationPackageModal.style.display = 'block';
+
+        // Hizmet türlerini sıfırla
+        document.querySelectorAll('input[name="service-type"]').forEach(cb => cb.checked = false);
+
+        updatePackageTotal();
+    });
+
+    reservationPackageForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // Paket adı kalktı: const packageName = document.getElementById('package-name').value.trim();
+        const totalPrice = parseFloat(document.getElementById('package-price').value) || 0;
+
+        // Hizmet türlerini textarea'dan al ve array yap
+        const serviceTypesManual = document.getElementById('service-types-manual').value;
+        const serviceTypes = serviceTypesManual.split(/[,\n]/).map(s => s.trim()).filter(s => s !== '');
+
+        // Dinamik listeleri (Nesne olarak) topla
+        const menuRows = menuItemsContainer.querySelectorAll('.dynamic-row');
+        const menuItems = Array.from(menuRows).map(row => ({
+            name: row.querySelector('.menu-item-input').value.trim(),
+            price: parseFloat(row.querySelector('.menu-item-price').value) || 0
+        })).filter(item => item.name !== '');
+
+        const capacityRows = capacityItemsContainer.querySelectorAll('.dynamic-row');
+        const capacities = Array.from(capacityRows).map(row => ({
+            name: row.querySelector('.capacity-item-input').value.trim(),
+            price: parseFloat(row.querySelector('.capacity-item-price').value) || 0
+        })).filter(item => item.name !== '');
+
+        if (menuItems.length === 0 || capacities.length === 0) {
+            showNotification('Lütfen en az bir menü maddesi ve kapasite seçeneği ekleyin.', false);
+            return;
+        }
+
+        try {
+            const packageData = {
+                storeId: currentReservationStoreId,
+                // packageName artık yok, frontendde undefined gelebilir ama sorun değil
+                totalPrice,
+                serviceTypes,
+                menuItems,
+                capacities,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (editingPackageId) {
+                await window.db.collection('reservationPackages').doc(editingPackageId).update(packageData);
+                showNotification('Paket güncellendi!');
+            } else {
+                packageData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await window.db.collection('reservationPackages').add(packageData);
+                showNotification('Paket eklendi!');
+            }
+
+            reservationPackageModal.style.display = 'none';
+            renderReservationPackages(currentReservationStoreId);
+        } catch (error) {
+            console.error('Paket kaydetme hatası:', error);
+            showNotification('İşlem başarısız!', false);
+        }
+    });
+
+    cancelPackage?.addEventListener('click', () => {
+        reservationPackageModal.style.display = 'none';
     });
 
     // Mağaza butonları

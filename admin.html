@@ -147,6 +147,8 @@
                             ulanyjylar</a></li>
                     <li><a href="#" class="nav-link" data-section="categories"><i class="fas fa-tags"></i>
                             Kategoriyalar</a></li>
+                    <li><a href="#" class="nav-link" data-section="reservations"><i class="fas fa-calendar-alt"></i>
+                            Rezervasyonlar</a></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
@@ -301,6 +303,7 @@
                                     <th>Müşderi ady</th>
                                     <th>Telefon</th>
                                     <th>Adres</th>
+                                    <th>Bellik</th>
                                     <th>Magazyn</th>
                                     <th>Wagt</th>
                                     <th></th>
@@ -429,6 +432,48 @@
                     </div>
                 </section>
 
+                <!-- Rezervasyonlar Bölümü -->
+                <section id="reservations" class="content-section">
+                    <div class="section-header">
+                        <h2>Rezervasyon dolandyryşy</h2>
+                        <div class="header-actions" style="display: flex; gap: 15px; align-items: center;">
+                            <select id="reservation-store-select"
+                                style="padding: 10px 15px; border-radius: 8px; border: 2px solid #e0e0e0; background: white; font-weight: 500; min-width: 200px;">
+                                <option value="">Magazyn saýlaň...</option>
+                            </select>
+                            <button id="add-reservation-package-btn" class="btn-primary" style="display: none;">
+                                <i class="fas fa-plus"></i> Täze paket goş
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="reservation-packages-container">
+                        <div
+                            style="text-align: center; padding: 60px 20px; color: #666; background: white; border-radius: 12px; border: 2px dashed #e0e0e0;">
+                            <i class="fas fa-calendar-check"
+                                style="font-size: 48px; margin-bottom: 20px; color: var(--primary-color); opacity: 0.3;"></i>
+                            <p style="font-size: 16px; font-weight: 500;">Dowam etmek üçin ýokardan rezervasyon hyzmaty
+                                açyk
+                                bolan bir magazyn saýlaň.</p>
+                        </div>
+                    </div>
+
+                    <div id="reservation-packages-list" style="display: none; margin-top: 25px;">
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Jemi Baha</th>
+                                        <th>Hizmet Görnüşleri ve Menýu</th>
+                                        <th>Etmekler</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reservation-packages-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Ana Kategori Modalı -->
                 <div id="parent-category-modal" class="modal">
                     <div class="modal-content" style="max-width: 500px;">
@@ -506,55 +551,66 @@
                 <h3 id="store-modal-title">Täze magazyn goş</h3>
                 <span class="close-modal">&times;</span>
             </div>
-            <form id="store-form">
-                <input type="hidden" id="store-id">
-                <div class="form-group">
-                    <label>Magazyn ady</label>
-                    <input type="text" id="store-name" required>
-                </div>
-                <div class="form-group">
-                    <label>Magazyn düşündirilişi</label>
-                    <textarea id="store-description" rows="3"></textarea>
-                </div>
-                <!-- ✅ YENİ: Kategori Seçimi -->
-                <div class="form-group">
-                    <label>Kategoriýa</label>
-                    <select id="store-category">
-                        <option value="">Kategoriýa saýlaň (opsiýonel)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Magazyn tekst</label>
-                    <input type="text" id="store-custom-banner-text" placeholder="Mağaza üstünde gösterilecek metin">
-                </div>
+            <div class="modal-body">
+                <form id="store-form">
+                    <input type="hidden" id="store-id">
+                    <div class="form-group">
+                        <label>Magazyn ady</label>
+                        <input type="text" id="store-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Magazyn düşündirilişi</label>
+                        <textarea id="store-description" rows="3"></textarea>
+                    </div>
+                    <!-- ✅ YENİ: Kategori Seçimi -->
+                    <div class="form-group">
+                        <label>Kategoriýa</label>
+                        <select id="store-category">
+                            <option value="">Kategoriýa saýlaň (opsiýonel)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Magazyn tekst</label>
+                        <input type="text" id="store-custom-banner-text"
+                            placeholder="Mağaza üstünde gösterilecek metin">
+                    </div>
 
-                <!-- ✅ YENİ: TikTok ve Instagram -->
-                <div class="form-group">
-                    <label>TikTok URL</label>
-                    <input type="url" id="store-tiktok" placeholder="https://tiktok.com/@magazaadi">
-                </div>
-                <div class="form-group">
-                    <label>Instagram URL</label>
-                    <input type="url" id="store-instagram" placeholder="https://instagram.com/magazaadi">
-                </div>
-                <div class="form-group">
-                    <label>Magazyn belgisi (telefon)</label>
-                    <input type="tel" id="store-phone" placeholder="+993 XX XX XX XX">
-                </div>
-                <div class="form-group">
-                    <label>Magazyn ýerleşýän ýeri</label>
-                    <input type="text" id="store-location" placeholder="Aşgabat, Koňratgüzar 5-ji jaý">
-                </div>
-                <div class="form-group">
-                    <label>Sargyt üçin telefon (opsiýonel)</label>
-                    <input type="tel" id="store-order-phone" placeholder="+993 XX XX XX XX">
-                </div>
+                    <!-- ✅ YENİ: TikTok ve Instagram -->
+                    <div class="form-group">
+                        <label>TikTok URL</label>
+                        <input type="url" id="store-tiktok" placeholder="https://tiktok.com/@magazaadi">
+                    </div>
+                    <div class="form-group">
+                        <label>Instagram URL</label>
+                        <input type="url" id="store-instagram" placeholder="https://instagram.com/magazaadi">
+                    </div>
+                    <div class="form-group">
+                        <label>Magazyn belgisi (telefon)</label>
+                        <input type="tel" id="store-phone" placeholder="+993 XX XX XX XX">
+                    </div>
+                    <div class="form-group">
+                        <label>Magazyn ýerleşýän ýeri</label>
+                        <input type="text" id="store-location" placeholder="Aşgabat, Koňratgüzar 5-ji jaý">
+                    </div>
+                    <div class="form-group">
+                        <label>Sargyt üçin telefon (opsiýonel)</label>
+                        <input type="tel" id="store-order-phone" placeholder="+993 XX XX XX XX">
+                    </div>
 
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="cancel-store">Aýyr</button>
-                    <button type="submit" class="btn-primary">Ýatda sakla</button>
-                </div>
-            </form>
+                    <!-- ✅ YENİ: Rezervasyon Özelliği -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="store-has-reservation">
+                            <span>Bu magazyn rezervasyon hyzmatyny hödürleýär</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancel-store">Aýyr</button>
+                        <button type="submit" class="btn-primary">Ýatda sakla</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -711,6 +767,55 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Rezervasyon Paketi Modalı -->
+    <div id="reservation-package-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="reservation-package-modal-title">Täze paket goş</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="reservation-package-form">
+                    <input type="hidden" id="package-id">
+                    <div class="form-group">
+                        <label>Jemi Baha (Awtomatik hasaplanýar) *</label>
+                        <input type="number" id="package-price" required min="0" step="0.01" readonly
+                            style="background: #f5f5f5; font-weight: 600; color: var(--primary-color);">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Hizmet Görnüşleri (Otur bilen aýyryp ýazyň) *</label>
+                        <textarea id="service-types-manual" required rows="2"
+                            placeholder="Örn: Toý, Doglan gün, Üýşmeleň"></textarea>
+                    </div>
+
+                    <!-- ✅ YENİ: Dinamik Menü Listesi (Fiyatlı) -->
+                    <div class="form-group">
+                        <label>Menýu maddaary we Bahalary * <button type="button" class="btn-add-row"
+                                id="add-menu-item"><i class="fas fa-plus-circle"></i> Madda goş</button></label>
+                        <div id="package-menu-items" class="dynamic-rows">
+                            <!-- Satırlar JS ile eklenecek -->
+                        </div>
+                    </div>
+
+                    <!-- ✅ YENİ: Dinamik Kapasite Listesi (Fiyatlı) -->
+                    <div class="form-group">
+                        <label>Adam sany / Kapasite we Bahasy * <button type="button" class="btn-add-row"
+                                id="add-capacity-item"><i class="fas fa-plus-circle"></i> Seçenek goş</button></label>
+                        <div id="package-capacity-items" class="dynamic-rows">
+                            <!-- Satırlar JS ile eklenecek -->
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancel-package">Aýyr</button>
+                        <button type="submit" class="btn-primary">Ýatda sakla</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

@@ -49,6 +49,7 @@
             transform: scale(0.95) rotate(90deg) !important;
         }
     </style>
+
 </head>
 
 <body>
@@ -149,9 +150,16 @@
 
             <!-- GENEL FİLTRELEME ALANI -->
             <div class="main-filters-section" id="main-filters-section" style="display: none;">
-                <button id="main-filter-toggle-btn" class="filter-toggle-btn">
-                    <i class="fas fa-filter"></i> Filtr
-                </button>
+                <div class="filter-buttons-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                    <button id="main-filter-toggle-btn" class="filter-toggle-btn" style="margin-bottom: 0;">
+                        <i class="fas fa-filter"></i> Filtr
+                    </button>
+                    <!-- ✅ YENİ: Rezerve butonu buraya taşındı -->
+                    <button id="rezervasyon-yap-btn" class="filter-toggle-btn reservation-btn-v2"
+                        style="display: none; margin-bottom: 0; background-color: var(--primary-color); color: white; border: none;">
+                        <i class="fas fa-calendar-check"></i> Rezerve
+                    </button>
+                </div>
                 <div id="main-filters-container" class="main-filters-container" style="display: none;">
                     <!-- Fiyat filtreleri JavaScript ile buraya doldurulacak -->
                 </div>
@@ -239,6 +247,409 @@
         </div>
     </div>
 
+
+    <style>
+        /* ================================ BANQUET PLANNING (ZİYAFET) MODAL ================================ */
+        .banquet-modal {
+            z-index: 10001 !important;
+            display: none;
+            overflow-y: auto !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+            backdrop-filter: blur(5px);
+        }
+
+        .banquet-modal .modal-content {
+            max-width: 700px !important;
+            width: 95% !important;
+            margin: 0 auto;
+            border-radius: 30px !important;
+            min-height: auto;
+            background: #fff !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2) !important;
+            position: relative;
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .banquet-modal .modal-content {
+                margin-top: 50px;
+                margin-bottom: 50px;
+            }
+
+            .event-types-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+
+            .packages-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+                gap: 20px !important;
+                overflow-x: visible !important;
+            }
+        }
+
+        .banquet-container {
+            padding-bottom: 40px;
+        }
+
+        .banquet-header {
+            background: linear-gradient(135deg, #1a1a1a, #444);
+            color: white;
+            padding: 50px 20px 70px;
+            text-align: center;
+            border-radius: 0 0 40px 40px;
+            position: relative;
+        }
+
+        .banquet-icon {
+            font-size: 32px;
+            background: rgba(255, 255, 255, 0.15);
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 22px;
+            margin: 0 auto 15px;
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .banquet-hero {
+            margin: -40px 30px 0;
+            background: white;
+            padding: 25px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            z-index: 5;
+            border: 1px solid #f0f0f0;
+        }
+
+        .banquet-hero h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #1a1a1a, #666);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .banquet-section {
+            padding: 35px 30px 0;
+        }
+
+        .banquet-section h3 {
+            font-size: 19px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #1a1a1a;
+            font-weight: 800;
+        }
+
+        .event-types-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .event-type-card .card-content {
+            border: 2px solid #f0f0f0;
+            padding: 18px 15px;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .event-type-card input {
+            display: none;
+        }
+
+        .event-type-card input:checked+.card-content {
+            border-color: var(--primary-color);
+            background: #fff7f7;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .date-availability-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #banquet-date {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 18px;
+            font-size: 16px;
+            font-family: inherit;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        #banquet-date:focus {
+            border-color: var(--primary-color);
+        }
+
+        .availability-status {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2ecc71;
+            padding: 10px 18px;
+            background: #effaf3;
+            border-radius: 20px;
+            border: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        /* Packages */
+        .packages-grid {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 5px 5px 20px;
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        .packages-grid::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Chrome/Safari */
+
+        .package-item-card {
+            min-width: 280px;
+            flex: 0 0 280px;
+        }
+
+        .package-card-content {
+            border: 2px solid #f0f0f0;
+            padding: 24px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: 0.4s;
+            background: #fff;
+        }
+
+        .package-item-card input {
+            display: none;
+        }
+
+        .package-item-card input:checked+.package-card-content {
+            border-color: var(--primary-color);
+            background: #fff;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+            transform: scale(1.02);
+        }
+
+        /* Contact Inputs */
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f9f9f9;
+            padding: 15px 20px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            border: 1px solid #f0f0f0;
+            transition: 0.3s;
+        }
+
+        .input-group:focus-within {
+            background: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-group i {
+            color: #888;
+            font-size: 18px;
+        }
+
+        .input-group input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            outline: none;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        /* Summary */
+        .banquet-summary-card {
+            background: #1a1a1a;
+            color: white;
+            margin: 40px 30px 0;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 15px;
+            opacity: 0.9;
+        }
+
+        .summary-item.total {
+            font-size: 24px;
+            font-weight: 800;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            padding-top: 20px;
+            margin-top: 20px;
+            opacity: 1;
+        }
+
+        .admin-notice {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 15px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .banquet-submit-btn {
+            width: 100%;
+            padding: 20px;
+            border-radius: 20px;
+            border: none;
+            background: #fff;
+            color: #1a1a1a;
+            font-weight: 800;
+            font-size: 17px;
+            margin-top: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .banquet-submit-btn:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+    </style>
+
+    <!-- Ziyafet Planlama Modalı -->
+    <div id="banquet-modal" class="modal banquet-modal">
+        <div class="modal-content banquet-content">
+            <span class="close-modal" id="close-banquet-modal">&times;</span>
+
+            <div class="banquet-container">
+                <!-- Header Section -->
+                <div class="banquet-header">
+                    <div class="banquet-restaurant-info">
+                        <i class="fas fa-utensils banquet-icon"></i>
+                        <h2 id="banquet-store-name">Restoran Ady</h2>
+                    </div>
+                </div>
+
+                <!-- Hero Section -->
+                <div class="banquet-hero">
+                    <h1>Çalt we aňsat meýilleşdir 🚀</h1>
+                    <p>Siziň özel günüňiz üçin iň gowy hyzmaty hödürleýäris.</p>
+                </div>
+
+                <form id="banquet-form">
+                    <!-- 1. Event Type Selection -->
+                    <div class="banquet-section">
+                        <h3><i class="fas fa-star"></i> Çäre görnüşi</h3>
+                        <div id="event-types-list" class="event-types-grid">
+                            <!-- JS ile doldurulacak (pkg.serviceTypes) -->
+                        </div>
+                    </div>
+
+                    <!-- 2. Date and Availability -->
+                    <div class="banquet-section">
+                        <h3><i class="fas fa-calendar-alt"></i> Senenama</h3>
+                        <div class="date-availability-row">
+                            <input type="date" id="banquet-date" required>
+                            <div id="banquet-availability" class="availability-status status-available">
+                                <i class="fas fa-check-circle"></i> Elýeterli
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Guest Count -->
+                    <div class="banquet-section">
+                        <h3><i class="fas fa-users"></i> Adam sany</h3>
+                        <div id="guest-options-list" class="event-types-grid" style="margin-bottom: 15px;">
+                            <!-- JS ile doldurulacak (pkg.capacities) -->
+                        </div>
+
+                        <div class="manual-guest-counter"
+                            style="display: flex; align-items: center; gap: 15px; background: #f9f9f9; padding: 15px 20px; border-radius: 20px; border: 1px solid #f0f0f0; width: fit-content;">
+                            <span style="font-size: 14px; font-weight: 600; color: #666;">El bilen sazla:</span>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <button type="button" id="guest-minus-btn" class="counter-btn"
+                                    style="width: 36px; height: 36px; border-radius: 50%; border: none; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; color: #1a1a1a; display: flex; align-items: center; justify-content: center; transition: 0.2s;"><i
+                                        class="fas fa-minus"></i></button>
+                                <input type="number" id="guest-count" value="10" min="1"
+                                    style="width: 60px; text-align: center; border: none; background: transparent; font-size: 18px; font-weight: 800; color: var(--primary-color); outline: none;">
+                                <button type="button" id="guest-plus-btn" class="counter-btn"
+                                    style="width: 36px; height: 36px; border-radius: 50%; border: none; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; color: #1a1a1a; display: flex; align-items: center; justify-content: center; transition: 0.2s;"><i
+                                        class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Menu Packages (Dynamic) -->
+                    <div class="banquet-section">
+                        <h3><i class="fas fa-concierge-bell"></i> Menýu toplumlary</h3>
+                        <div id="banquet-packages-list" class="packages-grid">
+                            <!-- JS ile doldurulacak -->
+                            <p class="loading-packages">Paketler ýüklenýär...</p>
+                        </div>
+                    </div>
+
+                    <!-- 5. Contact Info -->
+                    <div class="banquet-section">
+                        <h3><i class="fas fa-id-card"></i> Habarlaşmak üçin</h3>
+                        <div class="contact-inputs">
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="banquet-customer-name" placeholder="Adyňyz we Familiýaňyz"
+                                    required>
+                            </div>
+                            <div class="input-group">
+                                <i class="fas fa-phone"></i>
+                                <input type="tel" id="banquet-customer-phone" placeholder="+993 61 000000" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary and Checkout -->
+                    <div class="banquet-summary-card">
+                        <div class="summary-item">
+                            <span>Sargyt bahasy:</span>
+                            <span id="banquet-subtotal">0 TMT</span>
+                        </div>
+                        <div class="summary-item total">
+                            <span>Jemi baha (Takmyny):</span>
+                            <span id="banquet-total-price">0 TMT</span>
+                        </div>
+                        <p class="admin-notice">* Final baha admin tarapyndan tassyklanar.</p>
+                        <button type="submit" class="banquet-submit-btn">
+                            Meýilleşdirmegi tassykla <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase Compat SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>

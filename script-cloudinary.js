@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const mainFiltersSection = document.getElementById('main-filters-section');
     const mainFilterToggleBtn = document.getElementById('main-filter-toggle-btn');
     const mainFiltersContainer = document.getElementById('main-filters-container');
+    const reservationBtn = document.getElementById('rezervasyon-yap-btn'); // ✅ GÜNCELLENDİ
 
 
     // --- DURUM DEĞİŞKENLERİ (STATE) ---
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // ✅ YENİ: Cloudflare Worker API üzerinden veri çek
         const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
-        console.log('🔄 Worker API üzerinden veriler yükleniyor:', WORKER_URL);
+        console.log('🔄 Worker API üzerinden veriler yükleniyor:');
 
         const response = await fetch(WORKER_URL);
         if (!response.ok) {
@@ -142,6 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (storeBanner) storeBanner.style.display = 'none';
             if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
             if (mainFiltersSection) mainFiltersSection.style.display = 'none';
+            if (reservationBtn) reservationBtn.style.display = 'none'; // ✅ GÜNCELLENDİ
             if (productsGrid) productsGrid.style.display = 'none';
             if (notFoundSection) notFoundSection.style.display = 'none';
             document.title = 'Showly - Online Katalog Platformasy';
@@ -164,6 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.scrollTo(0, 0);
             if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
             if (mainFiltersSection) mainFiltersSection.style.display = 'none';
+            if (reservationBtn) reservationBtn.style.display = 'none'; // ✅ GÜNCELLENDİ
             if (productsGrid) productsGrid.style.display = 'none';
             if (notFoundSection) notFoundSection.style.display = 'block';
             document.title = 'Sahypa tapylmady - Showly';
@@ -564,6 +567,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // ✅ BURAYI EKLEYİN - Kategori ve filtreleri göster
         categoryFiltersSection.style.display = 'block';
         mainFiltersSection.style.display = 'block';
+
+        // ✅ YENİ: Rezervasyon butonunu göster/gizle
+        if (reservationBtn) {
+            reservationBtn.style.display = store.hasReservation ? 'flex' : 'none';
+        }
+
         productsGrid.style.display = 'grid';
         while (productsGrid.firstChild) productsGrid.removeChild(productsGrid.firstChild);
 
@@ -1576,39 +1585,328 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 3000);
     }
 
+    // --- Ziyafet Planlama (Banquet Planning) Mantığı ---
+    const banquetModal = document.getElementById('banquet-modal');
+    const closeBanquetModal = document.getElementById('close-banquet-modal');
+    const banquetForm = document.getElementById('banquet-form');
+    const eventTypesList = document.getElementById('event-types-list');
+    const guestOptionsList = document.getElementById('guest-options-list');
+    const guestCountHidden = document.getElementById('guest-count');
+    const packagesList = document.getElementById('banquet-packages-list');
+    const banquetSubtotal = document.getElementById('banquet-subtotal');
+    const banquetTotalDisplay = document.getElementById('banquet-total-price');
+
+    let currentStorePackages = [];
+    let selectedPackagePrice = 0;
+
+
+    // Modalı açma fonksiyonu
+    window.openBanquetPlanning = async function (storeId) {
+        const store = allStores.find(s => s.id === storeId);
+        if (!store) return;
+
+        document.getElementById('banquet-store-name').textContent = store.name;
+
+        if (banquetModal) {
+            banquetModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            // Senenama çäklendirmesi (Geçmiş günleri ýap)
+            const dateInput = document.getElementById('banquet-date');
+            if (dateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.setAttribute('min', today);
+            }
+
+            // Paketleri yükle
+            await loadBanquetPackages(storeId);
+        }
+    };
+
+    // Paketleri Firestore'dan çekme
+    async function loadBanquetPackages(storeId) {
+        if (!packagesList) return;
+
+        packagesList.innerHTML = '<p class="loading-packages">Paketler ýüklenýär...</p>';
+
+        try {
+            const snapshot = await window.db.collection('reservationPackages')
+                .where('storeId', '==', storeId)
+                .get();
+
+            currentStorePackages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            if (currentStorePackages.length === 0) {
+                packagesList.innerHTML = '<p class="no-packages" style="padding: 20px; color: #888;">Bu restoran üçin heniz paket goşulmady.</p>';
+                return;
+            }
+
+            renderBanquetPackages();
+        } catch (error) {
+            console.error('❌ Paketler ýüklenip bilmedi:', error);
+            packagesList.innerHTML = '<p class="error-packages">Paketler ýüklenip bilmedi.</p>';
+        }
+    }
+
+    // Paketleri arayüze basma
+    function renderBanquetPackages() {
+        if (!packagesList) return;
+
+        // Her bir menü maddesini ayrı bir paket kartı gibi işle
+        let allDisplayPackages = [];
+        currentStorePackages.forEach((pkg) => {
+            if (pkg.menuItems && pkg.menuItems.length > 0) {
+                pkg.menuItems.forEach((item, itemIndex) => {
+                    allDisplayPackages.push({
+                        displayId: `${pkg.id}_${itemIndex}`,
+                        displayName: item.name,
+                        displayPrice: item.price,
+                        menuHtml: `
+                            <li style="margin-bottom: 6px; font-size: 14px; color: #333; display: flex; align-items: flex-start; gap: 8px;">
+                                <i class="fas fa-check" style="color: var(--primary-color); font-size: 12px; margin-top: 4px;"></i>
+                                <span style="font-weight: 500;">${item.name}</span>
+                            </li>
+                        `
+                    });
+                });
+            } else {
+                allDisplayPackages.push({
+                    displayId: pkg.id,
+                    displayName: pkg.packageName || 'Menýu Toplumy',
+                    displayPrice: pkg.totalPrice || pkg.price,
+                    menuHtml: '<li style="color: #888;">Menýu goşulmady.</li>'
+                });
+            }
+        });
+
+        packagesList.innerHTML = allDisplayPackages.map((dpkg, index) => {
+            return `
+                <label class="package-item-card" style="width: 100%; min-width: 280px; margin-bottom: 15px; display: block; cursor: pointer;">
+                    <input type="radio" name="banquet-package" value="${dpkg.displayId}" ${index === 0 ? 'checked' : ''} data-price="${dpkg.displayPrice}">
+                    <div class="package-card-content" style="padding: 22px; border-radius: 20px; border: 2px solid #eee; transition: 0.3s; background: #fff; position: relative;">
+                        <div class="package-badge" style="background: #1a1a1a; color: #fff; padding: 5px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-bottom: 15px; display: inline-flex; align-items: center; gap: 8px;">
+                           <i class="fas fa-utensils"></i> ${dpkg.displayName}
+                        </div>
+                        
+                        <ul class="package-features" style="list-style: none; padding: 0; margin: 0; text-align: left;">
+                            ${dpkg.menuHtml}
+                        </ul>
+
+                        <div style="margin-top: 12px; font-size: 11px; color: #bbb; font-style: italic;">
+                            * Menýu mazmuny üýtgedilip bilner.
+                        </div>
+
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 13px; color: #888; display: block;">Taban Baha:</span>
+                                <span style="font-size: 18px; font-weight: 800; color: #1a1a1a;">${dpkg.displayPrice} TMT</span>
+                            </div>
+                            <div class="selection-indicator">
+                                <span style="font-size: 12px; font-weight: 600; color: var(--primary-color);">Saýlamak üçin basyň <i class="fas fa-arrow-right"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            `;
+        }).join('');
+
+        // Paket seçimi değiştiğinde alt seçenekleri güncelle
+        document.querySelectorAll('input[name="banquet-package"]').forEach(input => {
+            input.addEventListener('change', () => {
+                selectedPackagePrice = parseFloat(input.dataset.price) || 0;
+                updatePackageOptions(input.value);
+            });
+        });
+
+        // İlk paketi varsayılan seç ve opsiyonları yükle
+        const firstInput = document.querySelector('input[name="banquet-package"]:checked');
+        if (firstInput) {
+            selectedPackagePrice = parseFloat(firstInput.dataset.price) || 0;
+            updatePackageOptions(firstInput.value);
+        }
+    }
+
+    // Paket bazlı dinamik seçenekleri (hizmet ve kapasite) yükle
+    function updatePackageOptions(displayId) {
+        const originalId = displayId.split('_')[0]; // Prefiksden asyl ID-ni al
+        const pkg = currentStorePackages.find(p => p.id === originalId);
+        if (!pkg) return;
+
+        // 1. Hizmet Görünüşleri (Event Types)
+        if (eventTypesList) {
+            const types = pkg.serviceTypes || ['Ziyafet'];
+            eventTypesList.innerHTML = types.map((type, idx) => `
+                <label class="event-type-card">
+                    <input type="radio" name="event-type" value="${type}" ${idx === 0 ? 'checked' : ''}>
+                    <div class="card-content" style="padding: 10px; border: 2px solid #eee; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; font-size: 14px;">
+                        <i class="fas fa-star" style="display: block; margin-bottom: 5px;"></i>
+                        <span>${type}</span>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        // 2. Adam Sany (Capacities)
+        if (guestOptionsList) {
+            const capacities = pkg.capacities || [];
+
+            // Ýatda sakla: Eger sanaw eýýäm bar bolsa we hiç zat saýlanmadyk bolsa (manual mode), täze renderde-de saýlama
+            const isFirstRender = guestOptionsList.children.length === 0;
+            const wasAnyChecked = document.querySelector('input[name="guest-option"]:checked');
+            const shouldSelectDefault = isFirstRender || wasAnyChecked !== null;
+
+            if (capacities.length === 0) {
+                guestOptionsList.innerHTML = '<p style="grid-column: 1/-1; color: #888; font-size: 13px; padding: 10px;">Kapasite maglumaty ýok.</p>';
+            } else {
+                guestOptionsList.innerHTML = capacities.map((cap, idx) => {
+                    const countMatch = cap.name.match(/\d+/);
+                    const count = countMatch ? countMatch[0] : 0;
+                    const extraPrice = cap.price || 0;
+
+                    // Diňe öňem saýlanan bolsa, birinji element saýlansyn
+                    const checkedAttr = (shouldSelectDefault && idx === 0) ? 'checked' : '';
+
+                    return `
+                        <label class="event-type-card guest-option-card">
+                            <input type="radio" name="guest-option" value="${count}" data-extra-price="${extraPrice}" ${checkedAttr}>
+                            <div class="card-content" style="padding: 12px; border: 2px solid #eee; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; font-size: 14px; position: relative;">
+                                <i class="fas fa-users" style="display: block; margin-bottom: 5px; color: var(--primary-color);"></i>
+                                <span style="font-weight: 700;">${cap.name}</span>
+                                ${extraPrice > 0 ? `<div style="font-size: 10px; color: #2ecc71; margin-top: 3px;">+${extraPrice} TMT/adam</div>` : ''}
+                            </div>
+                        </label>
+                    `;
+                }).join('');
+
+                // Kapasite seçimi değiştiğinde hesapla
+                document.querySelectorAll('input[name="guest-option"]').forEach(radio => {
+                    radio.addEventListener('change', calculateBanquetTotal);
+                });
+            }
+        }
+
+        calculateBanquetTotal();
+    }
+
+    // Toplam baha hesaplama
+    function calculateBanquetTotal() {
+        const guestCountInput = document.getElementById('guest-count');
+        const selectedGuestOption = document.querySelector('input[name="guest-option"]:checked');
+
+        const guestCount = guestCountInput ? parseInt(guestCountInput.value) || 0 : 0;
+        const extraPrice = selectedGuestOption ? parseFloat(selectedGuestOption.dataset.extraPrice) || 0 : 0;
+
+        // Toplam baha hasaplamasy (Kullanıcı kararı: Paket fiyatı + Seçenek ek fiyatı)
+        const total = selectedPackagePrice + extraPrice;
+
+        if (guestCountHidden) guestCountHidden.value = guestCount;
+        if (banquetSubtotal) banquetSubtotal.textContent = `${selectedPackagePrice} TMT`;
+        if (banquetTotalDisplay) banquetTotalDisplay.textContent = `${total} TMT`;
+    }
+
+    // Adam sany sanajy (+/-) düwmeleri
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#guest-plus-btn')) {
+            const input = document.getElementById('guest-count');
+            if (input) {
+                // Radio buttonları uncheck et (el bilen sazlanýar)
+                document.querySelectorAll('input[name="guest-option"]').forEach(r => r.checked = false);
+                input.value = parseInt(input.value) + 10;
+                calculateBanquetTotal();
+            }
+        }
+        if (e.target.closest('#guest-minus-btn')) {
+            const input = document.getElementById('guest-count');
+            if (input && parseInt(input.value) > 10) {
+                document.querySelectorAll('input[name="guest-option"]').forEach(r => r.checked = false);
+                input.value = parseInt(input.value) - 10;
+                calculateBanquetTotal();
+            }
+        }
+    });
+
+    document.addEventListener('input', (e) => {
+        if (e.target.id === 'guest-count') {
+            document.querySelectorAll('input[name="guest-option"]').forEach(r => r.checked = false);
+            calculateBanquetTotal();
+        }
+    });
+
+    // Modalı kapatma
+    closeBanquetModal?.addEventListener('click', () => {
+        if (banquetModal) {
+            banquetModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    // Rezervasyon butonu
+    reservationBtn?.addEventListener('click', () => {
+        if (currentStoreId) {
+            window.openBanquetPlanning(currentStoreId);
+        }
+    });
+
+    // Form gönderimi
+    banquetForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = banquetForm.querySelector('.banquet-submit-btn');
+        const originalText = submitBtn.innerHTML;
+
+        const customerName = document.getElementById('banquet-customer-name')?.value;
+        const customerPhone = document.getElementById('banquet-customer-phone')?.value;
+        const eventDate = document.getElementById('banquet-date')?.value;
+        const guestCount = guestCountHidden ? parseInt(guestCountHidden.value) : 0;
+        const eventType = document.querySelector('input[name="event-type"]:checked')?.value;
+        const packageId = document.querySelector('input[name="banquet-package"]:checked')?.value;
+        const selectedPkg = currentStorePackages.find(p => p.id === packageId);
+
+        if (!customerName || !customerPhone || !eventDate || !packageId) {
+            showNotification('Lütfen Ähli meýdançalary dolduryň!', false);
+            return;
+        }
+
+        const reservationData = {
+            orderType: 'reservation',
+            storeId: currentStoreId,
+            customer: {
+                name: customerName,
+                phone: customerPhone,
+                address: `Ziyafet Senesi: ${eventDate}`,
+                note: `${eventType} (${guestCount} adam)`
+            },
+            items: [{
+                id: packageId,
+                title: selectedPkg ? (selectedPkg.packageName || 'Ziyafet Paketi') : 'Ziyafet Paketi',
+                price: selectedPackagePrice,
+                quantity: 1
+            }],
+            totalPrice: selectedPackagePrice, // Artık sadece paket fiyatı
+            status: 'pending',
+            date: new Date().toISOString(),
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderilýär...';
+
+            await window.db.collection('orders').add(reservationData);
+
+            showNotification('✅ Sargyt kabul edildi! Siziň bilen basym habarlaşarys.', true);
+            banquetModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            banquetForm.reset();
+        } catch (error) {
+            console.error('❌ Rezervasyon hatası:', error);
+            showNotification('Sargyt ýerleşdirilmedi. Lütfen gaýtadan synanyşyň.', false);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+
     // --- İLK YÜKLEME ---
     router();
-});
-
-// ✅ YENİ: Sahypany täzele butonu
-document.getElementById('reload-page-btn')?.addEventListener('click', (e) => {
-    e.preventDefault();
-
-    // Loading göster
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const loadingText = document.querySelector('.loading-text');
-    loadingOverlay.style.display = 'flex';
-    loadingText.textContent = 'Sahypa täzelenýär...';
-
-    // 500ms bekle (kullanıcının butona bastığını görmesi için)
-    setTimeout(() => {
-        window.location.reload();
-    }, 500);
-});
-
-// ✅ YENİ: Ana sayfaya dön butonu
-document.getElementById('back-home-link')?.addEventListener('click', (e) => {
-    e.preventDefault();
-
-    // Loading göster
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const loadingText = document.querySelector('.loading-text');
-    loadingOverlay.style.display = 'flex';
-    loadingText.textContent = 'Sahypa täzelenýär...';
-
-    // Ana sayfaya git
-    setTimeout(() => {
-        history.pushState(null, null, '/');
-        window.location.reload();
-    }, 500);
 });
