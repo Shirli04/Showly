@@ -76,7 +76,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
         console.log('🔄 Worker API üzerinden veriler yükleniyor:');
 
-        const response = await fetch(WORKER_URL);
+        const response = await fetch(WORKER_URL, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
         if (!response.ok) {
             throw new Error(`HTTP Error: ${response.status}`);
         }
@@ -109,28 +116,62 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingOverlay.style.display = 'none';
         }
     } catch (error) {
-        console.error('❌ Veri yükleme hatası (Worker/Firebase):', error);
+        console.warn('⚠️ Worker API hatası, Firebase yedeğine geçiliyor...', error);
 
-        // ✅ Loading'i gizle
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
+        try {
+            // ✅ FALLBACK: Firebase üzerinden doğrudan veri çek
+            const [storesSnap, productsSnap, parentCatsSnap, subCatsSnap, catsSnap] = await Promise.all([
+                window.db.collection('stores').get(),
+                window.db.collection('products').get(),
+                window.db.collection('parentCategories').get(), // Varsa
+                window.db.collection('subcategories').get(),    // Varsa
+                window.db.collection('categories').get()        // Varsa
+            ]);
+
+            allStores = storesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            allProducts = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Global kategorileri doldur
+            window.allParentCategories = parentCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            window.allSubcategories = subCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            window.allOldCategories = catsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Firebase Fallback)`);
+
+            // Menüleri oluştur
+            console.log('📂 Kategori menüsü oluşturuluyor (Fallback)...');
+            await renderCategoryMenu();
+
+            // Ayarları kontrol et
+            await checkSiteSettings();
+
+            console.log('🔄 Loading kapatılıyor (Fallback)...');
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+
+        } catch (firebaseError) {
+            console.error('❌ KRİTİK HATA: Hem Worker hem Firebase başarısız!', firebaseError);
+
+            // ✅ Loading'i gizle
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
+
+            // ✅ Hata mesajını 404 sayfasında göster
+            const notFoundSection = document.getElementById('not-found');
+            const heroSection = document.querySelector('.hero-section');
+            const infoSection = document.querySelector('.info-section');
+            const errorTitle = document.getElementById('error-title');
+            const errorMessage = document.getElementById('error-message');
+
+            if (heroSection) heroSection.style.display = 'none';
+            if (infoSection) infoSection.style.display = 'none';
+
+            if (errorTitle) errorTitle.textContent = 'Baglanyşyk Ýok';
+            if (errorMessage) errorMessage.textContent = 'Internediňizi kontrol ediň!';
+            if (notFoundSection) notFoundSection.style.display = 'block';
+
+            showNotification('Baglanyp bilmedi. Internediňizi ýa-da VPN-i kontrol ediň.', false);
         }
-
-        // ✅ Hata mesajını 404 sayfasında göster
-        const notFoundSection = document.getElementById('not-found');
-        const heroSection = document.querySelector('.hero-section');
-        const infoSection = document.querySelector('.info-section');
-        const errorTitle = document.getElementById('error-title');
-        const errorMessage = document.getElementById('error-message');
-
-        if (heroSection) heroSection.style.display = 'none';
-        if (infoSection) infoSection.style.display = 'none';
-
-        if (errorTitle) errorTitle.textContent = 'Baglanyşyk Ýok';
-        if (errorMessage) errorMessage.textContent = 'Internediňizi kontrol ediň!';
-        if (notFoundSection) notFoundSection.style.display = 'block';
-
-        showNotification('Baglanyp bilmedi. Internediňizi ýa-da VPN-i kontrol ediň.', false);
     }
 
     // --- YÖNLENDİRME (ROUTING) FONKSİYONU ---
