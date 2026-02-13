@@ -101,6 +101,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         await renderCategoryMenu();
         console.log('✅ Kategori menüsü tamamlandı');
 
+        // ✅ YENİ: Ayarları kontrol et ve gerekirse kategorileri gizle
+        await checkSiteSettings();
+
         console.log('🔄 Loading kapatılıyor...');
         if (loadingOverlay) {
             loadingOverlay.style.display = 'none';
@@ -451,9 +454,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- GENEL FİLTRELERİ OLUŞTURAN FONKSİYON ---
     const renderMainFilters = (storeId, activeFilter) => {
+        const store = allStores.find(s => s.id === storeId);
+
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
         const discountedProducts = storeProducts.filter(p => p.isOnSale);
         const expensiveProducts = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500);
+
+        // ✅ MEVCUT REZERVASYON BUTONUNU YÖNET
+        const existingReservationBtn = document.getElementById('rezervasyon-yap-btn');
+        if (existingReservationBtn) {
+            if (store && store.hasReservation) {
+                existingReservationBtn.style.display = 'inline-flex';
+                existingReservationBtn.onclick = () => openBanquetPlanning(storeId);
+            } else {
+                existingReservationBtn.style.display = 'none';
+            }
+        }
 
         mainFiltersContainer.innerHTML = `
             <div class="price-filter-group">
@@ -564,21 +580,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             socialGrid.appendChild(link);
         }
 
-        // ✅ BURAYI EKLEYİN - Kategori ve filtreleri göster
-        categoryFiltersSection.style.display = 'block';
-        mainFiltersSection.style.display = 'block';
+        // ✅ BURAYI EKLEYİN - Kategori ve filtreleri göster (Eğer ayar gizli değilse)
+        if (!window.isCategoriesHidden) {
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'block';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'block';
 
-        // ✅ YENİ: Rezervasyon butonunu göster/gizle
-        if (reservationBtn) {
-            reservationBtn.style.display = store.hasReservation ? 'flex' : 'none';
+            // ✅ BURAYI EKLEYİN - Fonksiyonları çağır
+            renderCategories(storeId, activeFilter);
+            renderMainFilters(storeId, activeFilter);
+        } else {
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
         }
-
-        productsGrid.style.display = 'grid';
-        while (productsGrid.firstChild) productsGrid.removeChild(productsGrid.firstChild);
-
-        // ✅ BURAYI EKLEYİN - Fonksiyonları çağır
-        renderCategories(storeId, activeFilter);
-        renderMainFilters(storeId, activeFilter);
 
         let productsToRender = storeProducts;
         if (activeFilter) {
@@ -723,6 +736,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateFavoriteButton(product.id);
         });
     };
+
+    // ✅ YENİ: Site Ayarlarını Kontrol Et (Kategori Gizleme)
+    async function checkSiteSettings() {
+        try {
+            const doc = await window.db.collection('settings').doc('general').get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.hideCategories) {
+                    console.log('🙈 Ayar aktif: Kategoriler ve Menü gizleniyor...');
+                    window.isCategoriesHidden = true; // ✅ Global flag ayarla
+
+                    const categoryMenu = document.getElementById('store-menu'); // Sol menü container
+                    const categoryFilters = document.getElementById('category-filters-section'); // Üst filtreler
+                    const menuToggleBtn = document.getElementById('menu-toggle'); // Menü açma butonu
+
+                    if (categoryMenu) categoryMenu.style.display = 'none';
+                    if (categoryFilters) categoryFilters.style.display = 'none';
+                    if (menuToggleBtn) menuToggleBtn.style.display = 'none'; // Butonu da gizle
+                }
+            }
+        } catch (error) {
+            console.error('Ayarlar okunamadı:', error);
+        }
+    }
 
     // --- ARAMA FONKSİYONU ---
     const performSearch = () => {

@@ -2463,6 +2463,25 @@ header {
     border-top: 1px solid var(--border-color);
 }
 
+/* ✅ YENİ: Rezervasyon Butonu Stili (Görünürlüğü garantiye al) */
+.reservation-btn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 8px;
+    background-color: #ffeaa7 !important;
+    color: #d35400 !important;
+    border: 1px solid #fdcb6e !important;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(253, 203, 110, 0.3);
+    transition: all 0.3s ease;
+}
+
+.reservation-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(253, 203, 110, 0.4);
+    background-color: #fce38a !important;
+}
+
 .price-filters-title {
     font-size: 14px;
     font-weight: 600;

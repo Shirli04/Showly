@@ -40,6 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentReservationStoreId = null;
     let editingPackageId = null;
 
+    // ✅ GLOBAL VERİ DEĞİŞKENLERİ (Grafikler ve filtreleme için)
+    let globalStores = [];
+    let globalProducts = [];
+    let globalOrders = [];
+
     // Menü elemanlarını yetkiye göre gizle
     document.querySelectorAll('.nav-link').forEach(link => {
         const section = link.getAttribute('data-section');
@@ -879,15 +884,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification('Mağaza eklendi!');
             }
 
-            renderStoresTable();
-            populateStoreSelect();
-            updateDashboard();
+            // ✅ ÖNCE MODALI KAPAT
             closeAllModals();
+            isSubmitting = false;
+
+            // ✅ Arka planda güncelle
+            (async () => {
+                try {
+                    await renderStoresTable();
+                    populateStoreSelect();
+                    updateDashboard();
+                } catch (e) { console.error(e); }
+            })();
+
         } catch (err) {
             console.error(err);
             showNotification('Mağaza işlemi başarısız!', false);
-        } finally {
             isSubmitting = false;
+        } finally {
+            // isSubmitting handled above
         }
     };
 
@@ -1026,7 +1041,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteProduct = (productId) => {
         if (confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
             window.showlyDB.deleteProduct(productId);
-            renderProductsTable();
+            // ✅ Filtreleme durumunu kontrol et
+            const filterStoreSelect = document.getElementById('filter-store-select');
+            const filterCategorySelect = document.getElementById('filter-category-select');
+
+            if (filterStoreSelect && filterStoreSelect.value) {
+                // Filtreyi koru (await olmadığı için async yapmamız gerekebilir ama deleteProduct zaten async değil, ancak filterProducts async. Sorun olmaz, arka planda güncellenir)
+                filterProducts(filterStoreSelect.value, filterCategorySelect ? filterCategorySelect.value : null);
+            } else {
+                renderProductsTable();
+            }
             updateDashboard();
             showNotification('Ürün başarıyla silindi!');
         }
@@ -1131,14 +1155,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification('Ürün Firebase\'e eklendi!');
             }
 
-            renderProductsTable();
-            updateDashboard();
+            // ✅ ÖNCE MODALI KAPAT VE KULLANICIYI ÖZGÜR BIRAK
             closeAllModals();
+            isSubmitting = false; // Kullanıcı hemen başka işlem yapabilsin
+
+            // ✅ Arka planda verileri güncelle (AWAIT YOK)
+            (async () => {
+                try {
+                    const filterStoreSelect = document.getElementById('filter-store-select');
+                    const filterCategorySelect = document.getElementById('filter-category-select');
+
+                    if (filterStoreSelect && filterStoreSelect.value) {
+                        await filterProducts(filterStoreSelect.value, filterCategorySelect ? filterCategorySelect.value : null, false); // false = Loading gösterme
+                    } else {
+                        renderProductsTable(); // Bu zaten loading göstermiyor
+                    }
+                    updateDashboard();
+                } catch (e) {
+                    console.error('Arka plan güncelleme hatası:', e);
+                }
+            })();
+
         } catch (err) {
             console.error(err);
             showNotification('Ürün işlemi başarısız oldu!', false);
+            isSubmitting = false; // Hata durumunda kilidi aç
         } finally {
-            isSubmitting = false;
+            // isSubmitting burada değil, yukarıda early-return mantığıyla yönetiliyor
         }
     };
 
@@ -1171,59 +1214,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const row = document.createElement('tr');
-                if (order.status === 'pending') {
-                    const isReservation = order.orderType === 'reservation';
-                    row.innerHTML = `
-                        <td data-label="Harytlar">
-                            <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0;"></ul>
-                        </td>
-                        <td data-label="Ady" class="order-customer-name"></td>
-                        <td data-label="Telefony" class="order-customer-phone"></td>
-                        <td data-label="Salgysy" class="order-customer-address"></td>
-                        <td data-label="Bellik" class="order-customer-note"></td>
-                        <td data-label="Magazynlar" class="order-stores"></td>
-                        <td data-label="Taryhy" class="order-date"></td>
-                        <td data-label="Durum">
-                            ${isReservation ? '<span class="status reservation-label" style="background: #6c5ce7; color: white; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; margin-bottom: 5px; display: inline-block;">REZEW</span><br>' : ''}
-                            <span class="status pending">Garaşylýar</span>
-                        </td>
-                        <td data-label="Etmekler">
-                            <input type="text" id="number-input-${order.id}" placeholder="Sipariş No" style="width: 100px; padding: 5px;">
-                            <button class="btn-icon order-action-btn" data-id="${order.id}" title="Numara Ata we SMS Gönder">
+
+                // Sipariş Numarasını Belirle
+                const displayOrderNumber = order.orderNumber || (order.status === 'pending' ? 'Belli değil' : '-');
+                const isReservation = order.orderType === 'reservation';
+
+                row.innerHTML = `
+                    <td data-label="Haryt ID-leri">
+                        <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0; font-size: 12px; font-family: monospace;"></ul>
+                    </td>
+                    <td data-label="Ady" class="order-customer-name"></td>
+                    <td data-label="Telefony" class="order-customer-phone"></td>
+                    <td data-label="Salgysy" class="order-customer-address"></td>
+                    <td data-label="Bellik" class="order-customer-note"></td>
+                    <td data-label="Magazynlar" class="order-stores"></td>
+                    <td data-label="Taryhy" class="order-date"></td>
+                    <td data-label="Durum">
+                        <span class="status ${order.status}">${order.status === 'pending' ? 'Garaşylýar' : 'Onaylandı'}</span>
+                    </td>
+                    <td data-label="Etmekler">
+                        ${order.status === 'pending' ? `
+                            <input type="text" id="number-input-${order.id}" placeholder="No" style="width: 60px; padding: 5px; margin-right: 5px;">
+                            <button class="btn-icon order-action-btn" data-id="${order.id}" title="Onayla">
                                 <i class="fas fa-check"></i>
                             </button>
-                        </td>
-                    `;
-                } else {
-                    const isReservation = order.orderType === 'reservation';
-                    row.innerHTML = `
-                        <td data-label="Harytlar">
-                            <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0;"></ul>
-                        </td>
-                        <td data-label="Ady" class="order-customer-name"></td>
-                        <td data-label="Telefony" class="order-customer-phone"></td>
-                        <td data-label="Salgysy" class="order-customer-address"></td>
-                        <td data-label="Bellik" class="order-customer-note"></td>
-                        <td data-label="Magazynlar" class="order-stores"></td>
-                        <td data-label="Taryhy" class="order-date"></td>
-                        <td data-label="Durum">
-                            ${isReservation ? '<span class="status reservation-label" style="background: #6c5ce7; color: white; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; margin-bottom: 5px; display: inline-block;">REZEW</span><br>' : ''}
-                            <span class="status completed">Onaylandı</span>
-                        </td>
-                        <td data-label="Zakaz No" class="order-number-cell">
-                            ${isReservation ? '<span style="color: #6c5ce7; font-weight: 800;">REZERWE </span>' : ''}
-                            <strong></strong>
-                        </td>
-                    `;
-                    row.querySelector('.order-number-cell strong').textContent = order.orderNumber;
-                }
+                        ` : ''}
+                        <button class="btn-icon danger delete-order-btn" data-id="${order.id}" title="Sil">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
 
                 // Ortak verileri doldur
                 const itemsList = row.querySelector('.order-items-list');
                 order.items.forEach(item => {
                     const li = document.createElement('li');
-                    // Eğer ürün adı varsa onu göster, yoksa ID göster
-                    li.textContent = item.title || item.name || `ID: ${item.id}`;
+                    // ✅ İSTEK: Sadece Haryt ID'lerini göster
+                    li.textContent = item.id || 'ID Yok';
                     itemsList.appendChild(li);
                 });
 
@@ -1243,12 +1270,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 row.querySelector('.order-date').textContent = displayDate;
 
-                // Action button listener
+                // Action button listener (Numara Ata)
                 const actionBtn = row.querySelector('.order-action-btn');
                 if (actionBtn) {
                     actionBtn.addEventListener('click', () => {
                         const orderId = actionBtn.getAttribute('data-id');
                         assignOrderNumber(orderId);
+                    });
+                }
+
+                // Delete button listener (Sipariş Sil)
+                const deleteBtn = row.querySelector('.delete-order-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', async () => {
+                        const orderId = deleteBtn.getAttribute('data-id');
+                        if (confirm('Bu siparişi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
+                            try {
+                                await window.db.collection('orders').doc(orderId).delete();
+                                showNotification('Sipariş silindi!');
+                                // Tabloyu yenile (cache'i yok sayıp yeniden çekmesi için null verebiliriz veya manuel silebiliriz)
+                                // Basitçe:
+                                row.remove();
+                                updateDashboard();
+                            } catch (error) {
+                                console.error('Sipariş silinemedi:', error);
+                                showNotification('Sipariş silinemedi!', false);
+                            }
+                        }
                     });
                 }
 
@@ -1275,6 +1323,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('total-orders').textContent = ordersCount;
 
             console.log('✅ Dashboard güncellendi:', { storesCount, productsCount, ordersCount });
+
+            // ✅ GRAFİKLERİ GÜNCELLE
+            if (typeof updateCharts === 'function') {
+                updateCharts(cachedStores, cachedProducts, cachedOrders);
+            } else {
+                console.warn('updateCharts fonksiyonu bulunamadı!');
+            }
         } catch (error) {
             console.error('❌ Dashboard güncellenemedi:', error);
             document.getElementById('total-stores').textContent = '0';
@@ -1610,6 +1665,249 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ✅✅✅ BURAYA EKLE - KULLANICI YÖNETİMİ FONKSİYONLARI (KONUM 3) ✅✅✅
+
+    // --- GRAFİK YÖNETİMİ ---
+    let ordersChart = null;
+    let productsChart = null;
+    let storesChart = null;
+
+    // Tarih formatla (YYYY-MM-DD)
+    const formatDateForInput = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    };
+
+    // İki tarih arasındaki günleri oluştur
+    const getDatesInRange = (startDate, endDate) => {
+        const date = new Date(startDate);
+        const end = new Date(endDate);
+        const dates = [];
+
+        while (date <= end) {
+            dates.push(formatDateForInput(date));
+            date.setDate(date.getDate() + 1);
+        }
+        return dates;
+    };
+
+    // Grafikleri Başlat
+    const initCharts = () => {
+        const ctxOrders = document.getElementById('ordersChart')?.getContext('2d');
+        const ctxProducts = document.getElementById('productsChart')?.getContext('2d');
+        const ctxStores = document.getElementById('storesChart')?.getContext('2d');
+
+        if (ctxOrders) {
+            ordersChart = new Chart(ctxOrders, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        if (ctxProducts) {
+            productsChart = new Chart(ctxProducts, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        if (ctxStores) {
+            storesChart = new Chart(ctxStores, {
+                type: 'bar', // Veya line
+                data: { labels: [], datasets: [] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        }
+
+        // Varsayılan Tarihleri Ayarla (Son 1 Ay)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 1);
+
+        document.getElementById('chart-start-date').value = formatDateForInput(startDate);
+        document.getElementById('chart-end-date').value = formatDateForInput(endDate);
+    };
+
+    // Grafikleri Güncelle
+    const updateCharts = async (cachedStores, cachedProducts, cachedOrders) => {
+        if (!ordersChart || !productsChart || !storesChart) {
+            initCharts();
+            if (!ordersChart) return;
+        }
+
+        let startInput = document.getElementById('chart-start-date').value;
+        let endInput = document.getElementById('chart-end-date').value;
+
+        // EĞER TARİH SEÇİLİ DEĞİLSE => OTOMATİK SON 1 AY
+        if (!startInput || !endInput) {
+            const endD = new Date();
+            const startD = new Date();
+            startD.setMonth(startD.getMonth() - 1);
+
+            startInput = formatDateForInput(startD);
+            endInput = formatDateForInput(endD);
+
+            // Inputları da güncelle ki kullanıcı neye baktığını görsün
+            document.getElementById('chart-start-date').value = startInput;
+            document.getElementById('chart-end-date').value = endInput;
+        }
+
+        const startDate = new Date(startInput);
+        const endDate = new Date(endInput);
+        // Bitiş gününün sonuna kadar kapsasın (23:59:59)
+        endDate.setHours(23, 59, 59, 999);
+        startDate.setHours(0, 0, 0, 0);
+
+        // Verileri al
+        const parseDate = (d) => {
+            if (!d) return null;
+            // Firestore Timestamp kontrolü
+            if (d.toDate && typeof d.toDate === 'function') return d.toDate();
+            // String veya Date objesi kontrolü
+            return new Date(d);
+        };
+
+        // 1. Verileri Al ve Normalize Et (Global değişkenlerden veya parametrelerden)
+        // Parametre yoksa global değişkenleri kullan
+        const sourceOrders = cachedOrders || globalOrders;
+        const sourceProducts = cachedProducts || globalProducts;
+        const sourceStores = cachedStores || globalStores;
+
+        let orders = sourceOrders.map(d => ({ ...d, createdAt: parseDate(d.createdAt || d.date || d.timestamp) || new Date() }));
+
+        let products = sourceProducts.map(d => ({ ...d, createdAt: parseDate(d.createdAt) || new Date() }));
+
+        let stores = sourceStores.map(d => {
+            let date = d.createdAt || d.joinedAt;
+            // Firestore Timestamp kontrolü (_seconds)
+            if (date && date._seconds) {
+                date = new Date(date._seconds * 1000);
+            }
+            return { ...d, createdAt: parseDate(date) || new Date() };
+        });
+
+        // Tarih aralığındaki günleri etiket olarak hazırla
+        const labels = getDatesInRange(startDate, endDate);
+
+        // Veri haritaları (Gün -> Sayı)
+        const ordersMap = new Array(labels.length).fill(0);
+        const productsMap = new Array(labels.length).fill(0);
+        const storesMap = new Array(labels.length).fill(0);
+
+        // Siparişleri Say
+        orders.forEach(item => {
+            const date = item.createdAt;
+            if (date && date >= startDate && date <= endDate) {
+                const dayKey = formatDateForInput(date);
+                const index = labels.indexOf(dayKey);
+                if (index !== -1) ordersMap[index]++;
+            }
+        });
+        console.log("Chart Debug - Orders Map:", ordersMap);
+
+        // Ürünleri Say
+        products.forEach(item => {
+            const date = item.createdAt;
+            if (date && date >= startDate && date <= endDate) {
+                const dayKey = formatDateForInput(date);
+                const index = labels.indexOf(dayKey);
+                if (index !== -1) productsMap[index]++;
+            }
+        });
+
+        // Mağazaları Say
+        stores.forEach(item => {
+            const date = item.createdAt;
+            if (date && date >= startDate && date <= endDate) {
+                const dayKey = formatDateForInput(date);
+                const index = labels.indexOf(dayKey);
+                if (index !== -1) storesMap[index]++;
+            }
+        });
+
+        // Grafikleri Çiz
+        ordersChart.data = {
+            labels: labels,
+            datasets: [{
+                label: 'Sargyt sany',
+                data: ordersMap,
+                borderColor: '#6c5ce7',
+                backgroundColor: 'rgba(108, 92, 231, 0.1)',
+                tension: 0.3,
+                fill: true
+            }]
+        };
+        ordersChart.update();
+
+        productsChart.data = {
+            labels: labels,
+            datasets: [{
+                label: 'Täze harytlar',
+                data: productsMap,
+                backgroundColor: '#00b894'
+            }]
+        };
+        productsChart.update();
+
+        storesChart.data = {
+            labels: labels,
+            datasets: [{
+                label: 'Täze dükanlar',
+                data: storesMap,
+                backgroundColor: '#fdcb6e'
+            }]
+        };
+        storesChart.update();
+    };
+
+    // ✅ Listener'ları ayrı fonksiyona al (Hoisting için function keyword kullan veya yukarı taşı)
+    function attachChartListeners() {
+        const filterBtn = document.getElementById('filter-charts-btn');
+        const resetBtn = document.getElementById('reset-charts-btn');
+
+        if (filterBtn) {
+            // Önceki listener'ları temizlemek mümkün değil ama yeni ekliyoruz
+            // Clone node ile temizleyebiliriz ama şimdilik sadece ekleyelim
+            filterBtn.onclick = (e) => { // addEventListener yerine onclick ile override edelim
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                updateCharts();
+                return false;
+            };
+        }
+
+        if (resetBtn) {
+            resetBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setMonth(startDate.getMonth() - 1);
+
+                document.getElementById('chart-start-date').value = formatDateForInput(startDate);
+                document.getElementById('chart-end-date').value = formatDateForInput(endDate);
+
+                updateCharts();
+                return false;
+            };
+        }
+    }
+
+    // Event Listeners (Filtre Butonları)
+    // Sayfa yüklendiğinde grafikler başlatılsın
+    initCharts();
+
+    // Listener'ları başlat
+    attachChartListeners();
+
     // ===========================================================================
 
     // --- KULLANICI YÖNETİMİ FONKSİYONLARI ---
@@ -1807,9 +2105,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===========================================================================
 
     // Ürünleri filtrele
-    async function filterProducts(storeId, category) {
+    async function filterProducts(storeId, category, showLoading = true) {
         const loadingOverlay = document.getElementById('loading-overlay');
-        loadingOverlay.style.display = 'flex';
+        if (showLoading) loadingOverlay.style.display = 'flex';
 
         try {
             let query = window.db.collection('products');
@@ -2580,6 +2878,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const products = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+            // ✅ Global değişkenlere ata
+            globalStores = stores;
+            globalProducts = products;
+            globalOrders = orders;
+
             // ✅ TABLOLARI ÖNBELLEKTEKİ VERİYLE DOLDUR
             await Promise.all([
                 loadCategories(),
@@ -2609,6 +2912,54 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
+
+
+    // --- AYARLAR ---
+    const settingsForm = document.querySelector('.settings-form');
+    if (settingsForm) {
+        // Ayarları yükle
+        async function loadSettings() {
+            try {
+                const doc = await window.db.collection('settings').doc('general').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const hideCategoriesCheckbox = document.getElementById('setting-hide-categories');
+                    if (hideCategoriesCheckbox) {
+                        hideCategoriesCheckbox.checked = data.hideCategories || false;
+                    }
+                }
+            } catch (error) {
+                console.error('Ayarlar yüklenemedi:', error);
+            }
+        }
+
+        loadSettings();
+
+        settingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = settingsForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Kaydediliyor...';
+
+            try {
+                const hideCategories = document.getElementById('setting-hide-categories').checked;
+
+                await window.db.collection('settings').doc('general').set({
+                    hideCategories: hideCategories,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                showNotification('Ayarlar başarıyla kaydedildi!');
+            } catch (error) {
+                console.error('Ayarlar kaydedilemedi:', error);
+                showNotification('Ayarlar kaydedilemedi!', false);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    }
 
     // ✅ Verileri yükle
     loadAllData();
