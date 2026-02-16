@@ -624,6 +624,45 @@ header {
     }
 }
 
+/* --- YENİ: MAĞAZA ZİYARET SAYACI (GÖZ İKONU) --- */
+.store-views-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(26, 26, 26, 0.05);
+    padding: 5px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #888;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.store-views-badge i {
+    color: var(--primary-color);
+    font-size: 16px;
+}
+
+.store-views-badge:hover {
+    background: rgba(26, 26, 26, 0.1);
+    transform: translateY(-2px);
+    color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .store-views-badge {
+        position: relative;
+        margin: 0 auto 15px auto;
+        width: fit-content;
+        top: auto;
+        left: auto;
+    }
+}
+
 /* ================================ ÜRÜN İZGARASI (MODERN GÖRÜNÜM) ================================ */
 .products-grid {
     display: grid;

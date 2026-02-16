@@ -564,29 +564,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
 
-    const renderStorePage = (storeId, activeFilter = null) => {
+    const renderStorePage = async (storeId, activeFilter = null) => {
         currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
+        // ✅ Ürün grid'ini temizle ve göster
+        if (productsGrid) {
+            productsGrid.innerHTML = '';
+            productsGrid.style.display = 'grid';
+        }
+
         const storeBanner = document.getElementById('store-banner');
-        storeBanner.style.display = 'block';
+        if (storeBanner) {
+            storeBanner.style.display = 'block';
+            // Banner içeriğini anında temizle veya yeni mağaza ile güncelle (State reset)
+            storeBanner.innerHTML = '<div class="banner-skeleton"></div>';
+        }
 
-        // ✅ YENİ: TikTok ve Instagram butonları
-        // Sosyal medya butonları aşağıda güvenli bir şekilde oluşturulacak
+        // ✅ Ziyaret sayısını artır ve getir (AWAIT KALDIRILDI - Performans için)
+        let storeViews = store.views || 0;
+        try {
+            // Firestore'da sayaçı artır (Arka planda çalışır, UI'ı bloklamaz)
+            const storeRef = window.db.collection('stores').doc(storeId);
+            storeRef.update({
+                views: firebase.firestore.FieldValue.increment(1)
+            }).catch(e => console.warn('Sayaç DB hatası:', e));
 
-        storeBanner.innerHTML = `
-            <div class="store-banner-content">
-                <div class="store-info">
-                    <h2 id="store-banner-name"></h2>
-                    <p id="store-banner-text"></p>
+            // Yerel olarak bir artır (hızlı gösterim için)
+            storeViews += 1;
+            // Global state'teki veriyi güncelle
+            const storeIdx = allStores.findIndex(s => s.id === storeId);
+            if (storeIdx !== -1) allStores[storeIdx].views = storeViews;
+        } catch (vErr) {
+            console.warn('Sayaç hazırlık hatası:', vErr);
+        }
+
+        // Mağaza banner içeriğini oluştur
+        if (storeBanner) {
+            storeBanner.innerHTML = `
+                <div class="store-banner-content" style="position: relative;">
+                    <div class="store-views-badge">
+                        <i class="fas fa-eye"></i> <span>${storeViews}</span>
+                    </div>
+                    <div class="store-info">
+                        <h2 id="store-banner-name"></h2>
+                        <p id="store-banner-text"></p>
+                    </div>
+                    <div class="store-social-buttons-container" id="social-buttons-grid">
+                    </div>
                 </div>
-                <div class="store-social-buttons-container" id="social-buttons-grid">
-                </div>
-            </div>
-        `;
-        document.getElementById('store-banner-name').textContent = store.name;
-        document.getElementById('store-banner-text').textContent = store.customBannerText || '';
+            `;
+            document.getElementById('store-banner-name').textContent = store.name;
+            document.getElementById('store-banner-text').textContent = store.customBannerText || '';
+        }
 
         const socialGrid = document.getElementById('social-buttons-grid');
         if (store.tiktok) {
@@ -747,10 +778,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             productCard.innerHTML = `
                 <div class="product-image-container">
+                    <div class="img-skeleton"></div>
                     ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
                     <img src="${getOptimizedImageUrl(product.imageUrl)}" 
                          class="product-img"
-                         loading="lazy">
+                         loading="lazy"
+                         onload="this.classList.add('loaded'); this.parentElement.querySelector('.img-skeleton').style.display='none';"
+                         onerror="this.src='https://res.cloudinary.com/domv6ullp/image/upload/v1765464522/no-image_placeholder.png'; this.classList.add('loaded', 'error'); this.parentElement.querySelector('.img-skeleton').style.display='none';">
                     <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                 </div>
                 <div class="product-info">
@@ -795,10 +829,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (categoryMenu) categoryMenu.style.display = 'none';
                     if (categoryFilters) categoryFilters.style.display = 'none';
                     if (menuToggleBtn) menuToggleBtn.style.display = 'none'; // Butonu da gizle
+                } else {
+                    console.log('👁️ Kategoriler görünür durumda.');
+                    window.isCategoriesHidden = false; // ✅ Flag'i sıfırla
                 }
+            } else {
+                window.isCategoriesHidden = false; // ✅ Ayar yoksa varsayılan: görünür
             }
         } catch (error) {
             console.error('Ayarlar okunamadı:', error);
+            window.isCategoriesHidden = false; // ✅ Hata durumunda varsayılan: görünür
         }
     }
 
@@ -1619,11 +1659,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         const product = allProducts.find(p => p.id === productId);
         if (!product) return;
         const modal = document.getElementById('product-modal');
-        modal.setAttribute('data-product-id', productId); // Modalda ID'yi saklıyoruz
+        modal.setAttribute('data-product-id', productId);
+
         const modalImage = document.getElementById('modal-image');
-        modalImage.src = getOptimizedImageUrl(product.imageUrl, 800);
+        const modalSkeleton = document.getElementById('modal-img-skeleton');
+
+        // ✅ Resmi ve skeleton'u sıfırla
+        if (modalImage) {
+            modalImage.classList.remove('loaded');
+            if (modalSkeleton) modalSkeleton.style.display = 'block';
+
+            modalImage.onload = () => {
+                modalImage.classList.add('loaded');
+                if (modalSkeleton) modalSkeleton.style.display = 'none';
+            };
+            modalImage.onerror = () => {
+                modalImage.src = 'https://res.cloudinary.com/domv6ullp/image/upload/v1765464522/no-image_placeholder.png';
+                modalImage.classList.add('loaded');
+                if (modalSkeleton) modalSkeleton.style.display = 'none';
+            };
+            modalImage.src = getOptimizedImageUrl(product.imageUrl, 800);
+        }
+
         document.getElementById('modal-title').textContent = product.title;
-        document.getElementById('modal-price').textContent = product.price;
+
+        // ✅ İndirim kontrolü
+        const modalPrice = document.getElementById('modal-price');
+        const modalBadge = document.getElementById('modal-discount-badge');
+
+        if (product.isOnSale && product.originalPrice) {
+            const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
+            const discountedPriceValue = parseFloat(product.originalPrice.replace(' TMT', ''));
+
+            if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
+                // İndirimli görünüm
+                modalPrice.innerHTML = `
+                    <span class="current-price" style="color: var(--primary-color); font-weight: bold; font-size: 26px;">${product.originalPrice}</span>
+                    <span class="original-price" style="text-decoration: line-through; color: #999; font-size: 18px; margin-left: 10px;">${product.price}</span>
+                `;
+                if (modalBadge) modalBadge.style.display = 'block';
+            } else {
+                modalPrice.textContent = product.price;
+                if (modalBadge) modalBadge.style.display = 'none';
+            }
+        } else {
+            modalPrice.textContent = product.price;
+            if (modalBadge) modalBadge.style.display = 'none';
+        }
+
         document.getElementById('modal-description').textContent = product.description || '';
         // Material kontrolu - bossa sat?r? gizle
         const materialRow = document.getElementById('modal-material-row');
