@@ -247,12 +247,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const storeBanner = document.getElementById('store-banner');
 
         if (!path) { // Ana sayfaysak
+            lastRenderedStoreId = null; // ✅ Mağazaya geri dönünce kartlar yeniden oluşturulsun
             if (heroSection) heroSection.style.display = 'block';
             if (infoSection) infoSection.style.display = 'grid';
             if (storeBanner) storeBanner.style.display = 'none';
             if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
             if (mainFiltersSection) mainFiltersSection.style.display = 'none';
-            if (reservationBtn) reservationBtn.style.display = 'none'; // ✅ GÜNCELLENDİ
+            if (reservationBtn) reservationBtn.style.display = 'none';
             if (productsGrid) productsGrid.style.display = 'none';
             if (notFoundSection) notFoundSection.style.display = 'none';
             document.title = 'Showly - Online Katalog Platformasy';
@@ -667,248 +668,265 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
 
+    // ✅ PERFORMANS: Hangi mağazanın kartları oluşturuldu
+    let lastRenderedStoreId = null;
+
     const renderStorePage = async (storeId, activeFilter = null) => {
+        const isNewStore = currentStoreId !== storeId || lastRenderedStoreId !== storeId;
         currentStoreId = storeId;
         const store = allStores.find(s => s.id === storeId);
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
-        // ✅ Ürün grid'ini temizle ve göster
-        if (productsGrid) {
-            productsGrid.innerHTML = '';
-            productsGrid.style.display = 'grid';
-        }
+        // ✅ PERFORMANS: Sadece yeni mağazada kartları ve banner'ı yeniden oluştur
+        if (isNewStore) {
+            // Ürün grid'ini temizle ve göster
+            if (productsGrid) {
+                productsGrid.innerHTML = '';
+                productsGrid.style.display = 'grid';
+            }
 
-        const storeBanner = document.getElementById('store-banner');
-        if (storeBanner) {
-            storeBanner.style.display = 'block';
-            // Banner içeriğini anında temizle veya yeni mağaza ile güncelle (State reset)
-            storeBanner.innerHTML = '<div class="banner-skeleton"></div>';
-        }
+            const storeBanner = document.getElementById('store-banner');
+            if (storeBanner) {
+                storeBanner.style.display = 'block';
+                storeBanner.innerHTML = '<div class="banner-skeleton"></div>';
+            }
 
-        // ✅ Ziyaret sayısını artır ve getir (AWAIT KALDIRILDI - Performans için)
-        let storeViews = store.views || 0;
-        try {
-            // Firestore'da sayaçı artır (Arka planda çalışır, UI'ı bloklamaz)
-            const storeRef = window.db.collection('stores').doc(storeId);
-            storeRef.update({
-                views: firebase.firestore.FieldValue.increment(1)
-            }).catch(e => console.warn('Sayaç DB hatası:', e));
+            // Ziyaret sayısını artır
+            let storeViews = store.views || 0;
+            try {
+                const storeRef = window.db.collection('stores').doc(storeId);
+                storeRef.update({
+                    views: firebase.firestore.FieldValue.increment(1)
+                }).catch(e => console.warn('Sayaç DB hatası:', e));
+                storeViews += 1;
+                const storeIdx = allStores.findIndex(s => s.id === storeId);
+                if (storeIdx !== -1) allStores[storeIdx].views = storeViews;
+            } catch (vErr) {
+                console.warn('Sayaç hazırlık hatası:', vErr);
+            }
 
-            // Yerel olarak bir artır (hızlı gösterim için)
-            storeViews += 1;
-            // Global state'teki veriyi güncelle
-            const storeIdx = allStores.findIndex(s => s.id === storeId);
-            if (storeIdx !== -1) allStores[storeIdx].views = storeViews;
-        } catch (vErr) {
-            console.warn('Sayaç hazırlık hatası:', vErr);
-        }
-
-        // Mağaza banner içeriğini oluştur
-        if (storeBanner) {
-            storeBanner.innerHTML = `
-                <div class="store-banner-content" style="position: relative;">
-                    <div class="store-views-badge">
-                        <i class="fas fa-eye"></i> <span>${storeViews}</span>
+            // Mağaza banner içeriğini oluştur
+            if (storeBanner) {
+                storeBanner.innerHTML = `
+                    <div class="store-banner-content" style="position: relative;">
+                        <div class="store-views-badge">
+                            <i class="fas fa-eye"></i> <span>${storeViews}</span>
+                        </div>
+                        <div class="store-info">
+                            <h2 id="store-banner-name"></h2>
+                            <p id="store-banner-text"></p>
+                        </div>
+                        <div class="store-social-buttons-container" id="social-buttons-grid">
+                        </div>
                     </div>
-                    <div class="store-info">
-                        <h2 id="store-banner-name"></h2>
-                        <p id="store-banner-text"></p>
+                `;
+                document.getElementById('store-banner-name').textContent = store.name;
+                document.getElementById('store-banner-text').textContent = store.customBannerText || '';
+            }
+
+            const socialGrid = document.getElementById('social-buttons-grid');
+            if (store.tiktok) {
+                const link = document.createElement('a');
+                link.href = store.tiktok;
+                link.target = '_blank';
+                link.className = 'social-button tiktok-button';
+                link.innerHTML = '<i class="fab fa-tiktok"></i>';
+                socialGrid.appendChild(link);
+            }
+            if (store.instagram) {
+                const link = document.createElement('a');
+                link.href = store.instagram;
+                link.target = '_blank';
+                link.className = 'social-button instagram-button';
+                link.innerHTML = '<i class="fab fa-instagram"></i>';
+                socialGrid.appendChild(link);
+            }
+            if (store.phone) {
+                const link = document.createElement('a');
+                link.href = `tel:${store.phone}`;
+                link.className = 'social-button phone-button';
+                link.innerHTML = '<i class="fas fa-phone"></i>';
+                socialGrid.appendChild(link);
+            }
+            if (store.location) {
+                const link = document.createElement('a');
+                link.href = `https://maps.google.com/?q=${encodeURIComponent(store.location)}`;
+                link.target = '_blank';
+                link.className = 'social-button location-button';
+                link.innerHTML = '<i class="fas fa-map-marker-alt"></i>';
+                socialGrid.appendChild(link);
+            }
+
+            // ✅ TÜM ürün kartlarını bir kez oluştur (varsayılan sıralama ile)
+            const sortedProducts = [...storeProducts].sort((a, b) => {
+                const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
+                const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
+                const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
+                const bHasPrice = b.price && parseFloat(b.price.replace(' TMT', '')) > 0;
+                const aScore = (aHasImage ? 2 : 0) + (aHasPrice ? 1 : 0);
+                const bScore = (bHasImage ? 2 : 0) + (bHasPrice ? 1 : 0);
+                return bScore - aScore;
+            });
+
+            sortedProducts.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                // ✅ Data attribute'lar filtre için
+                productCard.setAttribute('data-product-id', product.id);
+                productCard.setAttribute('data-category', product.category || '');
+                productCard.setAttribute('data-on-sale', product.isOnSale ? 'true' : 'false');
+                const priceVal = parseFloat((product.price || '0').replace(' TMT', '')) || 0;
+                productCard.setAttribute('data-price', priceVal);
+
+                let priceDisplayElement = null;
+
+                if (product.isOnSale && product.originalPrice) {
+                    const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
+                    const discountedPriceValue = parseFloat(product.originalPrice.replace(' TMT', ''));
+
+                    if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
+                        const discountPercentage = Math.round(((normalPriceValue - discountedPriceValue) / normalPriceValue) * 100);
+
+                        const priceContainer = document.createElement('div');
+                        priceContainer.className = 'price-container';
+
+                        const priceInfo = document.createElement('div');
+                        priceInfo.className = 'price-info';
+
+                        const currentPrice = document.createElement('span');
+                        currentPrice.className = 'current-price';
+                        currentPrice.textContent = product.originalPrice;
+
+                        const originalPrice = document.createElement('span');
+                        originalPrice.className = 'original-price';
+                        originalPrice.textContent = product.price;
+
+                        priceInfo.appendChild(currentPrice);
+                        priceInfo.appendChild(originalPrice);
+
+                        const badge = document.createElement('span');
+                        badge.className = 'discount-percentage-badge';
+                        badge.textContent = `-%${discountPercentage}`;
+
+                        priceContainer.appendChild(priceInfo);
+                        priceContainer.appendChild(badge);
+
+                        priceDisplayElement = priceContainer;
+                    }
+                }
+
+                productCard.innerHTML = `
+                    <div class="product-image-container">
+                        <div class="img-skeleton"></div>
+                        ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
+                        <img src="${getOptimizedImageUrl(product.imageUrl)}" 
+                             class="product-img"
+                             loading="lazy"
+                             onload="this.classList.add('loaded'); this.parentElement.querySelector('.img-skeleton').style.display='none';"
+                             onerror="this.src='https://res.cloudinary.com/domv6ullp/image/upload/v1765464522/no-image_placeholder.png'; this.classList.add('loaded', 'error'); this.parentElement.querySelector('.img-skeleton').style.display='none';">
+                        <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                     </div>
-                    <div class="store-social-buttons-container" id="social-buttons-grid">
+                    <div class="product-info">
+                        <h3 class="product-title"></h3>
+                        <span class="product-category-label"></span>
+                        <div class="price-display-wrapper"></div>
+                        <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
                     </div>
-                </div>
-            `;
-            document.getElementById('store-banner-name').textContent = store.name;
-            document.getElementById('store-banner-text').textContent = store.customBannerText || '';
+                `;
+                productCard.querySelector('.product-img').alt = product.title;
+                productCard.querySelector('.product-title').textContent = product.title;
+                productCard.querySelector('.product-category-label').textContent = product.category || '';
+
+                const wrapper = productCard.querySelector('.price-display-wrapper');
+                if (priceDisplayElement) {
+                    wrapper.appendChild(priceDisplayElement);
+                } else {
+                    const priceSpan = document.createElement('span');
+                    priceSpan.className = 'product-price';
+                    priceSpan.textContent = product.price;
+                    wrapper.appendChild(priceSpan);
+                }
+                productsGrid.appendChild(productCard);
+                updateFavoriteButton(product.id);
+            });
+
+            lastRenderedStoreId = storeId;
+            console.log(`✅ ${storeProducts.length} ürün kartı oluşturuldu (yeni mağaza)`);
         }
 
-        const socialGrid = document.getElementById('social-buttons-grid');
-        if (store.tiktok) {
-            const link = document.createElement('a');
-            link.href = store.tiktok;
-            link.target = '_blank';
-            link.className = 'social-button tiktok-button';
-            link.innerHTML = '<i class="fab fa-tiktok"></i>';
-            socialGrid.appendChild(link);
-        }
-        if (store.instagram) {
-            const link = document.createElement('a');
-            link.href = store.instagram;
-            link.target = '_blank';
-            link.className = 'social-button instagram-button';
-            link.innerHTML = '<i class="fab fa-instagram"></i>';
-            socialGrid.appendChild(link);
-        }
-        if (store.phone) {
-            const link = document.createElement('a');
-            link.href = `tel:${store.phone}`;
-            link.className = 'social-button phone-button';
-            link.innerHTML = '<i class="fas fa-phone"></i>';
-            socialGrid.appendChild(link);
-        }
-        if (store.location) {
-            const link = document.createElement('a');
-            link.href = `https://maps.google.com/?q=${encodeURIComponent(store.location)}`;
-            link.target = '_blank';
-            link.className = 'social-button location-button';
-            link.innerHTML = '<i class="fas fa-map-marker-alt"></i>';
-            socialGrid.appendChild(link);
-        }
-
-        // Mağaza içi filtreleri her zaman göster (isCategoriesHidden sadece sol menüyü etkiler)
+        // ✅ PERFORMANS: Filtre uygula - kartları göster/gizle (DOM yeniden oluşturulmaz!)
         if (categoryFiltersSection) categoryFiltersSection.style.display = 'block';
         if (mainFiltersSection) mainFiltersSection.style.display = 'block';
         renderCategories(storeId, activeFilter);
         renderMainFilters(storeId, activeFilter);
 
-        let productsToRender = storeProducts;
+        // Filtrelenecek ürün ID'lerini belirle
+        let visibleProductIds = new Set(storeProducts.map(p => p.id));
+
         if (activeFilter) {
             switch (activeFilter.type) {
                 case 'CATEGORY':
-                    productsToRender = storeProducts.filter(p => p.category === activeFilter.value);
+                    visibleProductIds = new Set(storeProducts.filter(p => p.category === activeFilter.value).map(p => p.id));
                     break;
                 case 'DISCOUNT':
-                    productsToRender = storeProducts.filter(p => p.isOnSale);
+                    visibleProductIds = new Set(storeProducts.filter(p => p.isOnSale).map(p => p.id));
                     break;
                 case 'EXPENSIVE':
-                    productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500);
+                    visibleProductIds = new Set(storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500).map(p => p.id));
                     break;
-                case 'SORT_PRICE_ASC':
-                    productsToRender = [...storeProducts];
-                    break;
-                case 'SORT_PRICE_DESC':
-                    productsToRender = [...storeProducts];
-                    break;
-                case 'PRICE_RANGE':
+                case 'PRICE_RANGE': {
                     const min = activeFilter.min || 0;
                     const max = activeFilter.max || Infinity;
-                    productsToRender = storeProducts.filter(p => {
+                    visibleProductIds = new Set(storeProducts.filter(p => {
                         const price = parseFloat(p.price.replace(' TMT', ''));
                         return price >= min && price <= max;
-                    });
+                    }).map(p => p.id));
                     break;
+                }
+                // SORT_PRICE_ASC ve SORT_PRICE_DESC: tüm ürünler gösterilir, sadece sıralama değişir
             }
         }
 
-        if (productsToRender.length === 0) {
+        // ✅ Kartları göster/gizle (resimler korunur!)
+        const allCards = productsGrid.querySelectorAll('.product-card[data-product-id]');
+        let visibleCount = 0;
+
+        allCards.forEach(card => {
+            const productId = card.getAttribute('data-product-id');
+            if (visibleProductIds.has(productId)) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // ✅ Sıralama gerekiyorsa kartların DOM sırasını değiştir (resimler yine korunur!)
+        if (activeFilter?.type === 'SORT_PRICE_ASC' || activeFilter?.type === 'SORT_PRICE_DESC') {
+            const visibleCards = Array.from(allCards).filter(c => c.style.display !== 'none');
+            visibleCards.sort((a, b) => {
+                const priceA = parseFloat(a.getAttribute('data-price')) || 0;
+                const priceB = parseFloat(b.getAttribute('data-price')) || 0;
+                return activeFilter.type === 'SORT_PRICE_ASC' ? priceA - priceB : priceB - priceA;
+            });
+            // DOM sırasını değiştir (resimler korunur çünkü kartlar taşınıyor, silinmiyor!)
+            visibleCards.forEach(card => productsGrid.appendChild(card));
+            console.log(`✅ Ürünler ${activeFilter.type === 'SORT_PRICE_ASC' ? 'arzandan gymmada' : 'gymmatdan arzana'} sıralandı`);
+        }
+
+        // "Ürün bulunamadı" mesajı
+        const existingNoResults = productsGrid.querySelector('.no-results');
+        if (existingNoResults) existingNoResults.remove();
+
+        if (visibleCount === 0) {
             const noResults = document.createElement('div');
             noResults.className = 'no-results';
             noResults.innerHTML = '<i class="fas fa-box-open"></i><h3></h3>';
             noResults.querySelector('h3').textContent = 'Bu filtrde haryt tapylmady.';
             productsGrid.appendChild(noResults);
-            return;
         }
 
-        // ✅ Sıralama kodu
-        if (activeFilter?.type === 'SORT_PRICE_ASC') {
-            // Ucuzdan pahalıya sırala
-            productsToRender.sort((a, b) => {
-                const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
-                const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
-                return priceA - priceB;
-            });
-            console.log('✅ Ürünler ucuzdan pahalıya sıralandı');
-        } else if (activeFilter?.type === 'SORT_PRICE_DESC') {
-            // Pahalıdan ucuza sırala
-            productsToRender.sort((a, b) => {
-                const priceA = parseFloat(a.price.replace(' TMT', '')) || 0;
-                const priceB = parseFloat(b.price.replace(' TMT', '')) || 0;
-                return priceB - priceA; // Ters sıralama
-            });
-            console.log('✅ Ürünler pahalıdan ucuza sıralandı');
-        } else {
-            // Varsayılan sıralama (resimli ve fiyatlı ürünler önce)
-            productsToRender.sort((a, b) => {
-                const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
-                const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
-
-                const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
-                const bHasPrice = b.price && parseFloat(b.price.replace(' TMT', '')) > 0;
-
-                const aScore = (aHasImage ? 2 : 0) + (aHasPrice ? 1 : 0);
-                const bScore = (bHasImage ? 2 : 0) + (bHasPrice ? 1 : 0);
-
-                return bScore - aScore;
-            });
-            console.log('✅ Ürünler öncelik sırasına göre sıralandı');
-        }
-
-        // Ürün kartlarını oluştur
-        productsToRender.forEach(product => {
-            const productCard = document.createElement('div');
-            productCard.className = 'product-card';
-
-            let priceDisplayElement = null;
-
-            if (product.isOnSale && product.originalPrice) {
-                const normalPriceValue = parseFloat(product.price.replace(' TMT', ''));
-                const discountedPriceValue = parseFloat(product.originalPrice.replace(' TMT', ''));
-
-                if (!isNaN(normalPriceValue) && !isNaN(discountedPriceValue) && normalPriceValue > discountedPriceValue) {
-                    const discountPercentage = Math.round(((normalPriceValue - discountedPriceValue) / normalPriceValue) * 100);
-
-                    const priceContainer = document.createElement('div');
-                    priceContainer.className = 'price-container';
-
-                    const priceInfo = document.createElement('div');
-                    priceInfo.className = 'price-info';
-
-                    const currentPrice = document.createElement('span');
-                    currentPrice.className = 'current-price';
-                    currentPrice.textContent = product.originalPrice;
-
-                    const originalPrice = document.createElement('span');
-                    originalPrice.className = 'original-price';
-                    originalPrice.textContent = product.price;
-
-                    priceInfo.appendChild(currentPrice);
-                    priceInfo.appendChild(originalPrice);
-
-                    const badge = document.createElement('span');
-                    badge.className = 'discount-percentage-badge';
-                    badge.textContent = `-%${discountPercentage}`;
-
-                    priceContainer.appendChild(priceInfo);
-                    priceContainer.appendChild(badge);
-
-                    priceDisplayElement = priceContainer;
-                }
-            }
-
-            productCard.innerHTML = `
-                <div class="product-image-container">
-                    <div class="img-skeleton"></div>
-                    ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
-                    <img src="${getOptimizedImageUrl(product.imageUrl)}" 
-                         class="product-img"
-                         loading="lazy"
-                         onload="this.classList.add('loaded'); this.parentElement.querySelector('.img-skeleton').style.display='none';"
-                         onerror="this.src='https://res.cloudinary.com/domv6ullp/image/upload/v1765464522/no-image_placeholder.png'; this.classList.add('loaded', 'error'); this.parentElement.querySelector('.img-skeleton').style.display='none';">
-                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
-                </div>
-                <div class="product-info">
-                    <h3 class="product-title"></h3>
-                    <span class="product-category-label"></span>
-                    <div class="price-display-wrapper"></div>
-                    <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
-                </div>
-            `;
-            productCard.querySelector('.product-img').alt = product.title;
-            productCard.querySelector('.product-title').textContent = product.title;
-            productCard.querySelector('.product-category-label').textContent = product.category || '';
-
-            const wrapper = productCard.querySelector('.price-display-wrapper');
-            if (priceDisplayElement) {
-                wrapper.appendChild(priceDisplayElement);
-            } else {
-                const priceSpan = document.createElement('span');
-                priceSpan.className = 'product-price';
-                priceSpan.textContent = product.price;
-                wrapper.appendChild(priceSpan);
-            }
-            productsGrid.appendChild(productCard);
-            updateFavoriteButton(product.id);
-        });
+        console.log(`✅ Filtre uygulandı: ${visibleCount}/${storeProducts.length} ürün gösteriliyor`);
     };
 
     // ✅ YENİ: Site Ayarlarını Kontrol Et (Kategori Gizleme)
