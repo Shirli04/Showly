@@ -132,20 +132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Arka planda yeni veri çek
         fetchAndCacheData().catch(e => console.warn('Arka plan güncelleme hatası:', e));
     } else if (isDirectStoreAccess) {
-        // ✅ PERFORMANS: Direkt mağaza erişimi - minimal veri yükle
-        console.log('🚀 Direkt mağaza erişimi tespit edildi, hızlı yükleme...');
-
-        // Önce router'ı çalıştır (skeleton gösterecek)
-        router();
-
-        // Arka planda veri yükle
-        fetchAndCacheData().then(() => {
-            // Veriler gelince router'ı tekrar çalıştır
-            router();
-        }).catch(error => {
-            console.error('Veri yükleme hatası:', error);
-            showNotification('Baglanyp bilmedi. Internediňizi kontrol ediň.', false);
-        });
+        await fetchAndCacheData();
+        await checkSiteSettings();
     } else {
         // İlk yükleme veya önbellek yok
         await fetchAndCacheData();
