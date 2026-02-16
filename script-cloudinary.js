@@ -755,18 +755,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             socialGrid.appendChild(link);
         }
 
-        // ✅ BURAYI EKLEYİN - Kategori ve filtreleri göster (Eğer ayar gizli değilse)
-        if (!window.isCategoriesHidden) {
-            if (categoryFiltersSection) categoryFiltersSection.style.display = 'block';
-            if (mainFiltersSection) mainFiltersSection.style.display = 'block';
-
-            // ✅ BURAYI EKLEYİN - Fonksiyonları çağır
-            renderCategories(storeId, activeFilter);
-            renderMainFilters(storeId, activeFilter);
-        } else {
-            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
-            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
-        }
+        // Mağaza içi filtreleri her zaman göster (isCategoriesHidden sadece sol menüyü etkiler)
+        if (categoryFiltersSection) categoryFiltersSection.style.display = 'block';
+        if (mainFiltersSection) mainFiltersSection.style.display = 'block';
+        renderCategories(storeId, activeFilter);
+        renderMainFilters(storeId, activeFilter);
 
         let productsToRender = storeProducts;
         if (activeFilter) {
@@ -781,6 +774,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     productsToRender = storeProducts.filter(p => parseFloat(p.price.replace(' TMT', '')) > 500);
                     break;
                 case 'SORT_PRICE_ASC':
+                    productsToRender = [...storeProducts];
+                    break;
+                case 'SORT_PRICE_DESC':
                     productsToRender = [...storeProducts];
                     break;
                 case 'PRICE_RANGE':
@@ -971,14 +967,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
         if (mainFiltersSection) mainFiltersSection.style.display = 'none';
 
-        storeBanner.style.display = 'block';
-        while (storeBanner.firstChild) storeBanner.removeChild(storeBanner.firstChild);
-        const searchTitle = document.createElement('h2');
-        searchTitle.textContent = `Gözleg: "${query}"`;
-        const searchSub = document.createElement('p');
-        searchSub.textContent = `${filteredProducts.length} harydy`;
-        storeBanner.appendChild(searchTitle);
-        storeBanner.appendChild(searchSub);
+        if (storeBanner) {
+            storeBanner.style.display = 'block';
+            while (storeBanner.firstChild) storeBanner.removeChild(storeBanner.firstChild);
+            const searchTitle = document.createElement('h2');
+            searchTitle.textContent = `Gözleg: "${query}"`;
+            const searchSub = document.createElement('p');
+            searchSub.textContent = `${filteredProducts.length} harydy`;
+            storeBanner.appendChild(searchTitle);
+            storeBanner.appendChild(searchSub);
+        }
 
         productsGrid.style.display = 'grid';
         while (productsGrid.firstChild) productsGrid.removeChild(productsGrid.firstChild);
@@ -1569,9 +1567,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             cancelBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iberilýär...';
 
-            const loadingOverlay = document.getElementById('loading-overlay');
+            const orderLoadingOverlay = document.getElementById('loading-overlay');
             const loadingText = document.querySelector('.loading-text');
-            loadingOverlay.style.display = 'flex';
+            if (orderLoadingOverlay) orderLoadingOverlay.style.display = 'flex';
             loadingText.textContent = 'Sargydyňyz işlenýär...';
 
             // Mağazanın sipariş telefon numarasını al
@@ -1606,13 +1604,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log('Sipariş Firebase\'e eklendi');
 
 
-                loadingOverlay.style.display = 'none';
+                if (orderLoadingOverlay) orderLoadingOverlay.style.display = 'none';
                 showNotification(`✅ ${currentStoreCart.storeName} üçin sargydyňyz kabul edildi!`, true);
 
                 // Bu mağazayı sepetten sil
                 delete cart[currentStoreCart.storeId];
                 updateCartCount();
-                document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`).remove();
 
                 if (orderPhone) {
                     // SMS URL oluştur
@@ -1638,7 +1635,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             } catch (error) {
                 console.error('Sargyt goşulmady:', error);
-                loadingOverlay.style.display = 'none';
+                if (orderLoadingOverlay) orderLoadingOverlay.style.display = 'none';
 
                 submitBtn.disabled = false;
                 cancelBtn.disabled = false;
