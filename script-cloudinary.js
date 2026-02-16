@@ -132,13 +132,140 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Arka planda yeni veri çek
         fetchAndCacheData().catch(e => console.warn('Arka plan güncelleme hatası:', e));
     } else if (isDirectStoreAccess) {
-        await fetchAndCacheData();
+        // ✅ PERFORMANS: Direkt mağaza erişimi - önce sadece mağazaları yükle
+        console.log('🚀 Direkt mağaza erişimi - öncelikli yükleme başlıyor...');
+
+        // 1. Önce sadece mağazaları yükle
+        await fetchStoresOnly();
+
+        // 2. Site ayarlarını kontrol et
         await checkSiteSettings();
+
+        // 3. Router'ı çağır (şimdi allStores dolu, mağaza bulunacak)
+        router();
+
+        // 4. Arka planda ürünleri ve diğer verileri yükle
+        fetchProductsAndCategories().catch(e => console.warn('Ürün yükleme hatası:', e));
     } else {
         // İlk yükleme veya önbellek yok
         await fetchAndCacheData();
         await renderCategoryMenu();
         await checkSiteSettings();
+    }
+
+    // ✅ Sadece mağazaları çeken fonksiyon (hızlı)
+    async function fetchStoresOnly() {
+        try {
+            const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
+            console.log('📦 Sadece mağazalar yükleniyor...');
+
+            const response = await fetch(WORKER_URL, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+            const data = await response.json();
+
+            if (!data || !data.stores) throw new Error('Mağaza verisi bulunamadı');
+
+            // Sadece mağazaları yükle
+            allStores = data.stores;
+            console.log(`✅ ${allStores.length} mağaza yüklendi`);
+
+            return true;
+        } catch (error) {
+            console.error('Mağaza yükleme hatası:', error);
+            // Firebase fallback
+            try {
+                const storesSnap = await window.db.collection('stores').get();
+                allStores = storesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                console.log(`✅ ${allStores.length} mağaza yüklendi (Firebase)`);
+                return true;
+            } catch (fbError) {
+                console.error('Firebase mağaza hatası:', fbError);
+                throw fbError;
+            }
+        }
+    }
+
+    // ✅ Ürün ve kategorileri çeken fonksiyon (arka planda)
+    async function fetchProductsAndCategories() {
+        try {
+            const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
+            console.log('📦 Ürünler ve kategoriler yükleniyor...');
+
+            const response = await fetch(WORKER_URL, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+            const data = await response.json();
+
+            // Ürün ve kategorileri yükle
+            allProducts = data.products || [];
+            window.allParentCategories = data.parentCategories || [];
+            window.allSubcategories = data.subcategories || [];
+            window.allOldCategories = data.categories || [];
+
+            console.log(`✅ ${allProducts.length} ürün yüklendi`);
+
+            // Önbelleğe kaydet
+            setCachedData({
+                stores: allStores,
+                products: allProducts,
+                parentCategories: window.allParentCategories,
+                subcategories: window.allSubcategories,
+                categories: window.allOldCategories
+            });
+
+            // Ürünler yüklendikten sonra router'ı tekrar çağır (ürünleri göstermek için)
+            router();
+
+            return true;
+        } catch (error) {
+            console.warn('Ürün yükleme hatası:', error);
+            // Firebase fallback
+            try {
+                const [productsSnap, parentCatsSnap, subCatsSnap, catsSnap] = await Promise.all([
+                    window.db.collection('products').get(),
+                    window.db.collection('parentCategories').get(),
+                    window.db.collection('subcategories').get(),
+                    window.db.collection('categories').get()
+                ]);
+
+                allProducts = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                window.allParentCategories = parentCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                window.allSubcategories = subCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                window.allOldCategories = catsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                console.log(`✅ ${allProducts.length} ürün yüklendi (Firebase)`);
+
+                // Önbelleğe kaydet
+                setCachedData({
+                    stores: allStores,
+                    products: allProducts,
+                    parentCategories: window.allParentCategories,
+                    subcategories: window.allSubcategories,
+                    categories: window.allOldCategories
+                });
+
+                // Router'ı tekrar çağır
+                router();
+
+                return true;
+            } catch (fbError) {
+                console.error('Firebase ürün hatası:', fbError);
+                throw fbError;
+            }
+        }
     }
 
     // ✅ Veri çekme ve önbellekleme fonksiyonu
