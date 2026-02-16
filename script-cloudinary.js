@@ -1282,6 +1282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const quantityBtn = e.target.closest('.quantity-btn');
         if (quantityBtn) {
+            e.preventDefault(); // ✅ Hayalet tıklamayı (ghost click) engelle
             const storeId = quantityBtn.getAttribute('data-store-id');
             const productId = quantityBtn.getAttribute('data-id');
             const action = quantityBtn.getAttribute('data-action');
@@ -1299,6 +1300,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const removeBtn = e.target.closest('.cart-item-remove');
         if (removeBtn) {
+            e.preventDefault(); // ✅ Hayalet tıklamayı engelle
             const storeId = removeBtn.getAttribute('data-store-id');
             const productId = removeBtn.getAttribute('data-id');
             if (cart[storeId]) {
