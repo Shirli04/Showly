@@ -136,13 +136,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('🚀 Direkt mağaza erişimi - öncelikli yükleme başlıyor...');
 
         // 1. Önce sadece mağazaları yükle
-        await fetchStoresOnly();
+        await fetchAndCacheData();
 
         // 2. Site ayarlarını kontrol et
         await checkSiteSettings();
 
-        // 4. Arka planda ürünleri ve diğer verileri yükle
-        fetchProductsAndCategories().catch(e => console.warn('Ürün yükleme hatası:', e));
     } else {
         // İlk yükleme veya önbellek yok
         await fetchAndCacheData();
