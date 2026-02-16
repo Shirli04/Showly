@@ -141,9 +141,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2. Site ayarlarını kontrol et
         await checkSiteSettings();
 
-        // 3. Router'ı çağır (şimdi allStores dolu, mağaza bulunacak)
-        router();
-
         // 4. Arka planda ürünleri ve diğer verileri yükle
         fetchProductsAndCategories().catch(e => console.warn('Ürün yükleme hatası:', e));
     } else {
@@ -226,8 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 categories: window.allOldCategories
             });
 
-            // Ürünler yüklendikten sonra router'ı tekrar çağır (ürünleri göstermek için)
-            router();
+            // Ürünler yüklendi - renderStorePage ürünleri gösterecek
 
             return true;
         } catch (error) {
@@ -257,8 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     categories: window.allOldCategories
                 });
 
-                // Router'ı tekrar çağır
-                router();
+                // Ürünler yüklendi
 
                 return true;
             } catch (fbError) {
