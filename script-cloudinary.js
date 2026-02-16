@@ -67,110 +67,169 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // ✅ PERFORMANS: Loading overlay'i hemen gizle
     if (loadingOverlay) {
-        loadingOverlay.style.display = 'flex';
+        loadingOverlay.style.display = 'none';
     }
 
-    try {
-        // ✅ YENİ: Cloudflare Worker API üzerinden veri çek
-        const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
-        console.log('🔄 Worker API üzerinden veriler yükleniyor:');
+    // ✅ PERFORMANS: Önbellek yardımcı fonksiyonları
+    const CACHE_KEY = 'showly_data_cache';
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 dakika
 
-        const response = await fetch(WORKER_URL, {
-            method: 'GET',
-            mode: 'cors',
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json'
+    function getCachedData() {
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (!cached) return null;
+
+            const { data, timestamp } = JSON.parse(cached);
+            const now = Date.now();
+
+            if (now - timestamp > CACHE_DURATION) {
+                localStorage.removeItem(CACHE_KEY);
+                return null;
             }
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status}`);
+
+            console.log('✅ Önbellekten veri yüklendi');
+            return data;
+        } catch (e) {
+            console.warn('Önbellek okuma hatası:', e);
+            return null;
         }
+    }
 
-        const data = await response.json();
-
-        if (!data || !data.stores) {
-            throw new Error('Geçersiz veri formatı (Worker)');
+    function setCachedData(data) {
+        try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                data,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.warn('Önbellek yazma hatası:', e);
         }
+    }
 
-        allStores = data.stores;
-        allProducts = data.products;
-        // Global state'e kategorileri de ekleyelim ki renderCategoryMenu kullanabilsin
-        window.allParentCategories = data.parentCategories || [];
-        window.allSubcategories = data.subcategories || [];
-        window.allOldCategories = data.categories || [];
+    // ✅ PERFORMANS: URL'den mağaza slug'ını al
+    const currentPath = window.location.pathname.replace('/', '');
+    const isDirectStoreAccess = currentPath && currentPath !== '';
 
-        console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Worker üzerinden)`);
+    // ✅ PERFORMANS: Önce önbellekten dene
+    const cachedData = getCachedData();
 
-        console.log('📂 Kategori menüsü oluşturuluyor...');
-        // ✅ Kategorili menüyü oluştur (Worker verilerini kullanacak)
+    if (cachedData && !isDirectStoreAccess) {
+        // Ana sayfa için önbellekten hızlı yükle
+        allStores = cachedData.stores;
+        allProducts = cachedData.products;
+        window.allParentCategories = cachedData.parentCategories || [];
+        window.allSubcategories = cachedData.subcategories || [];
+        window.allOldCategories = cachedData.categories || [];
+
+        console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Önbellek)`);
+
+        // Kategori menüsünü oluştur
         await renderCategoryMenu();
-        console.log('✅ Kategori menüsü tamamlandı');
-
-        // ✅ YENİ: Ayarları kontrol et ve gerekirse kategorileri gizle
         await checkSiteSettings();
 
-        console.log('🔄 Loading kapatılıyor...');
-        if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
-        }
-    } catch (error) {
-        console.warn('⚠️ Worker API hatası, Firebase yedeğine geçiliyor...', error);
+        // Arka planda yeni veri çek
+        fetchAndCacheData().catch(e => console.warn('Arka plan güncelleme hatası:', e));
+    } else if (isDirectStoreAccess) {
+        // ✅ PERFORMANS: Direkt mağaza erişimi - minimal veri yükle
+        console.log('🚀 Direkt mağaza erişimi tespit edildi, hızlı yükleme...');
 
+        // Önce router'ı çalıştır (skeleton gösterecek)
+        router();
+
+        // Arka planda veri yükle
+        fetchAndCacheData().then(() => {
+            // Veriler gelince router'ı tekrar çalıştır
+            router();
+        }).catch(error => {
+            console.error('Veri yükleme hatası:', error);
+            showNotification('Baglanyp bilmedi. Internediňizi kontrol ediň.', false);
+        });
+    } else {
+        // İlk yükleme veya önbellek yok
+        await fetchAndCacheData();
+        await renderCategoryMenu();
+        await checkSiteSettings();
+    }
+
+    // ✅ Veri çekme ve önbellekleme fonksiyonu
+    async function fetchAndCacheData() {
         try {
-            // ✅ FALLBACK: Firebase üzerinden doğrudan veri çek
-            const [storesSnap, productsSnap, parentCatsSnap, subCatsSnap, catsSnap] = await Promise.all([
-                window.db.collection('stores').get(),
-                window.db.collection('products').get(),
-                window.db.collection('parentCategories').get(), // Varsa
-                window.db.collection('subcategories').get(),    // Varsa
-                window.db.collection('categories').get()        // Varsa
-            ]);
+            // ✅ YENİ: Cloudflare Worker API üzerinden veri çek
+            const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
+            console.log('🔄 Worker API üzerinden veriler yükleniyor:');
 
-            allStores = storesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            allProducts = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-            // Global kategorileri doldur
-            window.allParentCategories = parentCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            window.allSubcategories = subCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            window.allOldCategories = catsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-            console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Firebase Fallback)`);
-
-            // Menüleri oluştur
-            console.log('📂 Kategori menüsü oluşturuluyor (Fallback)...');
-            await renderCategoryMenu();
-
-            // Ayarları kontrol et
-            await checkSiteSettings();
-
-            console.log('🔄 Loading kapatılıyor (Fallback)...');
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
-
-        } catch (firebaseError) {
-            console.error('❌ KRİTİK HATA: Hem Worker hem Firebase başarısız!', firebaseError);
-
-            // ✅ Loading'i gizle
-            if (loadingOverlay) {
-                loadingOverlay.style.display = 'none';
+            const response = await fetch(WORKER_URL, {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP Error: ${response.status}`);
             }
 
-            // ✅ Hata mesajını 404 sayfasında göster
-            const notFoundSection = document.getElementById('not-found');
-            const heroSection = document.querySelector('.hero-section');
-            const infoSection = document.querySelector('.info-section');
-            const errorTitle = document.getElementById('error-title');
-            const errorMessage = document.getElementById('error-message');
+            const data = await response.json();
 
-            if (heroSection) heroSection.style.display = 'none';
-            if (infoSection) infoSection.style.display = 'none';
+            if (!data || !data.stores) {
+                throw new Error('Geçersiz veri formatı (Worker)');
+            }
 
-            if (errorTitle) errorTitle.textContent = 'Baglanyşyk Ýok';
-            if (errorMessage) errorMessage.textContent = 'Internediňizi kontrol ediň!';
-            if (notFoundSection) notFoundSection.style.display = 'block';
+            allStores = data.stores;
+            allProducts = data.products;
+            window.allParentCategories = data.parentCategories || [];
+            window.allSubcategories = data.subcategories || [];
+            window.allOldCategories = data.categories || [];
 
-            showNotification('Baglanyp bilmedi. Internediňizi ýa-da VPN-i kontrol ediň.', false);
+            console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Worker)`);
+
+            // Önbelleğe kaydet
+            setCachedData({
+                stores: allStores,
+                products: allProducts,
+                parentCategories: window.allParentCategories,
+                subcategories: window.allSubcategories,
+                categories: window.allOldCategories
+            });
+
+            return true;
+        } catch (error) {
+            console.warn('⚠️ Worker API hatası, Firebase yedeğine geçiliyor...', error);
+
+            // Firebase fallback
+            try {
+                const [storesSnap, productsSnap, parentCatsSnap, subCatsSnap, catsSnap] = await Promise.all([
+                    window.db.collection('stores').get(),
+                    window.db.collection('products').get(),
+                    window.db.collection('parentCategories').get(),
+                    window.db.collection('subcategories').get(),
+                    window.db.collection('categories').get()
+                ]);
+
+                allStores = storesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                allProducts = productsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                window.allParentCategories = parentCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                window.allSubcategories = subCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                window.allOldCategories = catsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Firebase)`);
+
+                setCachedData({
+                    stores: allStores,
+                    products: allProducts,
+                    parentCategories: window.allParentCategories,
+                    subcategories: window.allSubcategories,
+                    categories: window.allOldCategories
+                });
+
+                return true;
+            } catch (firebaseError) {
+                console.error('❌ KRİTİK HATA: Hem Worker hem Firebase başarısız!', firebaseError);
+                throw firebaseError;
+            }
         }
     }
 
@@ -199,6 +258,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (infoSection) infoSection.style.display = 'none';
         if (notFoundSection) notFoundSection.style.display = 'none';
 
+        // ✅ PERFORMANS: Veri yüklenmemişse skeleton göster
+        if (allStores.length === 0) {
+            console.log('⏳ Veriler henüz yüklenmedi, skeleton gösteriliyor...');
+            showStoreSkeleton();
+            return;
+        }
+
         const store = allStores.find(s => s.slug === path);
 
         if (store) {
@@ -216,6 +282,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.title = 'Sahypa tapylmady - Showly';
         }
     };
+
+    // ✅ PERFORMANS: Skeleton screen fonksiyonu
+    function showStoreSkeleton() {
+        if (storeBanner) {
+            storeBanner.style.display = 'block';
+            storeBanner.innerHTML = `
+                <div class="store-banner-content">
+                    <div class="skeleton-banner"></div>
+                </div>
+            `;
+        }
+
+        if (productsGrid) {
+            productsGrid.style.display = 'grid';
+            productsGrid.innerHTML = '';
+
+            // 6 skeleton kart göster
+            for (let i = 0; i < 6; i++) {
+                const skeletonCard = document.createElement('div');
+                skeletonCard.className = 'product-card skeleton-card';
+                skeletonCard.innerHTML = `
+                    <div class="skeleton-image"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-price"></div>
+                    </div>
+                `;
+                productsGrid.appendChild(skeletonCard);
+            }
+        }
+    }
 
     // ✅ YENİ: Kategorili menü yapısı
     async function renderCategoryMenu() {
