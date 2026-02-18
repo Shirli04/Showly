@@ -230,11 +230,11 @@ class ExcelManager {
                                 price: price,
                                 originalPrice: originalPrice,
                                 isOnSale: isOnSale,
-                                category: (row['Kategoriýa'] || row['Kategori'] || '').trim(),
+                                category: String(row['Kategoriýa'] || row['Kategori'] || '').trim(),
                                 // ✅ YENİ: Çok dilli kategori (TM = category, sadece RU ve EN)
-                                category_ru: (row['category_ru'] || '').trim(),
-                                category_en: (row['category_en'] || '').trim(),
-                                material: (row['Material'] || row['Malzeme'] || '').trim(),
+                                category_ru: String(row['category_ru'] || '').trim(),
+                                category_en: String(row['category_en'] || '').trim(),
+                                material: String(row['Material'] || row['Malzeme'] || '').trim(),
                                 imageUrl: imageUrl,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             };

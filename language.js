@@ -409,9 +409,14 @@
         const targetField = config[lang];
         const fallbackField = config[DEFAULT_LANG];
 
-        return (product[targetField] && product[targetField].trim() !== '')
-            ? product[targetField]
-            : (product[fallbackField] || '');
+        const targetVal = product[targetField];
+        const fallbackVal = product[fallbackField];
+
+        // String'e çevir ve kontrol et
+        if (targetVal && String(targetVal).trim() !== '') {
+            return String(targetVal);
+        }
+        return fallbackVal ? String(fallbackVal) : '';
     }
 
     /**
@@ -422,8 +427,9 @@
      */
     function getCategoryName(cat, lang) {
         lang = lang || getSelectedLang();
-        if (lang === 'tm') return cat.name || '';
-        return cat['name_' + lang] || cat.name || '';
+        if (lang === 'tm') return String(cat.name || '');
+        const val = cat['name_' + lang];
+        return val ? String(val) : (cat.name ? String(cat.name) : '');
     }
 
     /** Dil değiştiğinde çağrılacak callback kaydet */

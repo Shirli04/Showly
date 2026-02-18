@@ -837,9 +837,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="product-actions"><button class="btn-cart" data-id="${product.id}">${translate('add_to_cart', _lang)}</button></div>
                     </div>
                 `;
+                // DEBUG: Kategori verisini kontrol et
+                const catVal = getProductField(product, 'category', _lang);
+                if (!catVal) {
+                    console.warn(`⚠️ Kategori boş! ID: ${product.id}, Lang: ${_lang}`, product);
+                }
+
                 productCard.querySelector('.product-img').alt = getProductField(product, 'name', _lang);
                 productCard.querySelector('.product-title').textContent = getProductField(product, 'name', _lang);
-                productCard.querySelector('.product-category-label').textContent = getProductField(product, 'category', _lang) || '';
+                productCard.querySelector('.product-category-label').textContent = catVal || '';
 
                 const wrapper = productCard.querySelector('.price-display-wrapper');
                 if (priceDisplayElement) {
