@@ -235,6 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return row;
         });
 
+        // Tabloyu temizle (Duplicate önlemek için)
+        storesTableBody.innerHTML = '';
+
         // Tüm satırları tek seferde ekle
         storesTableBody.append(...rowsHTML);
         attachStoreEventListeners();
