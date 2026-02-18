@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </ul>
                     `;
 
-                    categoryItem.querySelector('.category-name-text').textContent = category.name;
+                    categoryItem.querySelector('.category-name-text').textContent = getCategoryName(category);
                     categoryItem.querySelectorAll('.store-name-text').forEach((span, i) => {
                         span.textContent = categoryStores[i].name;
                     });
@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="category-header" data-category="${parent.id}">
                         <i class="fas fa-chevron-right chevron-icon"></i>
                         <i class="fas ${parentIcon} category-logo-icon"></i>
-                        <span>${parent.name}</span>
+                        <span>${getCategoryName(parent)}</span>
                     </div>
                     <ul class="category-stores" id="stores-${parent.id}" style="display: none;">
                         ${parentSubcategories.map(sub => {
@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <li class="subcategory-item">
                                     <div class="subcategory-header" data-subcategory="${sub.id}">
                                         <i class="fas fa-chevron-right chevron-icon"></i>
-                                        <span class="subcategory-name">${sub.name}</span>
+                                        <span class="subcategory-name">${getCategoryName(sub)}</span>
                                     </div>
                                     <ul class="subcategory-stores" id="sub-stores-${sub.id}" style="display: none;">
                                         ${subStores.map(store => `
@@ -815,26 +815,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
 
+                // ✅ GÜNCELLENDİ: Çok dilli ürün kartı
+                const _lang = getSelectedLang();
                 productCard.innerHTML = `
                     <div class="product-image-container">
                         <div class="img-skeleton"></div>
-                        ${product.isOnSale ? '<span class="discount-badge">Arzanladyş</span>' : ''}
+                        ${product.isOnSale ? '<span class="discount-badge">' + translate('discount', _lang) + '</span>' : ''}
                         <img src="${getOptimizedImageUrl(product.imageUrl)}" 
                              class="product-img"
                              loading="lazy"
                              onload="this.classList.add('loaded'); this.parentElement.querySelector('.img-skeleton').style.display='none';"
-                             onerror="this.src='https://res.cloudinary.com/domv6ullp/image/upload/v1765464522/no-image_placeholder.png'; this.classList.add('loaded', 'error'); this.parentElement.querySelector('.img-skeleton').style.display='none';">
+                             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+'; this.classList.add('loaded', 'error'); this.parentElement.querySelector('.img-skeleton').style.display='none';">
                         <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
                     </div>
                     <div class="product-info">
                         <h3 class="product-title"></h3>
                         <span class="product-category-label"></span>
                         <div class="price-display-wrapper"></div>
-                        <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
+                        <div class="product-actions"><button class="btn-cart" data-id="${product.id}">${translate('add_to_cart', _lang)}</button></div>
                     </div>
                 `;
-                productCard.querySelector('.product-img').alt = product.title;
-                productCard.querySelector('.product-title').textContent = product.title;
+                productCard.querySelector('.product-img').alt = getProductField(product, 'name', _lang);
+                productCard.querySelector('.product-title').textContent = getProductField(product, 'name', _lang);
                 productCard.querySelector('.product-category-label').textContent = product.category || '';
 
                 const wrapper = productCard.querySelector('.price-display-wrapper');
@@ -959,22 +961,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- ARAMA FONKSİYONU ---
+    // --- ARAMA FONKSİYONU (✅ ÇOK DİLLİ) ---
     const performSearch = () => {
         const query = searchInput.value.trim().toLowerCase();
         if (query === '') {
-            showNotification('Gözleýän harydyňyzyň adyny ýazyň!');
+            showNotification(translate('search_empty_warning'));
             return;
         }
+
+        // ✅ Çok dilli arama: seçili dile göre alan belirle
+        const sLang = getSelectedLang();
 
         let productsToSearch = currentStoreId
             ? allProducts.filter(p => p.storeId === currentStoreId)
             : allProducts;
 
-        const filteredProducts = productsToSearch.filter(product =>
-            product.title.toLowerCase().includes(query) ||
-            (product.description && product.description.toLowerCase().includes(query))
-        );
+        const filteredProducts = productsToSearch.filter(product => {
+            const name = getProductField(product, 'name', sLang).toLowerCase();
+            const desc = getProductField(product, 'desc', sLang).toLowerCase();
+            return name.includes(query) || desc.includes(query);
+        });
 
         const heroSection = document.querySelector('.hero-section');
         const infoSection = document.querySelector('.info-section');
@@ -989,9 +995,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             storeBanner.style.display = 'block';
             while (storeBanner.firstChild) storeBanner.removeChild(storeBanner.firstChild);
             const searchTitle = document.createElement('h2');
-            searchTitle.textContent = `Gözleg: "${query}"`;
+            searchTitle.textContent = `${translate('search_results', sLang)}: "${query}"`;
             const searchSub = document.createElement('p');
-            searchSub.textContent = `${filteredProducts.length} harydy`;
+            searchSub.textContent = `${filteredProducts.length} ${translate('search_count', sLang)}`;
             storeBanner.appendChild(searchTitle);
             storeBanner.appendChild(searchSub);
         }
@@ -1003,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const noResults = document.createElement('div');
             noResults.className = 'no-results';
             noResults.innerHTML = '<i class="fas fa-search"></i><h3></h3>';
-            noResults.querySelector('h3').textContent = 'Haryt tapylmady';
+            noResults.querySelector('h3').textContent = translate('no_results', sLang);
             productsGrid.appendChild(noResults);
             return;
         }
@@ -1011,6 +1017,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         filteredProducts.forEach(product => {
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
+            productCard.setAttribute('data-product-id', product.id);
             productCard.innerHTML = `
                 <div class="product-image-container">
                     <img src="${getOptimizedImageUrl(product.imageUrl)}" 
@@ -1022,11 +1029,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h3 class="product-title"></h3>
                     <span class="product-category-label"></span>
                     <p class="product-price"></p>
-                    <div class="product-actions"><button class="btn-cart" data-id="${product.id}">Sebede goş</button></div>
+                    <div class="product-actions"><button class="btn-cart" data-id="${product.id}">${translate('add_to_cart', sLang)}</button></div>
                 </div>
             `;
-            productCard.querySelector('.product-img').alt = product.title;
-            productCard.querySelector('.product-title').textContent = product.title;
+            productCard.querySelector('.product-img').alt = getProductField(product, 'name', sLang);
+            productCard.querySelector('.product-title').textContent = getProductField(product, 'name', sLang);
             productCard.querySelector('.product-category-label').textContent = product.category || '';
             productCard.querySelector('.product-price').textContent = product.price;
             productsGrid.appendChild(productCard);
@@ -1321,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!currentStoreCart || currentStoreCart.items.length === 0) {
             const emptyMsg = document.createElement('p');
             emptyMsg.className = 'empty-cart-message';
-            emptyMsg.textContent = 'Siz öz sargyt etjek harytlaryňyzy şu sebede goşup bilersiňiz.';
+            emptyMsg.textContent = translate('cart_empty');
             cartItems.appendChild(emptyMsg);
             document.getElementById('cart-total-price').textContent = '0.00 TMT';
         } else {
@@ -1353,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             storeSection.innerHTML = `
                 <div class="cart-store-header">
                     <h4>${currentStoreCart.storeName}</h4>
-                    <span class="cart-store-total">Umumy: ${storeTotal.toFixed(2)} TMT</span>
+                    <span class="cart-store-total">${translate('cart_total')}: ${storeTotal.toFixed(2)} TMT</span>
                 </div>
                 ${itemsHTML}
             `;
@@ -1474,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentStoreCart = currentStoreId ? cart[currentStoreId] : null;
 
         if (!currentStoreCart || currentStoreCart.items.length === 0) {
-            showNotification('Sebediňiz boş!', false);
+            showNotification(translate('cart_is_empty'), false);
             return;
         }
 
@@ -1568,14 +1575,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const note = e.target.querySelector('.customer-note').value.trim();
 
             if (!name || !phone || !address) {
-                showNotification('Ähli meýdançalary dolduryň!', false);
+                showNotification(translate('order_fill_all'), false);
                 return;
             }
 
             // Telefon doğrulaması (+993 6XXXXXXX formatında 8 rakam)
             const phoneRegex = /^\+993\s\d{8}$/;
             if (!phoneRegex.test(phone)) {
-                showNotification('Telefon nomeriňizi dogry giriziň (+993 6XXXXXXX)!', false);
+                showNotification(translate('order_phone_invalid'), false);
                 return;
             }
 
@@ -1588,7 +1595,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const orderLoadingOverlay = document.getElementById('loading-overlay');
             const loadingText = document.querySelector('.loading-text');
             if (orderLoadingOverlay) orderLoadingOverlay.style.display = 'flex';
-            loadingText.textContent = 'Sargydyňyz işlenýär...';
+            loadingText.textContent = translate('order_processing');
 
             // Mağazanın sipariş telefon numarasını al
             const store = allStores.find(s => s.id === currentStoreCart.storeId);
@@ -1675,27 +1682,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (favorites.length === 0) {
             const emptyMsg = document.createElement('p');
             emptyMsg.className = 'empty-favorites-message';
-            emptyMsg.textContent = 'Siz harytlardan öz halanyňyzy saýlap bilersiňiz.';
+            emptyMsg.textContent = translate('favorites_empty');
             favoritesItems.appendChild(emptyMsg);
         } else {
+            const fLang = getSelectedLang();
             favorites.forEach(product => {
                 const favItem = document.createElement('div');
                 favItem.className = 'favorite-item';
                 favItem.innerHTML = `
                     <div class="fav-img-container"></div>
                     <div class="favorite-item-info">
-                        <div class="favorite-item-title">${product.title}</div>
+                        <div class="favorite-item-title">${getProductField(product, 'name', fLang)}</div>
                         <div class="favorite-item-price">${product.price}</div>
                         <div class="favorite-item-actions">
-                            <button class="btn-remove-favorite" data-id="${product.id}">Aýyr</button>
-                            <button class="btn-add-cart-from-fav" data-id="${product.id}">Sebede goş</button>
+                            <button class="btn-remove-favorite" data-id="${product.id}">${translate('order_form_cancel', fLang)}</button>
+                            <button class="btn-add-cart-from-fav" data-id="${product.id}">${translate('add_to_cart', fLang)}</button>
                         </div>
                     </div>
                 `;
 
                 const img = document.createElement('img');
                 img.src = product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f5f5f5%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2214%22%3E%3C/text%3E%3C/svg%3E';
-                img.alt = product.title || 'Product';
+                img.alt = getProductField(product, 'name', fLang) || 'Product';
                 favItem.querySelector('.fav-img-container').appendChild(img);
                 favoritesItems.appendChild(favItem);
             });
@@ -1760,17 +1768,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             url = url.replace('http://', 'https://');
         }
 
-        // Eğer Cloudinary URL'si ise optimizasyon yap
-        if (url.includes('cloudinary.com')) {
-            if (url.includes('/upload/')) {
-                const parts = url.split('/upload/');
-                if (parts[1].includes('w_') || parts[1].includes('q_auto')) {
-                    return url;
-                }
-                return `${parts[0]}/upload/f_auto,q_auto,w_${width}/${parts[1]}`;
-            }
-        }
-
         // Cloudflare R2 veya diğer URL'leri olduğu gibi döndür
         return url;
     }
@@ -1794,14 +1791,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (modalSkeleton) modalSkeleton.style.display = 'none';
             };
             modalImage.onerror = () => {
-                modalImage.src = 'https://res.cloudinary.com/domv6ullp/image/upload/v1765464522/no-image_placeholder.png';
+                modalImage.onerror = null; // Sonsuz döngüyü engelle
+                modalImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+';
                 modalImage.classList.add('loaded');
                 if (modalSkeleton) modalSkeleton.style.display = 'none';
             };
             modalImage.src = getOptimizedImageUrl(product.imageUrl, 800);
         }
 
-        document.getElementById('modal-title').textContent = product.title;
+        // ✅ GÜNCELLENDİ: Çok dilli modal başlık
+        document.getElementById('modal-title').textContent = getProductField(product, 'name', getSelectedLang());
 
         // ✅ İndirim kontrolü
         const modalPrice = document.getElementById('modal-price');
@@ -1827,7 +1826,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (modalBadge) modalBadge.style.display = 'none';
         }
 
-        document.getElementById('modal-description').textContent = product.description || '';
+        // ✅ GÜNCELLENDİ: Çok dilli modal açıklama
+        document.getElementById('modal-description').textContent = getProductField(product, 'desc', getSelectedLang());
         // Material kontrolu - bossa sat?r? gizle
         const materialRow = document.getElementById('modal-material-row');
         if (product.material && product.material.trim() !== '') {
@@ -2186,6 +2186,57 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         }
+    });
+
+    // ✅ YENİ: Dil değişim callback'i – DOM yeniden oluşturulmadan güncelleme
+    onLanguageChange((newLang) => {
+        // 1. Statik metinleri güncelle (data-i18n / data-i18n-placeholder)
+        applyTranslations();
+
+        // 2. Ürün kartı textlerini güncelle (performans: sadece text değişir)
+        const cards = document.querySelectorAll('.product-card[data-product-id]');
+        cards.forEach(card => {
+            const productId = card.getAttribute('data-product-id');
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            const titleEl = card.querySelector('.product-title');
+            if (titleEl) titleEl.textContent = getProductField(product, 'name', newLang);
+
+            const cartBtn = card.querySelector('.btn-cart');
+            if (cartBtn) cartBtn.textContent = translate('add_to_cart', newLang);
+
+            const badge = card.querySelector('.discount-badge');
+            if (badge) badge.textContent = translate('discount', newLang);
+        });
+
+        // 3. Aktif arama varsa yeniden çalıştır
+        const query = searchInput.value.trim();
+        if (query !== '') {
+            performSearch();
+        }
+
+        // 4. Modal açıksa güncelle
+        const modal = document.getElementById('product-modal');
+        if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
+            const productId = modal.getAttribute('data-product-id');
+            if (productId) {
+                const product = allProducts.find(p => p.id === productId);
+                if (product) {
+                    document.getElementById('modal-title').textContent = getProductField(product, 'name', newLang);
+                    document.getElementById('modal-description').textContent = getProductField(product, 'desc', newLang);
+                    const modalCartBtn = document.getElementById('modal-add-cart');
+                    if (modalCartBtn) modalCartBtn.textContent = translate('add_to_cart', newLang);
+                    const modalBadge = document.getElementById('modal-discount-badge');
+                    if (modalBadge && modalBadge.style.display !== 'none') {
+                        modalBadge.textContent = translate('discount', newLang);
+                    }
+                }
+            }
+        }
+
+        // 5. Kategori menüsünü güncelle (dile göre kategori adları)
+        renderCategoryMenu();
     });
 
     // --- İLK YÜKLEME ---

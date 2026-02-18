@@ -25,7 +25,7 @@ class ExcelManager {
         }
     }
 
-    // Ürünleri Excel'e dönüştür ve indir
+    // ✅ GÜNCELLENDİ: Ürünleri Excel'e dönüştür ve indir (çok dilli destek)
     static async exportProductsToExcel() {
         try {
             const productsSnapshot = await window.db.collection('products').get();
@@ -38,12 +38,21 @@ class ExcelManager {
                 const store = stores.find(s => s.id === product.storeId);
                 return {
                     'Magazyn Ady': store ? store.name : 'Bilinmiyor',
-                    'Haryt Ady': product.title,
+                    'Haryt Ady': product.title || '',
+                    // Çok dilli ürün adı (TM = Haryt Ady, sadece RU ve EN eklenir)
+                    'name_ru': product.name_ru || '',
+                    'name_en': product.name_en || '',
+                    'Düşündiriş': product.description || '',
+                    // Çok dilli açıklama (TM = Düşündiriş, sadece RU ve EN eklenir)
+                    'desc_ru': product.desc_ru || '',
+                    'desc_en': product.desc_en || '',
                     'Baha': product.price ? product.price.replace(' TMT', '') : '',
                     'Arzanladyş Bahasy': product.originalPrice ? product.originalPrice.replace(' TMT', '') : '',
                     'Kategoriýa': product.category || '',
+                    // ✅ YENİ: Çok dilli kategori (TM = Kategoriýa, sadece RU ve EN)
+                    'category_ru': product.category_ru || '',
+                    'category_en': product.category_en || '',
                     'Material': product.material || '',
-                    'Düşündiriş': product.description || '',
                     'Surat URL': product.imageUrl || ''
                 };
             });
@@ -113,7 +122,7 @@ class ExcelManager {
         });
     }
 
-    // ✅ DÜZELTİLMİŞ: Ürünleri Excel'den Firebase'e yükle
+    // ✅ GÜNCELLENDİ: Ürünleri Excel'den Firebase'e yükle (çok dilli destek + batch write)
     static async importProductsFromExcel(file) {
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.querySelector('.loading-text');
@@ -144,9 +153,11 @@ class ExcelManager {
                     let errorCount = 0;
                     const errors = [];
 
+                    // ✅ YENİ: Ürün verilerini hazırla (batch ve tekli mod için ortak)
+                    const preparedProducts = [];
+
                     for (let i = 0; i < jsonData.length; i++) {
                         const row = jsonData[i];
-                        loadingText.textContent = `Ürün yükleniyor... (${i + 1}/${jsonData.length})`;
 
                         try {
                             // ✅ Mağaza adını temizle ve bul
@@ -169,8 +180,8 @@ class ExcelManager {
                                 continue;
                             }
 
-                            // ✅ Ürün adını al
-                            const title = (row['Haryt Ady'] || row['Ürün Adı'] || row['Urun Adi'] || '').trim();
+                            // ✅ Ürün adını al (çok dilli destekli)
+                            const title = (row['name_tm'] || row['Haryt Ady'] || row['Ürün Adı'] || row['Urun Adi'] || '').trim();
                             if (!title) {
                                 errorCount++;
                                 errors.push(`Satır ${i + 1}: Ürün adı boş`);
@@ -203,30 +214,96 @@ class ExcelManager {
                             // ✅ Resim URL'sini al
                             const imageUrl = (row['Surat URL'] || row['Resim URL'] || row['Image URL'] || '').trim();
 
-                            // ✅ Ürün verisini oluştur
+                            // ✅ GÜNCELLENDİ: Çok dilli ürün verisi oluştur
                             const productData = {
                                 storeId: store.id,
+                                // Geriye uyumluluk: title ve description korunuyor
                                 title: title,
+                                description: (row['Düşündiriş'] || row['Açıklama'] || row['Aciklama'] || '').trim(),
+                                // Çok dilli ürün adları (TM = title, sadece RU ve EN)
+                                name_ru: (row['name_ru'] || '').trim(),
+                                name_en: (row['name_en'] || '').trim(),
+                                // Çok dilli açıklamalar (TM = description, sadece RU ve EN)
+                                desc_ru: (row['desc_ru'] || '').trim(),
+                                desc_en: (row['desc_en'] || '').trim(),
+                                // Mevcut alanlar aynen korunuyor
                                 price: price,
                                 originalPrice: originalPrice,
                                 isOnSale: isOnSale,
                                 category: (row['Kategoriýa'] || row['Kategori'] || '').trim(),
+                                // ✅ YENİ: Çok dilli kategori (TM = category, sadece RU ve EN)
+                                category_ru: (row['category_ru'] || '').trim(),
+                                category_en: (row['category_en'] || '').trim(),
                                 material: (row['Material'] || row['Malzeme'] || '').trim(),
-                                description: (row['Düşündiriş'] || row['Açıklama'] || row['Aciklama'] || '').trim(),
                                 imageUrl: imageUrl,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             };
 
-                            console.log(`✅ Ürün ${i + 1}:`, productData);
-
-                            // Firebase'e ekle
-                            await window.db.collection('products').add(productData);
-                            successCount++;
+                            preparedProducts.push({ index: i, data: productData });
 
                         } catch (err) {
                             errorCount++;
                             errors.push(`Satır ${i + 1}: ${err.message}`);
                             console.error(`Satır ${i + 1} hatası:`, err);
+                        }
+                    }
+
+                    // ✅ YENİ: Batch write veya tekli yazma (300+ ürün için performans optimizasyonu)
+                    const useBatch = preparedProducts.length > 300;
+
+                    if (useBatch) {
+                        // ✅ BATCH WRITE: 500'lü partiler halinde yaz
+                        console.log(`📦 Batch write modu: ${preparedProducts.length} ürün, 500'lü partiler`);
+                        const BATCH_SIZE = 500;
+                        const totalBatches = Math.ceil(preparedProducts.length / BATCH_SIZE);
+
+                        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+                            const batchStart = batchIndex * BATCH_SIZE;
+                            const batchEnd = Math.min(batchStart + BATCH_SIZE, preparedProducts.length);
+                            const batchItems = preparedProducts.slice(batchStart, batchEnd);
+
+                            loadingText.textContent = `Batch ${batchIndex + 1}/${totalBatches} yükleniyor... (${batchStart + 1}-${batchEnd}/${preparedProducts.length})`;
+
+                            const batch = window.db.batch();
+
+                            batchItems.forEach(item => {
+                                const docRef = window.db.collection('products').doc();
+                                batch.set(docRef, item.data);
+                            });
+
+                            try {
+                                await batch.commit();
+                                successCount += batchItems.length;
+                                console.log(`✅ Batch ${batchIndex + 1}/${totalBatches} tamamlandı (${batchItems.length} ürün)`);
+                            } catch (batchErr) {
+                                console.error(`❌ Batch ${batchIndex + 1} hatası:`, batchErr);
+                                // Batch başarısız olduysa tek tek dene
+                                for (const item of batchItems) {
+                                    try {
+                                        await window.db.collection('products').add(item.data);
+                                        successCount++;
+                                    } catch (singleErr) {
+                                        errorCount++;
+                                        errors.push(`Satır ${item.index + 1}: ${singleErr.message}`);
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // TEKLİ YAZMA: 300 ve altı ürün için mevcut sistem
+                        for (let i = 0; i < preparedProducts.length; i++) {
+                            const item = preparedProducts[i];
+                            loadingText.textContent = `Ürün yükleniyor... (${i + 1}/${preparedProducts.length})`;
+
+                            try {
+                                await window.db.collection('products').add(item.data);
+                                successCount++;
+                                console.log(`✅ Ürün ${item.index + 1}:`, item.data);
+                            } catch (err) {
+                                errorCount++;
+                                errors.push(`Satır ${item.index + 1}: ${err.message}`);
+                                console.error(`Satır ${item.index + 1} hatası:`, err);
+                            }
                         }
                     }
 
@@ -238,6 +315,9 @@ class ExcelManager {
 
                         // Sonuçları göster
                         let resultMessage = `✅ ${successCount} ürün başarıyla yüklendi`;
+                        if (useBatch) {
+                            resultMessage += ` (batch write)`;
+                        }
 
                         if (errorCount > 0) {
                             resultMessage += `\n❌ ${errorCount} ürün yüklenemedi`;

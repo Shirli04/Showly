@@ -120,14 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // HTTP'yi HTTPS'e zorla
         if (url.startsWith('http://')) url = url.replace('http://', 'https://');
 
-        // Eğer Cloudinary URL'si ise optimizasyon yap
-        if (url.includes('cloudinary.com')) {
-            if (url.includes('/upload/')) {
-                const parts = url.split('/upload/');
-                if (parts[1].includes('w_')) return url;
-                return `${parts[0]}/upload/f_auto,q_auto,w_${width}/${parts[1]}`;
-            }
-        }
         // Cloudflare R2 veya diğer URL'leri olduğu gibi döndür (HTTPS zorunlu)
         return url;
     }
@@ -188,13 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showNotification('Excel yedek oluşturuldu!');
     });
 
-    document.getElementById('backup-csv-btn')?.addEventListener('click', async () => {
-        const result = await backupToCloudinary();
-        if (result.stores.success && result.products.success) {
-            showNotification('Veriler Cloudinary\'ye yedeklendi!');
-        }
-    });
-
     // Ürün resmi önizleme
     productImage.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -221,23 +206,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const stores = cachedStores || await window.showlyDB.getStores();
         const allProducts = cachedProducts || (await window.db.collection('products').get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        storesTableBody.innerHTML = '';
+        // Mağazaları tarihe göre sırala (En yeni en üstte)
+        const sortedStores = [...stores].sort((a, b) => {
+            const dateA = a.createdAt ? (a.createdAt.seconds ? a.createdAt.toDate() : new Date(a.createdAt)) : new Date(0);
+            const dateB = b.createdAt ? (b.createdAt.seconds ? b.createdAt.toDate() : new Date(b.createdAt)) : new Date(0);
+            return dateB - dateA;
+        });
 
         // Tüm mağaza satırlarını oluştur (hızlı ve paralel)
-        const rowsHTML = stores.map(store => {
+        const rowsHTML = sortedStores.map(store => {
             const storeProducts = allProducts.filter(p => p.storeId === store.id);
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td data-label="ID" class="store-id-cell"></td>
                 <td data-label="Magazyn Ady" class="store-name-cell"></td>
+                <td data-label="URL" class="store-url-cell"></td>
                 <td data-label="Haryt Sany" class="store-products-count-cell"></td>
                 <td data-label="Etmekler">
                     <button class="btn-icon edit-store" data-id="${store.id}"><i class="fas fa-edit"></i></button>
                     <button class="btn-icon danger delete-store" data-id="${store.id}"><i class="fas fa-trash"></i></button>
                 </td>
             `;
+            const storeSlug = store.slug || store.id;
             row.querySelector('.store-id-cell').textContent = store.id;
             row.querySelector('.store-name-cell').textContent = store.name;
+            row.querySelector('.store-url-cell').innerHTML = `<a href="/${storeSlug}" target="_blank" class="store-link">/${storeSlug}</a>`;
             row.querySelector('.store-products-count-cell').textContent = storeProducts.length;
             return row;
         });
@@ -543,6 +536,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('parent-category-modal-title').textContent = 'Ana Kategori Düzenle';
             document.getElementById('parent-category-id').value = categoryId;
             document.getElementById('parent-category-name').value = category.name;
+            document.getElementById('parent-category-name-ru').value = category.name_ru || '';
+            document.getElementById('parent-category-name-en').value = category.name_en || '';
             document.getElementById('parent-category-order').value = category.order;
             selectParentCategoryIcon(category.icon || 'fa-tag');
 
@@ -591,6 +586,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('subcategory-modal-title').textContent = 'Alt Kategori Düzenle';
             document.getElementById('subcategory-id').value = subcategoryId;
             document.getElementById('subcategory-name').value = subcategory.name;
+            document.getElementById('subcategory-name-ru').value = subcategory.name_ru || '';
+            document.getElementById('subcategory-name-en').value = subcategory.name_en || '';
             document.getElementById('subcategory-parent').value = subcategory.parentId;
             document.getElementById('subcategory-order').value = subcategory.order;
 
@@ -631,6 +628,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const categoryId = document.getElementById('parent-category-id').value;
         const name = document.getElementById('parent-category-name').value.trim();
+        const nameRu = document.getElementById('parent-category-name-ru').value.trim();
+        const nameEn = document.getElementById('parent-category-name-en').value.trim();
         const icon = document.getElementById('parent-category-icon').value || 'fa-tag';
         const order = parseInt(document.getElementById('parent-category-order').value) || 1;
 
@@ -655,6 +654,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (categoryId) {
                 await window.db.collection('parentCategories').doc(categoryId).update({
                     name: name,
+                    name_ru: nameRu,
+                    name_en: nameEn,
                     icon: icon,
                     order: order
                 });
@@ -662,6 +663,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 await window.db.collection('parentCategories').doc(id).set({
                     name: name,
+                    name_ru: nameRu,
+                    name_en: nameEn,
                     icon: icon,
                     order: order,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -687,6 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const subcategoryId = document.getElementById('subcategory-id').value;
         const name = document.getElementById('subcategory-name').value.trim();
+        const nameRu = document.getElementById('subcategory-name-ru').value.trim();
+        const nameEn = document.getElementById('subcategory-name-en').value.trim();
         const parentId = document.getElementById('subcategory-parent').value;
         const order = parseInt(document.getElementById('subcategory-order').value) || 1;
 
@@ -711,6 +716,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (subcategoryId) {
                 await window.db.collection('subcategories').doc(subcategoryId).update({
                     name: name,
+                    name_ru: nameRu,
+                    name_en: nameEn,
                     parentId: parentId,
                     order: order
                 });
@@ -718,6 +725,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 await window.db.collection('subcategories').doc(id).set({
                     name: name,
+                    name_ru: nameRu,
+                    name_en: nameEn,
                     parentId: parentId,
                     order: order,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1011,12 +1020,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Modal içeriğini doldur
             document.getElementById('product-name').value = product.title || '';
+            document.getElementById('product-name-ru').value = product.name_ru || '';
+            document.getElementById('product-name-en').value = product.name_en || '';
             document.getElementById('product-store').value = product.storeId || '';
             document.getElementById('product-price').value = product.price || ''; // ✅ DÜZELTME
             document.getElementById('product-discounted-price').value = product.originalPrice || ''; // ✅ DÜZELTME
             document.getElementById('product-description').value = product.description || '';
+            document.getElementById('product-description-ru').value = product.desc_ru || '';
+            document.getElementById('product-description-en').value = product.desc_en || '';
             document.getElementById('product-material').value = product.material || '';
             document.getElementById('product-category').value = product.category || '';
+            document.getElementById('product-category-ru').value = product.category_ru || '';
+            document.getElementById('product-category-en').value = product.category_en || '';
 
             // Resim varsa, önizlemeyi göster
             if (product.imageUrl) {
@@ -1076,12 +1091,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const title = document.getElementById('product-name').value.trim();
+            const nameRu = document.getElementById('product-name-ru').value.trim();
+            const nameEn = document.getElementById('product-name-en').value.trim();
             const storeId = document.getElementById('product-store').value;
             const newPrice = document.getElementById('product-price').value.trim(); // ✅ DÜZELTME
             const discountedPriceInput = document.getElementById('product-discounted-price')?.value.trim() || ''; // ✅ DÜZELTME
             const desc = document.getElementById('product-description').value.trim();
+            const descRu = document.getElementById('product-description-ru').value.trim();
+            const descEn = document.getElementById('product-description-en').value.trim();
             const material = document.getElementById('product-material').value.trim();
             const category = document.getElementById('product-category').value.trim();
+            const categoryRu = document.getElementById('product-category-ru').value.trim();
+            const categoryEn = document.getElementById('product-category-en').value.trim();
             const file = productImage.files[0];
 
             if (!title || !storeId || !newPrice) {
@@ -1130,10 +1151,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 await window.db.collection('products').doc(editingProductId).update({
                     storeId,
                     title,
+                    name_ru: nameRu,
+                    name_en: nameEn,
                     price: newPrice,
                     description: desc,
+                    desc_ru: descRu,
+                    desc_en: descEn,
                     material,
                     category,
+                    category_ru: categoryRu,
+                    category_en: categoryEn,
                     isOnSale,
                     originalPrice,
                     imageUrl
@@ -1144,10 +1171,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 await window.addProductToFirebase({
                     storeId,
                     title,
+                    name_ru: nameRu,
+                    name_en: nameEn,
                     price: newPrice,
                     description: desc,
+                    desc_ru: descRu,
+                    desc_en: descEn,
                     material,
                     category,
+                    category_ru: categoryRu,
+                    category_en: categoryEn,
                     isOnSale,
                     originalPrice,
                     imageUrl

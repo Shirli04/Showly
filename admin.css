@@ -815,6 +815,31 @@ body {
     color: #636e72;
 }
 
+.popular-product-stats .store-id-cell {
+    font-family: monospace;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.store-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.store-link:hover {
+    text-decoration: underline;
+}
+
+.store-id-badge {
+    background: #f0f0f0;
+    -color: var(--white-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
 /* Tables */
 .table-container {
     background-color: var(--white-color);
@@ -2467,6 +2492,7 @@ ul {
         transform: scale(0.95);
     }
 }
+
 /* Rezervasyon Dinamik Sat?rlar */
 .dynamic-rows {
     display: flex;

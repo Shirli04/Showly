@@ -282,8 +282,9 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Magazyn ady</th>
+                                    <th>URL</th>
                                     <th>Haryt sany</th>
-                                    <th></th>
+                                    <th>Etmekler</th>
                                 </tr>
                             </thead>
                             <tbody id="stores-table-body">
@@ -402,9 +403,6 @@
                                 <p>Mağaza ve ürün verilerinizi indir ve yedekle</p>
                                 <button class="btn-primary" id="backup-excel-btn">
                                     <i class="fas fa-download"></i> Excel Yedek Al
-                                </button>
-                                <button class="btn-primary" id="backup-csv-btn" style="background-color: #17a2b8;">
-                                    <i class="fas fa-cloud-download-alt"></i> Cloudinary'ye Yedekle
                                 </button>
                             </div>
                             <button type="submit" class="btn-primary">Kaydet</button>
@@ -548,9 +546,18 @@
                         <form id="parent-category-form">
                             <input type="hidden" id="parent-category-id">
                             <div class="form-group">
-                                <label>Ana Kategori Ady *</label>
+                                <label>Ana Kategori Ady (TM) *</label>
                                 <input type="text" id="parent-category-name" required
                                     placeholder="Örn: Giyim, Yemek, Elektronik">
+                            </div>
+                            <!-- Çok dilli kategori adı -->
+                            <div class="form-group">
+                                <label>Ana Kategori Ady (RU)</label>
+                                <input type="text" id="parent-category-name-ru" placeholder="Название на русском">
+                            </div>
+                            <div class="form-group">
+                                <label>Ana Kategori Ady (EN)</label>
+                                <input type="text" id="parent-category-name-en" placeholder="Name in English">
                             </div>
                             <div class="form-group">
                                 <label>İkon *</label>
@@ -583,9 +590,18 @@
                         <form id="subcategory-form">
                             <input type="hidden" id="subcategory-id">
                             <div class="form-group">
-                                <label>Alt Kategori Ady *</label>
+                                <label>Alt Kategori Ady (TM) *</label>
                                 <input type="text" id="subcategory-name" required
                                     placeholder="Örn: Erkek, Kadın, Çocuk">
+                            </div>
+                            <!-- Çok dilli alt kategori adı -->
+                            <div class="form-group">
+                                <label>Alt Kategori Ady (RU)</label>
+                                <input type="text" id="subcategory-name-ru" placeholder="Название на русском">
+                            </div>
+                            <div class="form-group">
+                                <label>Alt Kategori Ady (EN)</label>
+                                <input type="text" id="subcategory-name-en" placeholder="Name in English">
                             </div>
                             <div class="form-group">
                                 <label>Ana Kategori *</label>
@@ -688,8 +704,17 @@
             <div class="modal-body">
                 <form id="product-form">
                     <div class="form-group">
-                        <label>Haryt ady</label>
+                        <label>Haryt ady (TM) *</label>
                         <input type="text" id="product-name" required>
+                    </div>
+                    <!-- Çok dilli ürün adı -->
+                    <div class="form-group">
+                        <label>Haryt ady (RU)</label>
+                        <input type="text" id="product-name-ru" placeholder="Название товара на русском">
+                    </div>
+                    <div class="form-group">
+                        <label>Haryt ady (EN)</label>
+                        <input type="text" id="product-name-en" placeholder="Product name in English">
                     </div>
                     <div class="form-group">
                         <label>Magazyn</label>
@@ -697,16 +722,34 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Düşündiriş</label>
+                        <label>Düşündiriş (TM)</label>
                         <textarea id="product-description" rows="3"></textarea>
+                    </div>
+                    <!-- Çok dilli açıklama -->
+                    <div class="form-group">
+                        <label>Düşündiriş (RU)</label>
+                        <textarea id="product-description-ru" rows="2" placeholder="Описание на русском"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Düşündiriş (EN)</label>
+                        <textarea id="product-description-en" rows="2" placeholder="Description in English"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Material</label>
                         <input type="text" id="product-material">
                     </div>
                     <div class="form-group">
-                        <label>Kategoriýa</label>
+                        <label>Kategoriýa (TM)</label>
                         <input type="text" id="product-category" placeholder="Switer, Balaklar">
+                    </div>
+                    <!-- Çok dilli kategori -->
+                    <div class="form-group">
+                        <label>Kategoriýa (RU)</label>
+                        <input type="text" id="product-category-ru" placeholder="Категория на русском">
+                    </div>
+                    <div class="form-group">
+                        <label>Kategoriýa (EN)</label>
+                        <input type="text" id="product-category-en" placeholder="Category in English">
                     </div>
                     <div class="form-group">
                         <label>Baha (TMT)</label>

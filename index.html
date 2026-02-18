@@ -130,7 +130,7 @@
         </div>
 
         <div class="search-bar">
-            <input type="text" id="search-input" placeholder="Gözle...">
+            <input type="text" id="search-input" placeholder="Gözle..." data-i18n-placeholder="search_placeholder">
             <button type="button" id="search-button"><i class="fas fa-search"></i></button>
         </div>
 
@@ -143,6 +143,19 @@
                 <i class="fas fa-heart"></i>
                 <span class="favorites-count">0</span>
             </button>
+            <!-- ✅ Dil seçimi (dropdown) – en sağda, yan yana -->
+            <div class="language-selector" id="language-selector">
+                <button class="lang-toggle" id="lang-toggle">
+                    <i class="fas fa-globe"></i>
+                    <span class="lang-current">TM</span>
+                    <i class="fas fa-chevron-down lang-arrow"></i>
+                </button>
+                <div class="lang-dropdown" id="lang-dropdown">
+                    <button class="lang-option" data-lang="tm">🇹🇲 Türkmen</button>
+                    <button class="lang-option" data-lang="ru">🇷🇺 Русский</button>
+                    <button class="lang-option" data-lang="en">🇬🇧 English</button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -166,31 +179,27 @@
         <main class="content" id="main-content">
             <!-- ANA SAYFA İÇERİĞİ BAŞLANGICI -->
             <section class="hero-section">
-                <h1>Ähli görnüşli satyjylar üçin online kataloglar</h1>
-                <p>Bir sahypada ähli önümleriniz – müşderiler üçin taýýar görnüşde.</p>
-                <a class="hero-cta-link">
-                    <img src="https://res.cloudinary.com/domv6ullp/image/upload/v1765353001/showly/products/umvtosr6ijs1npjjzxuw.png"
-                        alt="Satyjy Bol" class="hero-cta-image">
-                </a>
+                <h1 data-i18n="hero_title">Ähli görnüşli satyjylar üçin online kataloglar</h1>
+                <p data-i18n="hero_subtitle">Bir sahypada ähli önümleriniz – müşderiler üçin taýýar görnüşde.</p>
             </section>
 
             <section class="info-section">
                 <div class="info-block">
-                    <h2>Biz barada</h2>
-                    <p>Şowly – Türkmenistanda döredilen onlaýn katalog platformasy.</p>
-                    <p>Biz satyjylaryň önümlerini müşderilere ýakynlaşdyrýarys.</p>
-                    <p>Maksadymyz – her bir satyjynyň online çykmagyny ýeňilleşdirmek.</p>
+                    <h2 data-i18n="about_title">Biz barada</h2>
+                    <p data-i18n="about_text_1">Şowly – Türkmenistanda döredilen onlaýn katalog platformasy.</p>
+                    <p data-i18n="about_text_2">Biz satyjylaryň önümlerini müşderilere ýakynlaşdyrýarys.</p>
+                    <p data-i18n="about_text_3">Maksadymyz – her bir satyjynyň online çykmagyny ýeňilleşdirmek.</p>
                 </div>
                 <div class="info-block">
-                    <h2>Näme üçin Şowly ?</h2>
+                    <h2 data-i18n="why_title">Näme üçin Şowly ?</h2>
                     <div class="features">
                         <div class="feature-item">
                             <i class="fas fa-user-check"></i>
-                            <h3>Ýönekeý ulanyş</h3>
+                            <h3 data-i18n="feature_easy">Ýönekeý ulanyş</h3>
                         </div>
                         <div class="feature-item">
                             <i class="fas fa-rocket"></i>
-                            <h3>Çalt wagtda satyjy bolmak hyzmaty</h3>
+                            <h3 data-i18n="feature_fast">Çalt wagtda satyjy bolmak hyzmaty</h3>
                         </div>
                     </div>
                 </div>
@@ -213,12 +222,12 @@
             <div class="main-filters-section" id="main-filters-section" style="display: none;">
                 <div class="filter-buttons-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
                     <button id="main-filter-toggle-btn" class="filter-toggle-btn" style="margin-bottom: 0;">
-                        <i class="fas fa-filter"></i> Filtr
+                        <i class="fas fa-filter"></i> <span data-i18n="filter_btn">Filtr</span>
                     </button>
                     <!-- ✅ YENİ: Rezerve butonu buraya taşındı -->
                     <button id="rezervasyon-yap-btn" class="filter-toggle-btn reservation-btn-v2"
                         style="display: none; margin-bottom: 0; background-color: var(--primary-color); color: white; border: none;">
-                        <i class="fas fa-calendar-check"></i> Banket
+                        <i class="fas fa-calendar-check"></i> <span data-i18n="banquet_btn">Banket</span>
                     </button>
                 </div>
                 <div id="main-filters-container" class="main-filters-container" style="display: none;">
@@ -232,12 +241,14 @@
     <!-- 404 Sayfa Bulunamadı Bölümü -->
     <div id="not-found" style="display: none; text-align: center; padding: 60px 20px;">
         <h1 style="font-size: 48px; color: var(--primary-color);"></h1>
-        <h2 style="font-size: 24px; margin-bottom: 10px;" id="error-title">Sahypa Tapylmady</h2>
-        <p style="color: #666; margin-bottom: 20px;" id="error-message">Gözleýän magazynyňyz tapylmady</p>
+        <h2 style="font-size: 24px; margin-bottom: 10px;" id="error-title" data-i18n="not_found_title">Sahypa Tapylmady
+        </h2>
+        <p style="color: #666; margin-bottom: 20px;" id="error-message" data-i18n="not_found_message">Gözleýän
+            magazynyňyz tapylmady</p>
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <a href="#" id="back-home-link" class="cta-button">Esasy sahypa git</a>
+            <a href="#" id="back-home-link" class="cta-button" data-i18n="back_home">Esasy sahypa git</a>
             <button id="reload-page-btn" class="cta-button" style="background-color: #17a2b8;">
-                <i class="fas fa-sync-alt"></i> Sahypany täzele
+                <i class="fas fa-sync-alt"></i> <span data-i18n="reload_page">Sahypany täzele</span>
             </button>
         </div>
     </div>
@@ -247,18 +258,19 @@
             <span class="close-modal">&times;</span>
             <div class="product-detail-image">
                 <div class="img-skeleton" id="modal-img-skeleton" style="display: none;"></div>
-                <span class="discount-badge" id="modal-discount-badge" style="display: none;">Arzanladyş</span>
+                <span class="discount-badge" id="modal-discount-badge" style="display: none;"
+                    data-i18n="discount">Arzanladyş</span>
                 <img id="modal-image" src="" alt="">
             </div>
             <div class="product-detail-info">
                 <h2 id="modal-title"></h2>
                 <p class="product-detail-price" id="modal-price"></p>
                 <p id="modal-description"></p>
-                <p id="modal-material-row" style="display: block;"><span
-                        style="font-weight: bold; color: #333;">Material:</span> <span id="modal-material"></span></p>
+                <p id="modal-material-row" style="display: block;"><span style="font-weight: bold; color: #333;"
+                        data-i18n="material_label">Material:</span> <span id="modal-material"></span></p>
                 <div class="product-variants" id="modal-variants"></div>
                 <div class="product-detail-actions">
-                    <button class="btn-add-cart" id="modal-add-cart">Sebede goş</button>
+                    <button class="btn-add-cart" id="modal-add-cart" data-i18n="add_to_cart">Sebede goş</button>
                 </div>
             </div>
         </div>
@@ -269,20 +281,21 @@
         <div class="modal-content cart-content">
             <span class="close-modal" id="close-cart-modal">&times;</span>
             <div class="cart-header">
-                <h2>Sebedim</h2>
+                <h2 data-i18n="cart_title">Sebedim</h2>
             </div>
             <div class="cart-items" id="cart-items">
                 <!-- Sepetteki ürünler JavaScript ile buraya doldurulacak -->
-                <p class="empty-cart-message">Siz öz sargyt etjek harytlaryňyzy şu sebede goşup bilersiňiz.</p>
+                <p class="empty-cart-message" data-i18n="cart_empty">Siz öz sargyt etjek harytlaryňyzy şu sebede goşup
+                    bilersiňiz.</p>
             </div>
             <div class="cart-footer">
                 <div class="cart-total">
-                    <h3>Umumy: <span id="cart-total-price">0 TMT</span></h3>
+                    <h3><span data-i18n="cart_total">Umumy</span>: <span id="cart-total-price">0 TMT</span></h3>
                 </div>
-                <button class="checkout-button">Sargyt et</button>
+                <button class="checkout-button" data-i18n="order_btn">Sargyt et</button>
                 <div class="delivery-notice">
                     <i class="fas fa-truck delivery-icon"></i>
-                    <span>Aşgabada we başga 5 welaýada sargyt edip berýäris.</span>
+                    <span data-i18n="delivery_notice">Aşgabada we başga 5 welaýada sargyt edip berýäris.</span>
                 </div>
             </div>
         </div>
@@ -293,11 +306,12 @@
         <div class="modal-content favorites-content">
             <span class="close-modal" id="close-favorites-modal">&times;</span>
             <div class="favorites-header">
-                <h2>Halanlarym</h2>
+                <h2 data-i18n="favorites_title">Halanlarym</h2>
             </div>
             <div class="favorites-items" id="favorites-items">
                 <!-- Favori ürünler JavaScript ile buraya doldurulacak -->
-                <p class="empty-favorites-message">Siz harytlardan öz halanyňyzy saýlap bilersiňiz.</p>
+                <p class="empty-favorites-message" data-i18n="favorites_empty">Siz harytlardan öz halanyňyzy saýlap
+                    bilersiňiz.</p>
             </div>
         </div>
     </div>
@@ -306,7 +320,7 @@
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
             <div class="loading-spinner"></div>
-            <div class="loading-text">Biraz garaşyň...</div>
+            <div class="loading-text" data-i18n="loading">Biraz garaşyň...</div>
         </div>
     </div>
 
@@ -719,6 +733,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
     <script src="/firebase-config.js"></script>
+    <!-- ✅ YENİ: Çok dilli destek modülü -->
+    <script src="/language.js"></script>
 
 
 

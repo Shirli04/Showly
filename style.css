@@ -175,6 +175,102 @@ header {
     transform: scale(0.95);
 }
 
+/* ================================ DİL SEÇİCİ DROPDOWN ================================ */
+.language-selector {
+    position: relative;
+}
+
+.lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-color);
+    background: var(--white-color);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.lang-toggle:hover {
+    background: var(--light-gray);
+    border-color: var(--primary-color);
+}
+
+.lang-toggle .fa-globe {
+    font-size: 15px;
+    color: var(--primary-color);
+}
+
+.lang-arrow {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+    color: #888;
+}
+
+.language-selector.open .lang-arrow {
+    transform: rotate(180deg);
+}
+
+.lang-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--white-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    z-index: 200;
+    min-width: 160px;
+    animation: dropdownSlide 0.2s ease;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.language-selector.open .lang-dropdown {
+    display: block;
+}
+
+.lang-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    text-align: left;
+}
+
+.lang-option:hover {
+    background: var(--light-gray);
+}
+
+.lang-option.active {
+    background: var(--light-gray);
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
 /* ================================ KULLANICI İŞLEMLERİ ================================ */
 .user-actions {
     display: flex;
@@ -182,7 +278,7 @@ header {
     gap: 15px;
 }
 
-.user-actions button,
+.user-actions>button,
 .user-actions .admin-btn {
     background-color: transparent;
     color: var(--text-color);
@@ -201,7 +297,7 @@ header {
     position: relative;
 }
 
-.user-actions button:hover,
+.user-actions>button:hover,
 .user-actions .admin-btn:hover {
     background-color: var(--light-gray);
     color: var(--primary-color);
@@ -682,24 +778,25 @@ header {
 /* --- YENİ: MAĞAZA ZİYARET SAYACI (GÖZ İKONU) --- */
 .store-views-badge {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 5px;
+    left: 5px;
     background: rgba(26, 26, 26, 0.05);
-    padding: 5px 12px;
-    border-radius: 8px;
+    padding: 3px 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
+    gap: 5px;
+    font-size: 11px;
     color: #888;
     font-weight: 600;
     transition: all 0.3s ease;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    z-index: 10;
 }
 
 .store-views-badge i {
     color: var(--primary-color);
-    font-size: 16px;
+    font-size: 12px;
 }
 
 .store-views-badge:hover {
@@ -710,11 +807,11 @@ header {
 
 @media (max-width: 768px) {
     .store-views-badge {
-        position: relative;
-        margin: 0 auto 15px auto;
-        width: fit-content;
-        top: auto;
-        left: auto;
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        margin: 0;
+        z-index: 10;
     }
 }
 
@@ -837,6 +934,7 @@ header {
     min-height: 35px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
