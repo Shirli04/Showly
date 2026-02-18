@@ -2195,7 +2195,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cards = document.querySelectorAll('.product-card[data-product-id]');
         cards.forEach(card => {
             const productId = card.getAttribute('data-product-id');
-            const product = allProducts.find(p => p.id === productId);
+            // Ürün ID'sini string olarak karşılaştır (Firebase'den bazen number/string karışık gelebilir)
+            const product = allProducts.find(p => String(p.id) === String(productId));
             if (!product) return;
 
             const titleEl = card.querySelector('.product-title');
@@ -2227,7 +2228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (modal && modal.style.display !== 'none' && modal.style.display !== '') {
             const productId = modal.getAttribute('data-product-id');
             if (productId) {
-                const product = allProducts.find(p => p.id === productId);
+                const product = allProducts.find(p => String(p.id) === String(productId));
                 if (product) {
                     document.getElementById('modal-title').textContent = getProductField(product, 'name', newLang);
                     document.getElementById('modal-description').textContent = getProductField(product, 'desc', newLang);
@@ -2241,8 +2242,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (materialRow) materialRow.style.display = 'none';
                     }
 
+                    const materialLabel = document.getElementById('modal-material-label');
+                    if (materialLabel) materialLabel.textContent = translate('material_label', newLang);
+
                     const modalCartBtn = document.getElementById('modal-add-cart');
                     if (modalCartBtn) modalCartBtn.textContent = translate('add_to_cart', newLang);
+
                     const modalBadge = document.getElementById('modal-discount-badge');
                     if (modalBadge && modalBadge.style.display !== 'none') {
                         modalBadge.textContent = translate('discount', newLang);

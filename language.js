@@ -333,11 +333,6 @@
         if (!SUPPORTED_LANGS.includes(lang)) return;
         localStorage.setItem(LANG_STORAGE_KEY, lang);
 
-        // Dropdown metnini ve aktif seçimi güncelle
-        const LANG_LABELS = { tm: 'TM', ru: 'RU', en: 'EN' };
-        const currentEl = document.querySelector('.lang-current');
-        if (currentEl) currentEl.textContent = LANG_LABELS[lang] || lang.toUpperCase();
-
         document.querySelectorAll('.lang-option').forEach(opt => {
             opt.classList.toggle('active', opt.getAttribute('data-lang') === lang);
         });
@@ -388,12 +383,25 @@
      */
     function getProductField(product, field, lang) {
         lang = lang || getSelectedLang();
-        // TM dili için mevcut alanları doğrudan kullan (name_tm/desc_tm/category_tm yok)
-        const FALLBACK_MAP = { name: 'title', desc: 'description', category: 'category' };
-        const fallbackKey = FALLBACK_MAP[field] || field;
-        if (lang === 'tm') return product[fallbackKey] || '';
-        const key = field + '_' + lang;
-        return product[key] || product[fallbackKey] || '';
+
+        // Veritabanındaki gerçek alan adları
+        const FIELD_MAP = {
+            name: { tm: 'name', ru: 'name_ru', en: 'name_en' },
+            desc: { tm: 'description', ru: 'description_ru', en: 'description_en' },
+            category: { tm: 'category', ru: 'category_ru', en: 'category_en' },
+            material: { tm: 'material', ru: 'material_ru', en: 'material_en' }
+        };
+
+        const config = FIELD_MAP[field];
+        if (!config) return product[field] || '';
+
+        // İstenen dildeki veriyi bul, yoksa TM (varsayılan) verisini döndür
+        const targetField = config[lang];
+        const fallbackField = config[DEFAULT_LANG];
+
+        return (product[targetField] && product[targetField].trim() !== '')
+            ? product[targetField]
+            : (product[fallbackField] || '');
     }
 
     /**
@@ -419,10 +427,6 @@
     document.addEventListener('DOMContentLoaded', () => {
         const lang = getSelectedLang();
         const LANG_LABELS = { tm: 'TM', ru: 'RU', en: 'EN' };
-
-        // Dropdown toggle butonunu ayarla
-        const currentEl = document.querySelector('.lang-current');
-        if (currentEl) currentEl.textContent = LANG_LABELS[lang] || lang.toUpperCase();
 
         // Aktif seçeneği işaretle
         document.querySelectorAll('.lang-option').forEach(opt => {

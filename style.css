@@ -185,14 +185,14 @@ header {
 .lang-toggle {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
     border: 1px solid var(--border-color);
     background: var(--white-color);
     border-radius: 10px;
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
     color: var(--text-color);
     transition: all 0.2s ease;
 }
@@ -228,14 +228,14 @@ header {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     z-index: 2000;
-    min-width: 140px;
+    min-width: 80px;
     animation: dropdownSlide 0.2s ease;
 }
 
 @media (max-width: 480px) {
     .lang-dropdown {
         right: 0;
-        min-width: 130px;
+        min-width: 70px;
     }
 }
 
@@ -258,16 +258,17 @@ header {
 .lang-option {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
     width: 100%;
-    padding: 11px 16px;
+    padding: 10px;
     border: none;
     background: transparent;
     font-size: 14px;
+    font-weight: 600;
     color: var(--text-color);
     cursor: pointer;
     transition: background 0.15s ease;
-    text-align: left;
+    text-align: center;
 }
 
 .lang-option:hover {
