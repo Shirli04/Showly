@@ -946,6 +946,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const doc = await window.db.collection('settings').doc('general').get();
             if (doc.exists) {
                 const data = doc.data();
+                // DEBUG: Force show categories for testing
+                console.log('👁️ Kategoriler test için zorla görünür yapılıyor (Normalde gizli).');
+                window.isCategoriesHidden = false;
+                document.body.classList.add('categories-visible');
+
+                /* ORİJİNAL KOD - GERİ ALINACAK
                 if (data.hideCategories) {
                     console.log('🙈 Ayar aktif: Kategoriler ve Menü gizli kalıyor...');
                     window.isCategoriesHidden = true;
@@ -955,6 +961,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.isCategoriesHidden = false;
                     document.body.classList.add('categories-visible');
                 }
+                */
             } else {
                 window.isCategoriesHidden = false; // ✅ Ayar yoksa varsayılan: görünür
             }
