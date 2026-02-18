@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let allStores = [];
     let allProducts = [];
     let currentActiveFilter = null; // ✅ Filtreyi global takip et
+    window.isInitialLoadComplete = false; // ✅ Verilerin tam yüklendiğini takip et
 
     // SMS URL açma fonksiyonu
     function openSmsUrl(url, phoneNumber, orderText) {
@@ -150,11 +151,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (onlyStores) {
                 allStores = data.stores;
                 // Ürünler yüklenene kadar boş bırak ama skeleton gösterebilmek için allStores lazım
+                window.isInitialLoadComplete = false;
                 return true;
             }
 
             allStores = data.stores;
             allProducts = data.products;
+            window.isInitialLoadComplete = true; // ✅ Tam yükleme bitti
             window.allParentCategories = data.parentCategories || [];
             window.allSubcategories = data.subcategories || [];
             window.allOldCategories = data.categories || [];
@@ -193,6 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.allSubcategories = subCatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 window.allOldCategories = catsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+                window.isInitialLoadComplete = true; // ✅ Tam yükleme bitti
                 console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Firebase)`);
 
                 setCachedData({
@@ -911,7 +915,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const existingNoResults = productsGrid.querySelector('.no-results');
         if (existingNoResults) existingNoResults.remove();
 
-        if (visibleCount === 0) {
+        if (visibleCount === 0 && window.isInitialLoadComplete) { // ✅ Sadece yükleme bittiyse göster
             const noResults = document.createElement('div');
             noResults.className = 'no-results';
             noResults.innerHTML = '<i class="fas fa-box-open"></i><h3></h3>';
@@ -2255,6 +2259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.allParentCategories = cachedData.parentCategories || [];
             window.allSubcategories = cachedData.subcategories || [];
             window.allOldCategories = cachedData.categories || [];
+            window.isInitialLoadComplete = true; // ✅ Cache'den geldiyse yükleme tamdır
             console.log(`🚀 Cache loaded: ${allStores.length} stores, ${allProducts.length} products`);
 
             renderCategoryMenu();
@@ -2269,6 +2274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.allParentCategories = cachedData.parentCategories || [];
                 window.allSubcategories = cachedData.subcategories || [];
                 window.allOldCategories = cachedData.categories || [];
+                window.isInitialLoadComplete = true; // ✅ Cache'den geldiyse yükleme tamdır
                 router();
                 checkSiteSettings();
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
