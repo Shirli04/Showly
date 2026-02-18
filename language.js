@@ -207,6 +207,57 @@
             ru: 'Подождите...',
             en: 'Please wait...'
         },
+        // --- BANKET & FAVORİLER ---
+        banquet_loading_packages: {
+            tm: 'Paketler ýüklenýär...',
+            ru: 'Загрузка пакетов...',
+            en: 'Loading packages...'
+        },
+        banquet_no_packages: {
+            tm: 'Bu restoran üçin heniz paket goşulmady.',
+            ru: 'Для этого ресторана пакетов пока нет.',
+            en: 'No packages added for this restaurant yet.'
+        },
+        banquet_load_error: {
+            tm: 'Paketler ýüklenip bilmedi.',
+            ru: 'Не удалось загрузить пакеты.',
+            en: 'Failed to load packages.'
+        },
+        banquet_no_capacity: {
+            tm: 'Kapasite maglumaty ýok.',
+            ru: 'Нет информации о вместимости.',
+            en: 'No capacity information.'
+        },
+        banquet_fill_all: {
+            tm: 'Lütfen ähli meýdançalary dolduryň!',
+            ru: 'Пожалуйста, заполните все поля!',
+            en: 'Please fill in all fields!'
+        },
+        banquet_submitting: {
+            tm: 'Iberilýär...',
+            ru: 'Отправка...',
+            en: 'Sending...'
+        },
+        banquet_success: {
+            tm: '✅ Sargyt kabul edildi! Siziň bilen basym habarlaşarys.',
+            ru: '✅ Заказ принят! Мы скоро свяжемся с вами.',
+            en: '✅ Order received! We will contact you soon.'
+        },
+        banquet_error: {
+            tm: 'Sargyt ýerleşdirilmedi. Lütfen gaýtadan synanyşyň.',
+            ru: 'Заказ не размещен. Пожалуйста, попробуйте еще раз.',
+            en: 'Order not placed. Please try again.'
+        },
+        fav_added: {
+            tm: 'Halanlaryma goşuldy',
+            ru: 'Добавлено в избранное',
+            en: 'Added to favorites'
+        },
+        fav_removed: {
+            tm: 'Halanlarymdan aýryldy',
+            ru: 'Удалено из избранного',
+            en: 'Removed from favorites'
+        },
 
         // 404 Page
         not_found_title: {

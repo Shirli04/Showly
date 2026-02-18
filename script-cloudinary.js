@@ -1063,10 +1063,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const index = favorites.findIndex(item => item.id === product.id);
         if (index !== -1) {
             favorites.splice(index, 1);
-            showNotification('Halanlarymdan aýryldy');
+            showNotification(translate('fav_removed', getSelectedLang()));
         } else {
             favorites.push(product);
-            showNotification('Halanlaryma goşuldy');
+            showNotification(translate('fav_added', getSelectedLang()));
         }
         updateFavoritesCount();
         updateFavoriteButton(product.id);
@@ -1289,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const product = allProducts.find(p => p.id === productId);
             if (product) {
                 addToCart(product);
-                modal.style.display = 'none';
+                history.back();
             }
         }
     });
@@ -1301,22 +1301,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const product = allProducts.find(p => p.id === productId);
         if (product) {
             addToCart(product);
-            modal.style.display = 'none';
-            document.body.classList.remove('modal-open');
+            // Modal'ı kapat (History back ile)
+            history.back();
+            // document.body.classList.remove('modal-open'); // popstate halleder
         }
     });
 
+    // ✅ BACK BUTTON SUPPORT: Modalı kapatmak için history.back() kullan
+    // Bu, popstate eventini tetikler ve modal oradan kapanır.
     document.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', () => {
-            btn.closest('.modal').style.display = 'none';
-            document.body.classList.remove('modal-open');
+            history.back();
         });
     });
 
     window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
-            e.target.style.display = 'none';
-            document.body.classList.remove('modal-open');
+            history.back();
         }
     });
 
@@ -1376,6 +1377,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         cartModal.style.display = 'block';
         document.body.classList.add('modal-open');
+        // ✅ BACK BUTTON SUPPORT
+        history.pushState({ modal: 'cart-modal' }, '', window.location.href);
     });
 
     // TikTok/Instagram in-app browser için cart touch scroll tespiti
@@ -1722,6 +1725,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderFavorites();
         favoritesModal.style.display = 'block';
         document.body.classList.add('modal-open');
+        // ✅ BACK BUTTON SUPPORT
+        history.pushState({ modal: 'favorites-modal' }, '', window.location.href);
     });
 
     document.addEventListener('click', (e) => {
@@ -1762,7 +1767,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Tarayıcının geri/ileri butonları
-    window.addEventListener('popstate', router);
+    // ✅ BACK BUTTON SUPPORT: Geri basınca önce modal kapat, sonra router çalıştır
+    window.addEventListener('popstate', (event) => {
+        // 1. Açık modal var mı kontrol et
+        const modals = document.querySelectorAll('.modal');
+        let modalClosed = false;
+
+        modals.forEach(modal => {
+            if (modal.style.display !== 'none' && modal.style.display !== '') {
+                modal.style.display = 'none';
+                modalClosed = true;
+            }
+        });
+
+        // Overlay elementlerini temizle (örn loading overlay değil, sadece modal overlayleri)
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = 'auto';
+
+        // 2. Eğer modal kapattıysak Router'ı çalıştırma (Sadece modalı kapattık)
+        if (modalClosed) {
+            return;
+        }
+
+        // 3. Modal yoksa normal sayfa değişimi yap
+        router();
+    });
 
     // --- YARDIMCI FONKSİYONLAR ---
     function getOptimizedImageUrl(url, width = 400) {
@@ -1783,6 +1812,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!product) return;
         const modal = document.getElementById('product-modal');
         modal.setAttribute('data-product-id', productId);
+
+        // ✅ BACK BUTTON SUPPORT: Modal açıldığında geçmişe durum ekle
+        history.pushState({ modal: 'product-modal' }, '', window.location.href);
+        document.body.classList.add('modal-open');
 
         const modalImage = document.getElementById('modal-image');
         const modalSkeleton = document.getElementById('modal-img-skeleton');
@@ -1898,7 +1931,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (banquetModal) {
             banquetModal.style.display = 'block';
+            document.body.classList.add('modal-open');
             document.body.style.overflow = 'hidden';
+
+            // ✅ BACK BUTTON SUPPORT
+            history.pushState({ modal: 'banquet-modal' }, '', window.location.href);
 
             // Senenama çäklendirmesi (Geçmiş günleri ýap)
             const dateInput = document.getElementById('banquet-date');
@@ -1916,7 +1953,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadBanquetPackages(storeId) {
         if (!packagesList) return;
 
-        packagesList.innerHTML = '<p class="loading-packages">Paketler ýüklenýär...</p>';
+        packagesList.innerHTML = `<p class="loading-packages">${translate('banquet_loading_packages', getSelectedLang())}</p>`;
 
         try {
             const snapshot = await window.db.collection('reservationPackages')
@@ -1926,14 +1963,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentStorePackages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             if (currentStorePackages.length === 0) {
-                packagesList.innerHTML = '<p class="no-packages" style="padding: 20px; color: #888;">Bu restoran üçin heniz paket goşulmady.</p>';
+                packagesList.innerHTML = `<p class="no-packages" style="padding: 20px; color: #888;">${translate('banquet_no_packages', getSelectedLang())}</p>`;
                 return;
             }
 
             renderBanquetPackages();
         } catch (error) {
             console.error('❌ Paketler ýüklenip bilmedi:', error);
-            packagesList.innerHTML = '<p class="error-packages">Paketler ýüklenip bilmedi.</p>';
+            packagesList.innerHTML = `<p class="error-packages">${translate('banquet_load_error', getSelectedLang())}</p>`;
         }
     }
 
@@ -2045,7 +2082,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const shouldSelectDefault = isFirstRender || wasAnyChecked !== null;
 
             if (capacities.length === 0) {
-                guestOptionsList.innerHTML = '<p style="grid-column: 1/-1; color: #888; font-size: 13px; padding: 10px;">Kapasite maglumaty ýok.</p>';
+                guestOptionsList.innerHTML = `<p style="grid-column: 1/-1; color: #888; font-size: 13px; padding: 10px;">${translate('banquet_no_capacity', getSelectedLang())}</p>`;
             } else {
                 guestOptionsList.innerHTML = capacities.map((cap, idx) => {
                     const countMatch = cap.name.match(/\d+/);
@@ -2122,10 +2159,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Modalı kapatma
+    // Modalı kapatma
     closeBanquetModal?.addEventListener('click', () => {
         if (banquetModal) {
-            banquetModal.style.display = 'none';
-            document.body.style.overflow = 'auto';
+            history.back();
         }
     });
 
@@ -2152,7 +2189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedPkg = currentStorePackages.find(p => p.id === packageId);
 
         if (!customerName || !customerPhone || !eventDate || !packageId) {
-            showNotification('Lütfen Ähli meýdançalary dolduryň!', false);
+            showNotification(translate('banquet_fill_all', getSelectedLang()), false);
             return;
         }
 
@@ -2179,17 +2216,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderilýär...';
+            submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translate('banquet_submitting', getSelectedLang())}`;
 
             await window.db.collection('orders').add(reservationData);
 
-            showNotification('✅ Sargyt kabul edildi! Siziň bilen basym habarlaşarys.', true);
-            banquetModal.style.display = 'none';
-            document.body.style.overflow = 'auto';
+            showNotification(translate('banquet_success', getSelectedLang()), true);
+            history.back(); // Modal kapat (popstate tetiklenir)
+            // document.body.style.overflow = 'auto'; // popstate halleder
             banquetForm.reset();
         } catch (error) {
             console.error('❌ Rezervasyon hatası:', error);
-            showNotification('Sargyt ýerleşdirilmedi. Lütfen gaýtadan synanyşyň.', false);
+            showNotification(translate('banquet_error', getSelectedLang()), false);
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
