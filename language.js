@@ -190,6 +190,16 @@
             ru: 'По этому фильтру товаров не найдено.',
             en: 'No products found for this filter.'
         },
+        filter_min_tmt: {
+            tm: 'Min TMT',
+            ru: 'Мин. TMT',
+            en: 'Min TMT'
+        },
+        filter_max_tmt: {
+            tm: 'Max TMT',
+            ru: 'Макс. TMT',
+            en: 'Max TMT'
+        },
 
         // Loading
         loading: {

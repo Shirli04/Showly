@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (allStores.length === 0) {
                 const noStoreMsg = document.createElement('p');
                 noStoreMsg.style.cssText = 'padding: 20px; color: rgba(255,255,255,0.7); text-align: center;';
-                noStoreMsg.textContent = 'Henüz mağaza eklenmemiş.';
+                noStoreMsg.textContent = translate('no_stores', getSelectedLang());
                 categoryMenu.appendChild(noStoreMsg);
                 return;
             }
@@ -596,27 +596,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        const lang = getSelectedLang();
+
         mainFiltersContainer.innerHTML = `
             <div class="price-filter-group">
-                <div class="price-filter-group-title">Hızlı Filtreler</div>
+                <div class="price-filter-group-title">${translate('filter_quick', lang)}</div>
                 <div class="category-buttons-container">
                     <button class="filter-option-btn ${activeFilter?.type === 'DISCOUNT' ? 'active' : ''}" data-filter-type="DISCOUNT">
-                        <i class="fas fa-percentage"></i> Arzanladyş <span class="category-count">${discountedProducts.length}</span>
+                        <i class="fas fa-percentage"></i> ${translate('filter_discount', lang)} <span class="category-count">${discountedProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'SORT_PRICE_ASC' ? 'active' : ''}" data-filter-type="SORT_PRICE_ASC">
-                        <i class="fas fa-sort-amount-up"></i> Arzandan gymmada <span class="category-count">${storeProducts.length}</span>
+                        <i class="fas fa-sort-amount-up"></i> ${translate('filter_price_asc', lang)} <span class="category-count">${storeProducts.length}</span>
                     </button>
                     <button class="filter-option-btn ${activeFilter?.type === 'SORT_PRICE_DESC' ? 'active' : ''}" data-filter-type="SORT_PRICE_DESC">
-                        <i class="fas fa-sort-amount-down"></i> Gymmatdan arzana <span class="category-count">${storeProducts.length}</span>
+                        <i class="fas fa-sort-amount-down"></i> ${translate('filter_price_desc', lang)} <span class="category-count">${storeProducts.length}</span>
                     </button>
                 </div>
             </div>
             <div class="price-filter-group">
-                <div class="price-filter-group-title">Baha aralygy</div>
+                <div class="price-filter-group-title">${translate('filter_price_range', lang)}</div>
                 <div class="price-range-inputs">
-                    <input type="number" id="min-price" placeholder="Min TMT" min="0" value="${activeFilter?.type === 'PRICE_RANGE' ? activeFilter.min : ''}">
+                    <input type="number" id="min-price" placeholder="${translate('filter_min_tmt', lang)}" min="0" value="${activeFilter?.type === 'PRICE_RANGE' ? activeFilter.min : ''}">
                     <span>-</span>
-                    <input type="number" id="max-price" placeholder="Max TMT" min="0" value="${activeFilter?.type === 'PRICE_RANGE' ? activeFilter.max : ''}">
+                    <input type="number" id="max-price" placeholder="${translate('filter_max_tmt', lang)}" min="0" value="${activeFilter?.type === 'PRICE_RANGE' ? activeFilter.max : ''}">
                 </div>
             </div>
         `;
@@ -926,10 +928,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (existingNoResults) existingNoResults.remove();
 
         if (visibleCount === 0 && window.isInitialLoadComplete) { // ✅ Sadece yükleme bittiyse göster
+            const lang = getSelectedLang();
             const noResults = document.createElement('div');
             noResults.className = 'no-results';
             noResults.innerHTML = '<i class="fas fa-box-open"></i><h3></h3>';
-            noResults.querySelector('h3').textContent = 'Bu filtrde haryt tapylmady.';
+            noResults.querySelector('h3').textContent = translate('filter_no_product', lang);
             productsGrid.appendChild(noResults);
         }
 
@@ -2218,6 +2221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2.5 Kategori butonlarını güncelle (Tüm Ürünler çevirisi için)
         if (currentStoreId) {
             renderCategories(currentStoreId, currentActiveFilter);
+            renderMainFilters(currentStoreId, currentActiveFilter);
         }
 
         // 3. Aktif arama varsa yeniden çalıştır
