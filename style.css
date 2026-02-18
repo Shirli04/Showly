@@ -178,6 +178,8 @@ header {
 /* ================================ DİL SEÇİCİ DROPDOWN ================================ */
 .language-selector {
     position: relative;
+    z-index: 1001;
+    /* Mobil menü ve diğer elemanların üzerinde kalsın */
 }
 
 .lang-toggle {
@@ -225,9 +227,16 @@ header {
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     overflow: hidden;
-    z-index: 200;
-    min-width: 160px;
+    z-index: 2000;
+    min-width: 140px;
     animation: dropdownSlide 0.2s ease;
+}
+
+@media (max-width: 480px) {
+    .lang-dropdown {
+        right: -10px;
+        min-width: 130px;
+    }
 }
 
 @keyframes dropdownSlide {
@@ -3220,6 +3229,26 @@ header {
     color: #fff;
     border-left-color: rgba(102, 126, 234, 0.8);
     padding-left: 28px;
+}
+
+/* ================================ KATEGORİ GİZLEME (VARSAYILAN: GİZLİ) ================================ */
+#store-menu,
+#category-filters-section,
+#menu-toggle {
+    display: none !important;
+}
+
+/* Kategori ayarı yüklendiğinde bu class eklenecek */
+.categories-visible #store-menu {
+    display: flex !important;
+}
+
+.categories-visible #category-filters-section {
+    display: block !important;
+}
+
+.categories-visible #menu-toggle {
+    display: flex !important;
 }
 
 @media (max-width: 768px) {

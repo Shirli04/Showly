@@ -521,11 +521,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- KATEGORİ FİLTRELERİNİ OLUŞTURAN FONKSİYON ---
     const renderCategories = (storeId, activeFilter) => {
+        const lang = getSelectedLang();
         const container = document.getElementById('category-buttons-container');
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
         const categories = [...new Set(storeProducts.map(p => p.category).filter(Boolean))];
 
-        const activeCategoryName = activeFilter?.type === 'CATEGORY' ? activeFilter.value : 'Ähli harytlar';
+        const activeCategoryName = activeFilter?.type === 'CATEGORY' ? activeFilter.value : translate('filter_all', lang);
 
         while (container.firstChild) container.removeChild(container.firstChild);
 
@@ -545,7 +546,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // "Tüm ürünler" seçeneği
         const allOption = document.createElement('button');
         allOption.className = 'category-dropdown-item ' + (!activeFilter ? 'active' : '');
-        allOption.textContent = 'Ähli harytlar ';
+        allOption.textContent = translate('filter_all', lang) + ' ';
         const allOptionCount = document.createElement('span');
         allOptionCount.className = 'category-count';
         allOptionCount.textContent = storeProducts.length;
@@ -837,7 +838,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
                 productCard.querySelector('.product-img').alt = getProductField(product, 'name', _lang);
                 productCard.querySelector('.product-title').textContent = getProductField(product, 'name', _lang);
-                productCard.querySelector('.product-category-label').textContent = product.category || '';
+                productCard.querySelector('.product-category-label').textContent = getProductField(product, 'category', _lang) || '';
 
                 const wrapper = productCard.querySelector('.price-display-wrapper');
                 if (priceDisplayElement) {
@@ -856,9 +857,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`✅ ${storeProducts.length} ürün kartı oluşturuldu (yeni mağaza)`);
         }
 
-        // ✅ PERFORMANS: Filtre uygula - kartları göster/gizle (DOM yeniden oluşturulmaz!)
-        if (categoryFiltersSection) categoryFiltersSection.style.display = 'block';
-        if (mainFiltersSection) mainFiltersSection.style.display = 'block';
+        // ✅ Filtreleri sadece kategori gizli değilse göster
+        if (!window.isCategoriesHidden) {
+            if (categoryFiltersSection) categoryFiltersSection.style.display = '';
+            if (mainFiltersSection) mainFiltersSection.style.display = '';
+        } else {
+            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
+            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
+        }
         renderCategories(storeId, activeFilter);
         renderMainFilters(storeId, activeFilter);
 
@@ -938,19 +944,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (doc.exists) {
                 const data = doc.data();
                 if (data.hideCategories) {
-                    console.log('🙈 Ayar aktif: Kategoriler ve Menü gizleniyor...');
-                    window.isCategoriesHidden = true; // ✅ Global flag ayarla
-
-                    const categoryMenu = document.getElementById('store-menu'); // Sol menü container
-                    const categoryFilters = document.getElementById('category-filters-section'); // Üst filtreler
-                    const menuToggleBtn = document.getElementById('menu-toggle'); // Menü açma butonu
-
-                    if (categoryMenu) categoryMenu.style.display = 'none';
-                    if (categoryFilters) categoryFilters.style.display = 'none';
-                    if (menuToggleBtn) menuToggleBtn.style.display = 'none'; // Butonu da gizle
+                    console.log('🙈 Ayar aktif: Kategoriler ve Menü gizli kalıyor...');
+                    window.isCategoriesHidden = true;
+                    document.body.classList.remove('categories-visible');
                 } else {
-                    console.log('👁️ Kategoriler görünür durumda.');
-                    window.isCategoriesHidden = false; // ✅ Flag'i sıfırla
+                    console.log('👁️ Kategoriler görünür yapılıyor.');
+                    window.isCategoriesHidden = false;
+                    document.body.classList.add('categories-visible');
                 }
             } else {
                 window.isCategoriesHidden = false; // ✅ Ayar yoksa varsayılan: görünür
@@ -1827,11 +1827,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // ✅ GÜNCELLENDİ: Çok dilli modal açıklama
+        // ✅ GÜNCELLENDİ: Çok dilli modal açıklama ve materyal
         document.getElementById('modal-description').textContent = getProductField(product, 'desc', getSelectedLang());
-        // Material kontrolu - bossa sat?r? gizle
+        // Material kontrolu - bossa satırı gizle
         const materialRow = document.getElementById('modal-material-row');
-        if (product.material && product.material.trim() !== '') {
-            document.getElementById('modal-material').textContent = product.material;
+        const productMaterial = getProductField(product, 'material', getSelectedLang());
+        if (productMaterial && productMaterial.trim() !== '') {
+            document.getElementById('modal-material').textContent = productMaterial;
             if (materialRow) materialRow.style.display = 'block';
         } else {
             if (materialRow) materialRow.style.display = 'none';
@@ -2203,12 +2205,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const titleEl = card.querySelector('.product-title');
             if (titleEl) titleEl.textContent = getProductField(product, 'name', newLang);
 
+            const categoryEl = card.querySelector('.product-category-label');
+            if (categoryEl) categoryEl.textContent = getProductField(product, 'category', newLang) || '';
+
             const cartBtn = card.querySelector('.btn-cart');
             if (cartBtn) cartBtn.textContent = translate('add_to_cart', newLang);
 
             const badge = card.querySelector('.discount-badge');
             if (badge) badge.textContent = translate('discount', newLang);
         });
+
+        // 2.5 Kategori butonlarını güncelle (Tüm Ürünler çevirisi için)
+        if (currentStoreId) {
+            renderCategories(currentStoreId, currentActiveFilter);
+        }
 
         // 3. Aktif arama varsa yeniden çalıştır
         const query = searchInput.value.trim();
@@ -2225,6 +2235,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (product) {
                     document.getElementById('modal-title').textContent = getProductField(product, 'name', newLang);
                     document.getElementById('modal-description').textContent = getProductField(product, 'desc', newLang);
+
+                    const modalMaterial = getProductField(product, 'material', newLang);
+                    const materialRow = document.getElementById('modal-material-row');
+                    if (modalMaterial && modalMaterial.trim() !== '') {
+                        document.getElementById('modal-material').textContent = modalMaterial;
+                        if (materialRow) materialRow.style.display = 'block';
+                    } else {
+                        if (materialRow) materialRow.style.display = 'none';
+                    }
+
                     const modalCartBtn = document.getElementById('modal-add-cart');
                     if (modalCartBtn) modalCartBtn.textContent = translate('add_to_cart', newLang);
                     const modalBadge = document.getElementById('modal-discount-badge');
