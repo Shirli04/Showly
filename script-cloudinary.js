@@ -655,33 +655,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
 
-        // ✅ PERFORMANS: Ürünler yoksa skeleton göster, ürünler gelince tekrar çağrılacak
+        // ✅ PERFORMANS: Ürünlerin varlığını ve kartların oluşturulup oluşturulmadığını kontrol et
         const hasProducts = storeProducts.length > 0;
-        const isNewStore = currentStoreId !== storeId || lastRenderedStoreId !== storeId;
+        const isNewStore = currentStoreId !== storeId;
+        const cardsNeeded = productsGrid && productsGrid.querySelector('.product-card:not(.skeleton-card)') === null;
 
-        // Eğer ürünler henüz yüklenmemişse ama mağaza yeni değilse, sadece ürünlerin gelmesini bekliyoruz
-        if (!hasProducts && !isNewStore) {
+        // Ürünler yoksa ama mağaza yeni değilse ve kartlar da yoksa, beklemeye devam et (skeleton zaten vardır)
+        if (!hasProducts && !isNewStore && cardsNeeded) {
             console.log('⏳ Ürünler henüz yüklenmedi, bekleniyor...');
             return;
         }
 
-        currentStoreId = storeId;
-
-        // ✅ PERFORMANS: Sadece yeni mağazada kartları ve banner'ı yeniden oluştur
+        // ✅ Ziyaret sayısını SADECE mağaza ilk açıldığında artır
         if (isNewStore) {
-            // Ürün grid'ini temizle ve göster
-            if (productsGrid) {
-                productsGrid.innerHTML = '';
-                productsGrid.style.display = 'grid';
-            }
-
-            const storeBanner = document.getElementById('store-banner');
-            if (storeBanner) {
-                storeBanner.style.display = 'block';
-                storeBanner.innerHTML = '<div class="banner-skeleton"></div>';
-            }
-
-            // Ziyaret sayısını artır
             let storeViews = store.views || 0;
             try {
                 const storeRef = window.db.collection('stores').doc(storeId);
@@ -694,9 +680,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (vErr) {
                 console.warn('Sayaç hazırlık hatası:', vErr);
             }
+        }
 
-            // Mağaza banner içeriğini oluştur
-            if (storeBanner) {
+        currentStoreId = storeId;
+
+        // ✅ PERFORMANS: Sadece yeni mağazada veya kartlar yokken (arka plan yüklemesi bittiyse) kartları/banner'ı oluştur
+        if (isNewStore || (hasProducts && cardsNeeded)) {
+            // Ürün grid'ini temizle ve göster
+            if (productsGrid) {
+                productsGrid.innerHTML = '';
+                productsGrid.style.display = 'grid';
+            }
+
+            const storeBanner = document.getElementById('store-banner');
+
+            // ✅ Banner skeleton/içerik sadece mağaza değiştiğinde güncellenir
+            if (isNewStore && storeBanner) {
+                storeBanner.style.display = 'block';
+                storeBanner.innerHTML = '<div class="banner-skeleton"></div>';
+            }
+
+            // Mağaza banner içeriğini oluştur (Sadece yeni mağaza ise)
+            if (isNewStore && storeBanner) {
+                const storeViews = store.views || 0;
                 storeBanner.innerHTML = `
                     <div class="store-banner-content" style="position: relative;">
                         <div class="store-views-badge">
@@ -715,39 +721,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const socialGrid = document.getElementById('social-buttons-grid');
-            if (store.tiktok) {
-                const link = document.createElement('a');
-                link.href = store.tiktok;
-                link.target = '_blank';
-                link.className = 'social-button tiktok-button';
-                link.innerHTML = '<i class="fab fa-tiktok"></i>';
-                socialGrid.appendChild(link);
+            if (isNewStore && socialGrid) {
+                if (store.tiktok) {
+                    const link = document.createElement('a');
+                    link.href = store.tiktok; link.target = '_blank';
+                    link.className = 'social-button tiktok-button';
+                    link.innerHTML = '<i class="fab fa-tiktok"></i>';
+                    socialGrid.appendChild(link);
+                }
+                if (store.instagram) {
+                    const link = document.createElement('a');
+                    link.href = store.instagram; link.target = '_blank';
+                    link.className = 'social-button instagram-button';
+                    link.innerHTML = '<i class="fab fa-instagram"></i>';
+                    socialGrid.appendChild(link);
+                }
+                if (store.phone) {
+                    const link = document.createElement('a');
+                    link.href = `tel:${store.phone}`;
+                    link.className = 'social-button phone-button';
+                    link.innerHTML = '<i class="fas fa-phone"></i>';
+                    socialGrid.appendChild(link);
+                }
+                if (store.location) {
+                    const link = document.createElement('a');
+                    link.href = `https://maps.google.com/?q=${encodeURIComponent(store.location)}`;
+                    link.target = '_blank'; link.className = 'social-button location-button';
+                    link.innerHTML = '<i class="fas fa-map-marker-alt"></i>';
+                    socialGrid.appendChild(link);
+                }
             }
-            if (store.instagram) {
-                const link = document.createElement('a');
-                link.href = store.instagram;
-                link.target = '_blank';
-                link.className = 'social-button instagram-button';
-                link.innerHTML = '<i class="fab fa-instagram"></i>';
-                socialGrid.appendChild(link);
-            }
-            if (store.phone) {
-                const link = document.createElement('a');
-                link.href = `tel:${store.phone}`;
-                link.className = 'social-button phone-button';
-                link.innerHTML = '<i class="fas fa-phone"></i>';
-                socialGrid.appendChild(link);
-            }
-            if (store.location) {
-                const link = document.createElement('a');
-                link.href = `https://maps.google.com/?q=${encodeURIComponent(store.location)}`;
-                link.target = '_blank';
-                link.className = 'social-button location-button';
-                link.innerHTML = '<i class="fas fa-map-marker-alt"></i>';
-                socialGrid.appendChild(link);
-            }
+        }
 
-            // ✅ TÜM ürün kartlarını bir kez oluştur (varsayılan sıralama ile)
+        // ✅ TÜM ürün kartlarını bir kez oluştur (Eğer kartlar yoksa veya mağaza değiştiyse)
+        if (isNewStore || (hasProducts && cardsNeeded)) {
             const sortedProducts = [...storeProducts].sort((a, b) => {
                 const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
                 const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
@@ -857,8 +864,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCategories(storeId, activeFilter);
         renderMainFilters(storeId, activeFilter);
 
-        // Filtrelenecek ürün ID'lerini belirle
-        let visibleProductIds = new Set(storeProducts.map(p => p.id));
+        // Filtrelenecek ürün ID'lerini belirle (String'e zorla)
+        let visibleProductIds = new Set(storeProducts.map(p => String(p.id)));
 
         if (activeFilter) {
             switch (activeFilter.type) {
@@ -889,7 +896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let visibleCount = 0;
 
         allCards.forEach(card => {
-            const productId = card.getAttribute('data-product-id');
+            const productId = String(card.getAttribute('data-product-id'));
             if (visibleProductIds.has(productId)) {
                 card.style.display = '';
                 visibleCount++;
