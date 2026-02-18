@@ -120,57 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // ✅ PERFORMANS: Önce önbellekten dene
-    const cachedData = getCachedData();
-
-    if (cachedData && !isDirectStoreAccess) {
-        // Ana sayfa: Cache'den yükle
-        allStores = cachedData.stores;
-        allProducts = cachedData.products;
-        window.allParentCategories = cachedData.parentCategories || [];
-        window.allSubcategories = cachedData.subcategories || [];
-        window.allOldCategories = cachedData.categories || [];
-
-        console.log(`Cache: ${allStores.length} store, ${allProducts.length} product`);
-
-        renderCategoryMenu();
-        checkSiteSettings();
-
-        fetchAndCacheData().catch(e => console.warn('Background update error:', e));
-    } else if (isDirectStoreAccess) {
-        if (loadingOverlay) loadingOverlay.style.display = 'flex';
-
-        // 1. Önce önbelleği kontrol et (En hızlı)
-        if (cachedData) {
-            allStores = cachedData.stores;
-            allProducts = cachedData.products;
-            window.allParentCategories = cachedData.parentCategories || [];
-            window.allSubcategories = cachedData.subcategories || [];
-            window.allOldCategories = cachedData.categories || [];
-            console.log(`🚀 Cache loaded: ${allStores.length} stores, ${allProducts.length} products`);
-
-            router(); // Hemen sayfayı render et
-            checkSiteSettings(); // Ayarları arka planda kontrol et
-            if (loadingOverlay) loadingOverlay.style.display = 'none';
-        } else {
-            // 2. Önce stores listesini çek (Küçük veri, hızlı)
-            fetchAndCacheData(true).then(() => {
-                router(); // Mağazayı bul ve skeleton göster
-                // 3. Kalan ağır verileri (Ürünler) arka planda çek
-                fetchAndCacheData().finally(() => {
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
-                });
-                checkSiteSettings();
-            });
-        }
-    } else {
-        // Ana sayfa: Normal akış (Cache yoksa)
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
-        fetchAndCacheData().then(() => {
-            renderCategoryMenu();
-            checkSiteSettings();
-        });
-    }
+    // Veri yükleme akışını en sona taşıdık (hoisting sorunlarını önlemek için)
 
     // ✅ Veri çekme ve önbellekleme fonksiyonu
     async function fetchAndCacheData(onlyStores = false) {
@@ -2295,5 +2245,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // --- İLK YÜKLEME ---
-    router();
+    // --- BAŞLATMA MANTIĞI (Sözdizimi ve Kapsam Sorunlarını Önlemek İçin En Sonda) ---
+    const initApp = async () => {
+        const cachedData = getCachedData();
+
+        if (cachedData && !isDirectStoreAccess) {
+            allStores = cachedData.stores;
+            allProducts = cachedData.products;
+            window.allParentCategories = cachedData.parentCategories || [];
+            window.allSubcategories = cachedData.subcategories || [];
+            window.allOldCategories = cachedData.categories || [];
+            console.log(`🚀 Cache loaded: ${allStores.length} stores, ${allProducts.length} products`);
+
+            renderCategoryMenu();
+            checkSiteSettings();
+            router();
+            fetchAndCacheData().catch(e => console.warn('Background update error:', e));
+        } else if (isDirectStoreAccess) {
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            if (cachedData) {
+                allStores = cachedData.stores;
+                allProducts = cachedData.products;
+                window.allParentCategories = cachedData.parentCategories || [];
+                window.allSubcategories = cachedData.subcategories || [];
+                window.allOldCategories = cachedData.categories || [];
+                router();
+                checkSiteSettings();
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+            } else {
+                fetchAndCacheData(true).then(() => {
+                    router();
+                    fetchAndCacheData().finally(() => {
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    });
+                    checkSiteSettings();
+                });
+            }
+        } else {
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+            fetchAndCacheData().then(() => {
+                renderCategoryMenu();
+                checkSiteSettings();
+                router();
+            });
+        }
+    };
+
+    initApp();
 });

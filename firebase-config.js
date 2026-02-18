@@ -20,6 +20,8 @@ if (typeof firebase !== 'undefined') {
     // ✅ PERFORMANS: Ayarları sadece bir kez uygula (Overriding host uyarısını önler)
     if (!window._firestoreConfigured) {
         try {
+            // Firestore settings() sadece bir kez çağrılabilir. 
+            // Eğer daha önce çağrılmışsa (farklı bir script tarafından), hata fırlatır.
             db.settings({
                 cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
                 ignoreUndefinedProperties: true,
@@ -27,22 +29,22 @@ if (typeof firebase !== 'undefined') {
                 useFetchStreams: false
             });
             window._firestoreConfigured = true;
-            console.log('🚀 Firestore: Long Polling ve ayarlar yapılandırıldı');
-
-            // ✅ Çevrimdışı Kalıcılığı Etkinleştir
-            db.enablePersistence({ synchronizeTabs: true })
-                .then(() => {
-                    console.log('📦 Firestore: Çevrimdışı kalıcılık etkinleşti');
-                })
-                .catch((err) => {
-                    if (err.code === 'failed-precondition') {
-                        console.warn('Persistence failed: Multiple tabs open');
-                    } else if (err.code === 'unimplemented') {
-                        console.warn('Persistence is not available in this browser');
-                    }
-                });
+            console.log('🚀 Firestore: Yapılandırma tamamlandı');
         } catch (e) {
-            console.warn('Firestore settings already configured:', e.message);
+            // Hata genellikle "settings() has already been called" şeklindedir, bu durumda sessizce devam et
+            window._firestoreConfigured = true;
+            console.log('ℹ️ Firestore: Ayarlar zaten uygulanmış.');
+        }
+
+        // ✅ Çevrimdışı Kalıcılığı Etkinleştir (Settings'den bağımsız olabilir)
+        try {
+            db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+                if (err.code === 'failed-precondition') {
+                    console.warn('Persistence failed: Multiple tabs');
+                }
+            });
+        } catch (pErr) {
+            // Persistence hatası kritik değildir
         }
     }
 } else {
