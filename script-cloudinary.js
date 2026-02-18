@@ -502,7 +502,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
         const categories = [...new Set(storeProducts.map(p => p.category).filter(Boolean))];
 
-        const activeCategoryName = activeFilter?.type === 'CATEGORY' ? activeFilter.value : translate('filter_all', lang);
+        const representative = activeFilter?.type === 'CATEGORY' ? storeProducts.find(p => p.category === activeFilter.value) : null;
+        const activeCategoryName = representative ? getProductField(representative, 'category', lang) : (activeFilter?.type === 'CATEGORY' ? activeFilter.value : translate('filter_all', lang));
 
         while (container.firstChild) container.removeChild(container.firstChild);
 
@@ -538,7 +539,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const count = storeProducts.filter(p => p.category === category).length;
             const option = document.createElement('button');
             option.className = 'category-dropdown-item ' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === category ? 'active' : '');
-            option.textContent = category + ' ';
+            const representative = storeProducts.find(p => p.category === category);
+            const translatedName = representative ? getProductField(representative, 'category', lang) : category;
+            option.textContent = translatedName + ' ';
             const optionCount = document.createElement('span');
             optionCount.className = 'category-count';
             optionCount.textContent = count;
@@ -1030,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             productCard.querySelector('.product-img').alt = getProductField(product, 'name', sLang);
             productCard.querySelector('.product-title').textContent = getProductField(product, 'name', sLang);
-            productCard.querySelector('.product-category-label').textContent = product.category || '';
+            productCard.querySelector('.product-category-label').textContent = getProductField(product, 'category', sLang) || '';
             productCard.querySelector('.product-price').textContent = product.price;
             productsGrid.appendChild(productCard);
             updateFavoriteButton(product.id);

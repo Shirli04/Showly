@@ -386,8 +386,8 @@
 
         // Veritabanındaki gerçek alan adları
         const FIELD_MAP = {
-            name: { tm: 'name', ru: 'name_ru', en: 'name_en' },
-            desc: { tm: 'description', ru: 'description_ru', en: 'description_en' },
+            name: { tm: 'title', ru: 'name_ru', en: 'name_en' },
+            desc: { tm: 'description', ru: 'desc_ru', en: 'desc_en' },
             category: { tm: 'category', ru: 'category_ru', en: 'category_en' },
             material: { tm: 'material', ru: 'material_ru', en: 'material_en' }
         };
