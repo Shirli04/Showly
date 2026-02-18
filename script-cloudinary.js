@@ -499,8 +499,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderCategories = (storeId, activeFilter) => {
         const lang = getSelectedLang();
         const container = document.getElementById('category-buttons-container');
+        if (container) container.style.display = 'block'; // Force show
+
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
-        const categories = [...new Set(storeProducts.map(p => p.category).filter(Boolean))];
+        console.log(`Dropdown Debug: StoreID=${storeId}, Products=${storeProducts.length}`);
+        // ✅ GÜNCELLENDİ: Kategorileri seçili dile göre grupla
+        const categories = [...new Set(storeProducts.map(p => getProductField(p, 'category', lang)).filter(Boolean))];
 
         const representative = activeFilter?.type === 'CATEGORY' ? storeProducts.find(p => p.category === activeFilter.value) : null;
         const activeCategoryName = representative ? getProductField(representative, 'category', lang) : (activeFilter?.type === 'CATEGORY' ? activeFilter.value : translate('filter_all', lang));
@@ -536,12 +540,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Kategori seçenekleri
         categories.forEach(category => {
-            const count = storeProducts.filter(p => p.category === category).length;
+            // category artik çevrilmiş isim (Localized Name)
+            // Sayımı buna göre yap:
+            const count = storeProducts.filter(p => getProductField(p, 'category', lang) === category).length;
+
             const option = document.createElement('button');
             option.className = 'category-dropdown-item ' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === category ? 'active' : '');
-            const representative = storeProducts.find(p => p.category === category);
-            const translatedName = representative ? getProductField(representative, 'category', lang) : category;
-            option.textContent = translatedName + ' ';
+
+            option.textContent = category + ' '; // Zaten çevrilmiş isim
             const optionCount = document.createElement('span');
             optionCount.className = 'category-count';
             optionCount.textContent = count;
@@ -837,15 +843,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="product-actions"><button class="btn-cart" data-id="${product.id}">${translate('add_to_cart', _lang)}</button></div>
                     </div>
                 `;
-                // DEBUG: Kategori verisini kontrol et
-                const catVal = getProductField(product, 'category', _lang);
-                if (!catVal) {
-                    console.warn(`⚠️ Kategori boş! ID: ${product.id}, Lang: ${_lang}`, product);
-                }
 
                 productCard.querySelector('.product-img').alt = getProductField(product, 'name', _lang);
                 productCard.querySelector('.product-title').textContent = getProductField(product, 'name', _lang);
-                productCard.querySelector('.product-category-label').textContent = catVal || '';
+                productCard.querySelector('.product-category-label').textContent = getProductField(product, 'category', _lang) || '';
 
                 const wrapper = productCard.querySelector('.price-display-wrapper');
                 if (priceDisplayElement) {
@@ -865,8 +866,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // ✅ Filtreleri her zaman göster (Mağaza içi filtreler gizlenmemeli)
-        if (categoryFiltersSection) categoryFiltersSection.style.display = '';
-        if (mainFiltersSection) mainFiltersSection.style.display = '';
+        if (categoryFiltersSection) categoryFiltersSection.style.display = 'block';
+        if (mainFiltersSection) mainFiltersSection.style.display = 'block';
         renderCategories(storeId, activeFilter);
         renderMainFilters(storeId, activeFilter);
 
@@ -876,7 +877,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeFilter) {
             switch (activeFilter.type) {
                 case 'CATEGORY':
-                    visibleProductIds = new Set(storeProducts.filter(p => p.category === activeFilter.value).map(p => p.id));
+                    // ✅ GÜNCELLENDİ: Filtreleme de localized isme göre yapılmalı
+                    const lang = getSelectedLang();
+                    visibleProductIds = new Set(storeProducts.filter(p => getProductField(p, 'category', lang) === activeFilter.value).map(p => p.id));
                     break;
                 case 'DISCOUNT':
                     visibleProductIds = new Set(storeProducts.filter(p => p.isOnSale).map(p => p.id));
@@ -946,12 +949,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const doc = await window.db.collection('settings').doc('general').get();
             if (doc.exists) {
                 const data = doc.data();
-                // DEBUG: Force show categories for testing
-                console.log('👁️ Kategoriler test için zorla görünür yapılıyor (Normalde gizli).');
-                window.isCategoriesHidden = false;
-                document.body.classList.add('categories-visible');
-
-                /* ORİJİNAL KOD - GERİ ALINACAK
                 if (data.hideCategories) {
                     console.log('🙈 Ayar aktif: Kategoriler ve Menü gizli kalıyor...');
                     window.isCategoriesHidden = true;
@@ -961,7 +958,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.isCategoriesHidden = false;
                     document.body.classList.add('categories-visible');
                 }
-                */
             } else {
                 window.isCategoriesHidden = false; // ✅ Ayar yoksa varsayılan: görünür
             }
