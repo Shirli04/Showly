@@ -16,29 +16,34 @@ if (typeof firebase !== 'undefined') {
 
     // Veritabanını (db) diğer scriptlerin kullanabileceği yap
     window.db = db;
-    try {
-        db.settings({
-            cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-            ignoreUndefinedProperties: true,
-            experimentalForceLongPolling: true, // ✅ ZORUNLU: Kısıtlı ağlarda bağlantı için sadece Long Polling kullan
-            useFetchStreams: false              // ✅ YENİ: Bazı güvenlik duvarlarını aşmak için fetch stream'leri kapat
-        });
-        console.log('🚀 Firestore: Long Polling zorunlu kılındı (Kısıtlı ağ modu)');
 
-        // ✅ Çevrimdışı Kalıcılığı Etkinleştir
-        db.enablePersistence({ synchronizeTabs: true })
-            .then(() => {
-                console.log('📦 Firestore: Çevrimdışı kalıcılık etkinleşti');
-            })
-            .catch((err) => {
-                if (err.code === 'failed-precondition') {
-                    console.warn('Persistence failed: Multiple tabs open');
-                } else if (err.code === 'unimplemented') {
-                    console.warn('Persistence is not available in this browser');
-                }
+    // ✅ PERFORMANS: Ayarları sadece bir kez uygula (Overriding host uyarısını önler)
+    if (!window._firestoreConfigured) {
+        try {
+            db.settings({
+                cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+                ignoreUndefinedProperties: true,
+                experimentalForceLongPolling: true,
+                useFetchStreams: false
             });
-    } catch (e) {
-        console.warn('Firestore settings already configured or failed:', e.message);
+            window._firestoreConfigured = true;
+            console.log('🚀 Firestore: Long Polling ve ayarlar yapılandırıldı');
+
+            // ✅ Çevrimdışı Kalıcılığı Etkinleştir
+            db.enablePersistence({ synchronizeTabs: true })
+                .then(() => {
+                    console.log('📦 Firestore: Çevrimdışı kalıcılık etkinleşti');
+                })
+                .catch((err) => {
+                    if (err.code === 'failed-precondition') {
+                        console.warn('Persistence failed: Multiple tabs open');
+                    } else if (err.code === 'unimplemented') {
+                        console.warn('Persistence is not available in this browser');
+                    }
+                });
+        } catch (e) {
+            console.warn('Firestore settings already configured:', e.message);
+        }
     }
 } else {
     console.error('❌ Firebase SDK yüklenemedi! İnternet bağlantınızı veya CDN linklerini kontrol edin.');

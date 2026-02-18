@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentStoreId = null;
     let allStores = [];
     let allProducts = [];
+    let currentActiveFilter = null; // ✅ Filtreyi global takip et
 
     // SMS URL açma fonksiyonu
     function openSmsUrl(url, phoneNumber, orderText) {
@@ -132,35 +133,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log(`Cache: ${allStores.length} store, ${allProducts.length} product`);
 
-        await renderCategoryMenu();
-        await checkSiteSettings();
+        renderCategoryMenu();
+        checkSiteSettings();
 
         fetchAndCacheData().catch(e => console.warn('Background update error:', e));
     } else if (isDirectStoreAccess) {
-        // Direkt magaza: Cache varsa kullan, yoksa API'den cek
+        if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+        // 1. Önce önbelleği kontrol et (En hızlı)
         if (cachedData) {
             allStores = cachedData.stores;
             allProducts = cachedData.products;
             window.allParentCategories = cachedData.parentCategories || [];
             window.allSubcategories = cachedData.subcategories || [];
             window.allOldCategories = cachedData.categories || [];
-            console.log(`Cache: ${allStores.length} store, ${allProducts.length} product`);
-        } else {
-            await fetchAndCacheData();
-        }
-        await checkSiteSettings();
-        // Loading overlay'i kapat
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
+            console.log(`🚀 Cache loaded: ${allStores.length} stores, ${allProducts.length} products`);
 
+            router(); // Hemen sayfayı render et
+            checkSiteSettings(); // Ayarları arka planda kontrol et
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+        } else {
+            // 2. Önce stores listesini çek (Küçük veri, hızlı)
+            fetchAndCacheData(true).then(() => {
+                router(); // Mağazayı bul ve skeleton göster
+                // 3. Kalan ağır verileri (Ürünler) arka planda çek
+                fetchAndCacheData().finally(() => {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                });
+                checkSiteSettings();
+            });
+        }
     } else {
-        // İlk yükleme veya önbellek yok
-        await fetchAndCacheData();
-        await renderCategoryMenu();
-        await checkSiteSettings();
+        // Ana sayfa: Normal akış (Cache yoksa)
+        if (loadingOverlay) loadingOverlay.style.display = 'none';
+        fetchAndCacheData().then(() => {
+            renderCategoryMenu();
+            checkSiteSettings();
+        });
     }
 
     // ✅ Veri çekme ve önbellekleme fonksiyonu
-    async function fetchAndCacheData() {
+    async function fetchAndCacheData(onlyStores = false) {
         try {
             // ✅ YENİ: Cloudflare Worker API üzerinden veri çek
             const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
@@ -184,6 +197,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error('Geçersiz veri formatı (Worker)');
             }
 
+            if (onlyStores) {
+                allStores = data.stores;
+                // Ürünler yüklenene kadar boş bırak ama skeleton gösterebilmek için allStores lazım
+                return true;
+            }
+
             allStores = data.stores;
             allProducts = data.products;
             window.allParentCategories = data.parentCategories || [];
@@ -192,7 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             console.log(`✅ ${allStores.length} mağaza ve ${allProducts.length} ürün yüklendi (Worker)`);
 
-            // Önbelleğe kaydet
+            // Önbelleğe kaydet (Sadece tam veri yüklendiğinde)
             setCachedData({
                 stores: allStores,
                 products: allProducts,
@@ -200,6 +219,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 subcategories: window.allSubcategories,
                 categories: window.allOldCategories
             });
+
+            // Eğer sayfa açıksa ama ürünler henüz yüklenmemişse router'ı tetikle
+            if (currentStoreId) renderStorePage(currentStoreId);
 
             return true;
         } catch (error) {
@@ -574,6 +596,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             dropdownContent.appendChild(option);
         });
 
+        // Container'a ekle
+        container.appendChild(dropdownBtn);
+        container.appendChild(dropdownContent);
+
         // Dropdown butonu tıklama
         dropdownBtn.addEventListener('click', () => {
             if (dropdownContent.style.display === 'none') {
@@ -584,10 +610,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 dropdownBtn.querySelector('.category-dropdown-icon').style.transform = 'rotate(0deg)';
             }
         });
-
-        // Container'a ekle
-        container.appendChild(dropdownBtn);
-        container.appendChild(dropdownContent);
 
         // Dropdown dışına tıklama
         document.addEventListener('click', (e) => {
@@ -673,10 +695,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     let lastRenderedStoreId = null;
 
     const renderStorePage = async (storeId, activeFilter = null) => {
-        const isNewStore = currentStoreId !== storeId || lastRenderedStoreId !== storeId;
-        currentStoreId = storeId;
+        currentActiveFilter = activeFilter; // ✅ Global filtreyi güncelle
         const store = allStores.find(s => s.id === storeId);
+        if (!store) return;
+
         const storeProducts = allProducts.filter(p => p.storeId === storeId);
+
+        // ✅ PERFORMANS: Ürünler yoksa skeleton göster, ürünler gelince tekrar çağrılacak
+        const hasProducts = storeProducts.length > 0;
+        const isNewStore = currentStoreId !== storeId || lastRenderedStoreId !== storeId;
+
+        // Eğer ürünler henüz yüklenmemişse ama mağaza yeni değilse, sadece ürünlerin gelmesini bekliyoruz
+        if (!hasProducts && !isNewStore) {
+            console.log('⏳ Ürünler henüz yüklenmedi, bekleniyor...');
+            return;
+        }
+
+        currentStoreId = storeId;
 
         // ✅ PERFORMANS: Sadece yeni mağazada kartları ve banner'ı yeniden oluştur
         if (isNewStore) {
@@ -1792,7 +1827,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             modalImage.onerror = () => {
                 modalImage.onerror = null; // Sonsuz döngüyü engelle
-                modalImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+';
+                modalImage.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L2RleHQ+PC9zdmc+';
                 modalImage.classList.add('loaded');
                 if (modalSkeleton) modalSkeleton.style.display = 'none';
             };

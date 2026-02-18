@@ -3233,18 +3233,18 @@ header {
 
 /* ================================ KATEGORİ GİZLEME (VARSAYILAN: GİZLİ) ================================ */
 #store-menu,
-#category-filters-section,
 #menu-toggle {
     display: none !important;
+}
+
+#category-filters-section {
+    display: none;
+    /* Varsayılan gizli, router açacak */
 }
 
 /* Kategori ayarı yüklendiğinde bu class eklenecek */
 .categories-visible #store-menu {
     display: flex !important;
-}
-
-.categories-visible #category-filters-section {
-    display: block !important;
 }
 
 .categories-visible #menu-toggle {
