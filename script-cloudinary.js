@@ -858,14 +858,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`✅ ${storeProducts.length} ürün kartı oluşturuldu (yeni mağaza)`);
         }
 
-        // ✅ Filtreleri sadece kategori gizli değilse göster
-        if (!window.isCategoriesHidden) {
-            if (categoryFiltersSection) categoryFiltersSection.style.display = '';
-            if (mainFiltersSection) mainFiltersSection.style.display = '';
-        } else {
-            if (categoryFiltersSection) categoryFiltersSection.style.display = 'none';
-            if (mainFiltersSection) mainFiltersSection.style.display = 'none';
-        }
+        // ✅ Filtreleri her zaman göster (Mağaza içi filtreler gizlenmemeli)
+        if (categoryFiltersSection) categoryFiltersSection.style.display = '';
+        if (mainFiltersSection) mainFiltersSection.style.display = '';
         renderCategories(storeId, activeFilter);
         renderMainFilters(storeId, activeFilter);
 
