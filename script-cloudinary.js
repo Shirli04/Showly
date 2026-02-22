@@ -2260,10 +2260,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Modalı kapatma
-    // Modalı kapatma
     closeBanquetModal?.addEventListener('click', () => {
-        if (banquetModal) {
-            history.back();
+        if (banquetModal && banquetModal.style.display === 'block') {
+            // Eğer geçmişe biz eklediysek geri git, yoksa sadece kapat
+            if (window.history.state && window.history.state.modal === 'banquet-modal') {
+                history.back();
+            } else {
+                banquetModal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = 'auto';
+            }
         }
     });
 
@@ -2404,8 +2410,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     closeBronModal?.addEventListener('click', () => {
-        if (bronModal) {
-            history.back();
+        if (bronModal && bronModal.style.display === 'block') {
+            // Eğer geçmişe biz eklediysek geri git, yoksa sadece kapat
+            if (window.history.state && window.history.state.modal === 'bron-modal') {
+                history.back();
+            } else {
+                bronModal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = 'auto';
+            }
         }
     });
 
@@ -2624,4 +2637,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     initApp();
+
+    // ✅ YENİ: Global Popstate Dinleyicisi (Geri tuşuyla modalları kapat)
+    window.addEventListener('popstate', (event) => {
+        const state = event.state;
+
+        // Tüm olası modalları kapat
+        const modals = [
+            { id: 'bron-modal', key: 'bron-modal' },
+            { id: 'banquet-modal', key: 'banquet-modal' },
+            { id: 'product-modal', key: 'product-modal' }
+        ];
+
+        modals.forEach(m => {
+            const el = document.getElementById(m.id);
+            if (el && el.style.display === 'block') {
+                // Eğer state modalı içermiyorsa kapat
+                if (!state || state.modal !== m.key) {
+                    el.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = 'auto';
+                }
+            }
+        });
+    });
 });
