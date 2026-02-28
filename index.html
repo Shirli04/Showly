@@ -95,12 +95,8 @@
         }
 
         .product-img {
-            opacity: 0;
+            /* opacity: 0; kaldirildi -> Intersection Observer "lazy loading" tetiklenmesi icin cisme ihtiyac duyar */
             transition: opacity 0.3s ease;
-        }
-
-        .product-img.loaded {
-            opacity: 1;
         }
 
         .product-img.error {
