@@ -2757,17 +2757,23 @@ header {
 /* ================================ YENİ FİLTRE ALANI STİLİ ================================ */
 .category-buttons-container {
     display: flex;
-    flex-wrap: nowrap; /* 🔥 GÜNCELLENDİ: Sağa kaydırmalı olması için wrap iptal edildi */
+    flex-wrap: nowrap;
+    /* 🔥 GÜNCELLENDİ: Sağa kaydırmalı olması için wrap iptal edildi */
     gap: 8px;
     margin-bottom: 15px;
-    overflow-x: auto; /* Sağa kaydırmayı aç */
-    scrollbar-width: none; /* Firefox için barı gizle */
-    -ms-overflow-style: none; /* IE için barı gizle */
-    padding-bottom: 4px; /* Scroll için alt boşluk */
+    overflow-x: auto;
+    /* Sağa kaydırmayı aç */
+    scrollbar-width: none;
+    /* Firefox için barı gizle */
+    -ms-overflow-style: none;
+    /* IE için barı gizle */
+    padding-bottom: 4px;
+    /* Scroll için alt boşluk */
 }
 
 .category-buttons-container::-webkit-scrollbar {
-    display: none; /* Chrome/Safari için barı gizle */
+    display: none;
+    /* Chrome/Safari için barı gizle */
 }
 
 .filter-toggle-btn {
@@ -3508,23 +3514,35 @@ select {
 
 .category-filters-section {
     position: sticky;
-    top: 0;
-    z-index: 100;
+    top: 70px;
+    /* Header'ın yüksekliğini hesaba kat (yaklaşık 70px) */
+    z-index: 90;
+    /* Header (100) altında, diğer ürünlerin üstünde durmalı */
     background-color: var(--background-color, #fff);
     padding: 10px 16px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     border-bottom: 1px solid var(--border-color, #e0e0e0);
+    transition: top 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .category-filters-section {
+        top: 60px;
+        /* Mobilde header daha dar olabilir */
+    }
 }
 
 .category-buttons-container {
     display: flex;
     gap: 8px;
     overflow-x: auto;
-    flex-wrap: nowrap; /* Wrap iptal */
+    flex-wrap: nowrap;
+    /* Wrap iptal */
     padding-bottom: 4px;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    -webkit-overflow-scrolling: touch; /* iOS Safari akıcı kaydırma */
+    -webkit-overflow-scrolling: touch;
+    /* iOS Safari akıcı kaydırma */
 }
 
 .category-buttons-container::-webkit-scrollbar {
