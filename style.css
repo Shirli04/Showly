@@ -3514,8 +3514,8 @@ select {
 
 .category-filters-section {
     position: sticky;
-    top: 70px;
-    /* Header'ın yüksekliğini hesaba kat (yaklaşık 70px) */
+    top: 76px;
+    /* Masaüstünde header yüksekliği yaklaşık 71px */
     z-index: 90;
     /* Header (100) altında, diğer ürünlerin üstünde durmalı */
     background-color: var(--background-color, #fff);
@@ -3525,10 +3525,11 @@ select {
     transition: top 0.3s ease;
 }
 
+/* Mobilde logo ve arama çubuğu alt alta geçtiği için (flex-wrap) header yüksekliği artar */
 @media (max-width: 768px) {
     .category-filters-section {
-        top: 60px;
-        /* Mobilde header daha dar olabilir */
+        top: 138px;
+        /* Mobilde arama çubuğu alt satıra indiğinde header boyu 125px civarı olur */
     }
 }
 
