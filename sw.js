@@ -38,12 +38,13 @@ self.addEventListener('activate', event => {
 
 // Fetch Event: Serve from cache if offline
 self.addEventListener('fetch', event => {
-    // Sadece GET isteklerini yakala ve Firebase WebChannel/Firestore isteklerini yoksay
+    // Sadece GET isteklerini yakala ve Firebase WebChannel/Firestore veya Cloudflare Analytics (cdn-cgi) isteklerini yoksay
     if (
         event.request.method !== 'GET' ||
         !event.request.url.startsWith('http') ||
         event.request.url.includes('firestore.googleapis.com') ||
-        event.request.url.includes('google.com')
+        event.request.url.includes('google.com') ||
+        event.request.url.includes('cdn-cgi')
     ) {
         return;
     }
@@ -54,13 +55,9 @@ self.addEventListener('fetch', event => {
             if (cachedResponse) {
                 return cachedResponse;
             }
-            // Offline'dayken ve cache'te yokken hata fırlatmamak için boş bir sayfa/response dönülebilir
-            // Veya sadece undefined döndürmemek adına yeni bir Response nesnesi fırlatıyoruz:
-            return new Response('Internet baglanşygy ýok we bu sahypa öňden ýüklenmändir.', {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: new Headers({ 'Content-Type': 'text/plain' })
-            });
+            // Offline'dayken ve cache'te yoksa, resmi bozmamak adına asıl hatayı üretmek daha güvenli
+            // 503 sentetik hata üretmek resimlerin "kırık ikon" yerine bloklanmasına ve retry'ın ölmesine yol açıyordu.
+            throw new TypeError('Network request failed');
         })
     );
 });
