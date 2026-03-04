@@ -1,3 +1,8 @@
+// ✅ GLOBAL VERİ DEĞİŞKENLERİ (starAutoRefresh ve DOMContentLoaded içinden erişilmesi için dosyanın başında)
+let globalStores = [];
+let globalProducts = [];
+let globalOrders = [];
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Admin paneli yükleniyor...');
 
@@ -72,10 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentBronStoreId = null;
     let editingPackageId = null;
 
-    // ✅ GLOBAL VERİ DEĞİŞKENLERİ (Grafikler ve filtreleme için)
-    let globalStores = [];
-    let globalProducts = [];
-    let globalOrders = [];
+    // (globalStores, globalProducts, globalOrders dosya başında tanımlandı)
 
     // Menü elemanlarını yetkiye göre gizle
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -176,10 +178,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const text = link.querySelector('span')?.textContent || link.textContent.trim();
             pageTitle.textContent = text;
 
-            // Bölgeye özel veri yükleme (Opsiyonel)
-            if (sectionId === 'stores') renderStoresTable();
-            if (sectionId === 'products') renderProductsTable();
-            if (sectionId === 'orders') renderOrdersTable();
+            // ✅ OPTİMİZASYON: Önce cache'i kullan, cache yoksa Firebase'den çek
+            if (sectionId === 'stores') {
+                renderStoresTable(globalStores.length ? globalStores : null, globalProducts.length ? globalProducts : null);
+            }
+            if (sectionId === 'products') {
+                renderProductsTable(globalProducts.length ? globalProducts : null, globalStores.length ? globalStores : null);
+            }
+            if (sectionId === 'orders') {
+                renderOrdersTable(globalOrders.length ? globalOrders : null, globalProducts.length ? globalProducts : null, globalStores.length ? globalStores : null);
+            }
             if (sectionId === 'users') renderUsersTable();
             if (sectionId === 'categories') {
                 renderParentCategoriesTable();
@@ -227,31 +235,34 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- YENİ: SİPARİŞ NUMARASI ATAMA FONKSİYONU ---
-    window.assignOrderNumber = (orderId) => {
+    // ✅ DÜZELTME BUG 4: Fonksiyon async yapıldı + Firebase'e doğrudan güncelleme.
+    // Eski sorunlar:
+    //   1) getOrders() async bir metottu ama await kullanılmıyordu → Promise dönüyordu,
+    //      üzerinde .find() çağrısı hata fırlatıyordu.
+    //   2) saveToLocalStorage() adlı metot ShowlyDB'de hiç tanımlı değildi → çalışmıyordu.
+    //   3) Sonuç: sipariş numarası hiçbir zaman kaydedilmiyordu.
+    window.assignOrderNumber = async (orderId) => {
         const inputElement = document.getElementById(`number-input-${orderId}`);
-        const orderNumber = inputElement.value.trim();
+        const orderNumber = inputElement?.value.trim();
 
         if (!orderNumber) {
             alert('Lütfen bir sipariş numarası girin.');
             return;
         }
 
-        // Siparişi güncelle
-        const order = window.showlyDB.getOrders().find(o => o.id === orderId);
-        if (order) {
-            order.orderNumber = orderNumber;
-            order.status = 'confirmed'; // Durumu 'onaylandı' olarak güncelle
-            window.showlyDB.saveToLocalStorage(); // Değişikliği kaydet
+        try {
+            // Firebase'de doğrudan güncelle (await ile!)
+            await window.db.collection('orders').doc(orderId).update({
+                orderNumber: orderNumber,
+                status: 'confirmed'
+            });
 
-            // --- ÖNEMLİ: BURASI SMS GÖNDERMEK İÇİN ARKA YÜZ ÇAĞRISI YAPILACAK ---
-            console.log(`Sipariş ${orderId} için numara atandı: ${orderNumber}. Müşteriye SMS gönderilecek.`);
-            console.log('Müşteri Bilgileri:', order.customer);
-
-            // Burada bir backend API'sine istek atılacak.
-            // sendSmsToCustomer(order.customer.phone, `Siparişiniz onaylandı. Sipariş No: ${orderNumber}`);
-
+            console.log(`✅ Sipariş ${orderId} için numara atandı: ${orderNumber}`);
             showNotification(`Sipariş ${orderId} için numara başarıyla atandı: ${orderNumber}`);
             renderOrdersTable(); // Tabloyu yenile
+        } catch (err) {
+            console.error('❌ Sipariş numarası kaydedilemedi:', err);
+            alert('Sipariş numarası kaydedilirken hata oluştu: ' + err.message);
         }
     };
 
@@ -488,6 +499,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!doc.exists) return;
             const store = doc.data();
 
+            // ✅ BULGU 14: globalStores önbelleğindeki eski veriyi güncelle
+            const storeIndex = globalStores.findIndex(s => s.id === currentBronStoreId);
+            if (storeIndex !== -1) {
+                globalStores[storeIndex] = { id: doc.id, ...store };
+            }
+
             bronTableBody.innerHTML = '';
 
             const tables = store.tables || [];
@@ -514,9 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mağaza tablosunu güncelle
     const renderStoresTable = async (cachedStores, cachedProducts) => {
-        window.showTableSkeleton('stores-table-body', 5, 5); // Skeleton göster
-        const stores = cachedStores || await window.showlyDB.getStores();
-        const allProducts = cachedProducts || (await window.db.collection('products').get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // ✅ Önce globalCache'i kullan, yoksa Firebase'den çek
+        const stores = cachedStores || globalStores.length ? (cachedStores || globalStores) : await window.showlyDB.getStores();
+        const allProducts = cachedProducts || globalProducts.length ? (cachedProducts || globalProducts) : (await window.db.collection('products').get()).docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        window.showTableSkeleton('stores-table-body', 5, 5); // Skeleton göster (veritabanına gitmeden önce)
 
         // Mağazaları tarihe göre sırala (En yeni en üstte)
         const sortedStores = [...stores].sort((a, b) => {
@@ -1272,19 +1290,21 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderProductsTable(cachedProducts, cachedStores) {
         window.showTableSkeleton('products-table-body', 6, 6); // Skeleton göster
         try {
-            // ✅ Verileri önbellekten veya Firebase'den al
-            let products = cachedProducts;
+            // ✅ Önce globalCache'i kullan, yoksa Firebase'den çek
+            let products = cachedProducts || (globalProducts.length ? globalProducts : null);
             let storesMap = {};
 
             if (!products || !cachedStores) {
-                const [productsSnapshot, storesSnapshot] = await Promise.all([
-                    window.db.collection('products').get(),
-                    window.db.collection('stores').get()
-                ]);
-                products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                storesSnapshot.docs.forEach(doc => {
-                    storesMap[doc.id] = { id: doc.id, ...doc.data() };
-                });
+                if (!products) {
+                    const productsSnapshot = await window.db.collection('products').get();
+                    products = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
+                if (!cachedStores && !globalStores.length) {
+                    const storesSnapshot = await window.db.collection('stores').get();
+                    storesSnapshot.docs.forEach(doc => { storesMap[doc.id] = { id: doc.id, ...doc.data() }; });
+                } else {
+                    (cachedStores || globalStores).forEach(store => { storesMap[store.id] = store; });
+                }
             } else {
                 cachedStores.forEach(store => {
                     storesMap[store.id] = store;
@@ -1577,9 +1597,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderOrdersTable = async (cachedOrders, cachedProducts, cachedStores) => {
         window.showTableSkeleton('orders-table-body', 9, 5); // Skeleton göster
         try {
-            const orders = cachedOrders || (await window.db.collection('orders').orderBy('date', 'desc').get({ source: 'server' })).docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const allProducts = cachedProducts || (await window.db.collection('products').get({ source: 'server' })).docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const allStores = cachedStores || (await window.db.collection('stores').get({ source: 'server' })).docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // ✅ globalCache'i kullan, yoksa Firebase'den çek
+            const orders = cachedOrders || (globalOrders.length ? globalOrders : (await window.db.collection('orders').orderBy('date', 'desc').get({ source: 'server' })).docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const allProducts = cachedProducts || (globalProducts.length ? globalProducts : (await window.db.collection('products').get({ source: 'server' })).docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const allStores = cachedStores || (globalStores.length ? globalStores : (await window.db.collection('stores').get({ source: 'server' })).docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
             ordersTableBody.innerHTML = '';
             if (orders.length === 0) {
@@ -1600,8 +1621,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     storeNames = [...new Set(order.items.map(item => {
                         const product = allProducts.find(p => p.id === item.id);
                         const store = allStores.find(s => s.id === product?.storeId);
-                        return store?.name || 'Bilinmiyor';
-                    }))].join(', ');
+                        return store?.name || null;
+                    }).filter(Boolean))].join(', ');
+                    if (!storeNames) storeNames = 'Bilinmeyen Magazyn';
                 }
 
                 const row = document.createElement('tr');
@@ -2876,10 +2898,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return row;
     }
 
+    // Dinamik satır ekleme yardımcısı (Sadece Ad - Fiyat YOK)
+    function createDynamicRowWithoutPrice(nameValue = '', nameClass = '', placeholder = 'Ady') {
+        const row = document.createElement('div');
+        row.className = 'dynamic-row';
+
+        const inputHtml = `<input type="text" class="${nameClass}" required value="${nameValue}" placeholder="${placeholder}" style="flex: 2;">`;
+
+        row.innerHTML = `
+            ${inputHtml}
+            <button type="button" class="btn-remove-row" style="flex: 0 0 auto; height: fit-content; align-self: center;"><i class="fas fa-minus-circle"></i> Poz</button>
+        `;
+
+        row.querySelector('.btn-remove-row').addEventListener('click', () => {
+            row.remove();
+        });
+
+        return row;
+    }
+
     const addMenuRowBtn = document.getElementById('add-menu-item');
     const addCapacityRowBtn = document.getElementById('add-capacity-item');
+    const addServiceFeatureBtn = document.getElementById('add-service-feature'); // ✅ YENİ
     const menuItemsContainer = document.getElementById('package-menu-items');
     const capacityItemsContainer = document.getElementById('package-capacity-items');
+    const serviceFeaturesContainer = document.getElementById('package-service-features'); // ✅ YENİ
 
     addMenuRowBtn?.addEventListener('click', () => {
         menuItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'menu-item-input', 'menu-item-price', 'Örn: 2 sany tike'));
@@ -2887,6 +2930,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addCapacityRowBtn?.addEventListener('click', () => {
         capacityItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'capacity-item-input', 'capacity-item-price', 'Örn: 2 Adamlyk'));
+    });
+
+    addServiceFeatureBtn?.addEventListener('click', () => {
+        serviceFeaturesContainer.appendChild(createDynamicRowWithoutPrice('', 'service-feature-input', 'Örn: Fotoğrafçı, Dekorasyon...'));
     });
 
     // Rezervasyon mağazası seçildiğinde
@@ -2937,6 +2984,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Hizmet Türleri
                         const serviceTypesText = Array.isArray(pkg.serviceTypes) ? pkg.serviceTypes.join(', ') : 'Saýlanmadyk';
 
+                        // Ekstra Hizmetler (Hyzmatlar)
+                        const serviceFeaturesText = Array.isArray(pkg.serviceFeatures) ? pkg.serviceFeatures.map(f => f.name || f).join(', ') : 'Ýok';
+
                         // İlk hizmet türünü veya varsayılan bir başlık göster (Çünkü Paket Adı kalktı)
                         const mainTitle = (Array.isArray(pkg.serviceTypes) && pkg.serviceTypes.length > 0)
                             ? pkg.serviceTypes[0]
@@ -2953,7 +3003,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                         row.querySelector('td:nth-child(1)').textContent = mainTitle;
                         row.querySelector('td:nth-child(2)').textContent = `${pkg.totalPrice || pkg.price} TMT`;
-                        row.querySelector('td:nth-child(3)').textContent = `Görnüşleri: ${serviceTypesText}\n\nMenýu:\n${menuText}\n\nKapasite Seçekleri: ${capacityText}`;
+                        row.querySelector('td:nth-child(3)').textContent = `Görnüşleri: ${serviceTypesText}\n\nHyzmatlar:\n${serviceFeaturesText}\n\nMenýu:\n${menuText}\n\nKapasite Seçekleri: ${capacityText}`;
                         reservationPackagesTableBody.appendChild(row);
                     });
 
@@ -2989,6 +3039,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Dinamik alanları temizle ve doldur
+            // 1. Hizmet Özellikleri (Hyzmatlar)
+            serviceFeaturesContainer.innerHTML = '';
+            if (Array.isArray(pkg.serviceFeatures) && pkg.serviceFeatures.length > 0) {
+                pkg.serviceFeatures.forEach(item => {
+                    serviceFeaturesContainer.appendChild(createDynamicRowWithoutPrice(item.name || item, 'service-feature-input', 'Örn: Fotoğrafçı, Dekorasyon...'));
+                });
+            } else {
+                serviceFeaturesContainer.appendChild(createDynamicRowWithoutPrice('', 'service-feature-input', 'Örn: Fotoğrafçı, Dekorasyon...'));
+            }
+
+            // 2. Menü Öğeleri
             menuItemsContainer.innerHTML = '';
             if (Array.isArray(pkg.menuItems) && pkg.menuItems.length > 0) {
                 pkg.menuItems.forEach(item => {
@@ -3034,8 +3095,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Paket adı kalktı
 
         // Dinamik alanları sıfırla (başlangıçta birer boş satır)
+        serviceFeaturesContainer.innerHTML = '';
+        serviceFeaturesContainer.appendChild(createDynamicRowWithoutPrice('', 'service-feature-input', 'Örn: Fotoğrafçı, Dekorasyon...'));
+
         menuItemsContainer.innerHTML = '';
         menuItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'menu-item-input', 'menu-item-price', 'Örn: 2 sany tike'));
+
         capacityItemsContainer.innerHTML = '';
         capacityItemsContainer.appendChild(createDynamicRowWithPrice('', '', 'capacity-item-input', 'capacity-item-price', 'Örn: 2 Adamlyk'));
 
@@ -3057,7 +3122,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const serviceTypesManual = document.getElementById('service-types-manual').value;
         const serviceTypes = serviceTypesManual.split(/[,\n]/).map(s => s.trim()).filter(s => s !== '');
 
-        // Dinamik listeleri (Nesne olarak) topla
+        // Dinamik listeleri (Nesne veya Metin olarak) topla
+        const featureRows = serviceFeaturesContainer.querySelectorAll('.dynamic-row');
+        const serviceFeatures = Array.from(featureRows)
+            .map(row => row.querySelector('.service-feature-input').value.trim())
+            .filter(name => name !== '');
+
         const menuRows = menuItemsContainer.querySelectorAll('.dynamic-row');
         const menuItems = Array.from(menuRows).map(row => ({
             name: row.querySelector('.menu-item-input').value.trim(),
@@ -3081,6 +3151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // packageName artık yok, frontendde undefined gelebilir ama sorun değil
                 totalPrice,
                 serviceTypes,
+                serviceFeatures, // ✅ YENİ: Hyzmatlar eklendi
                 menuItems,
                 capacities,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -3445,21 +3516,41 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllData();
 });
 
-// --- YENİ: VERİLERİ OTOMATİK YENİLEME FONKSİYONU ---
+// --- OTOMATİK YENİLEME FONKSİYONU (Optimize Edilmiş) ---
 function startAutoRefresh() {
-    const refreshInterval = 5 * 60 * 1000; // 5 dakika = 300.000 milisaniye
+    const refreshInterval = 5 * 60 * 1000; // 5 dakika
 
     setInterval(async () => {
-        console.log('🔄 Veriler 5 dakikada bir otomatik olarak yenileniyor...');
+        console.log('🔄 5dk arka planda globalCache yenileniyor...');
         try {
-            // Tabloları yenile
-            await renderStoresTable();
-            await renderProductsTable();
-            await renderOrdersTable();
-            await renderBronTable(); // ✅ Bron tablosunu da otomatik yenile
-            updateDashboard(); // İstatistikleri güncelle
+            // ✅ Sadece globalCache'i yenile, tablo render etme (UI'yı bloklamaz)
+            const [storesSnap, productsSnap, ordersSnap] = await Promise.all([
+                window.db.collection('stores').get().catch(() => ({ docs: [] })),
+                window.db.collection('products').get().catch(() => ({ docs: [] })),
+                window.db.collection('orders').orderBy('date', 'desc').get().catch(() => ({ docs: [] }))
+            ]);
+
+            // Global cache'i gizlice güncelle
+            if (storesSnap.docs.length) globalStores = storesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (productsSnap.docs.length) globalProducts = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (ordersSnap.docs.length) globalOrders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            console.log('✅ GlobalCache 5dk güncellendi. Stores:', globalStores.length);
+
+            // ✅ Sadece aktif sekmeyi yenile (loading göstermeden)
+            const activeSection = document.querySelector('.content-section.active');
+            if (activeSection) {
+                const sectionId = activeSection.id;
+                if (sectionId === 'stores') renderStoresTable(globalStores, globalProducts);
+                else if (sectionId === 'products') renderProductsTable(globalProducts, globalStores);
+                else if (sectionId === 'orders') renderOrdersTable(globalOrders, globalProducts, globalStores);
+            }
+
+            if (typeof updateDashboard === 'function') updateDashboard(globalStores, globalProducts, globalOrders);
+            if (typeof renderBronTable === 'function') renderBronTable();
+
         } catch (error) {
-            console.error('Otomatik yenileme sırasında hata oluştu:', error);
+            console.error('Otomatik yenileme sırasında hata:', error);
         }
     }, refreshInterval);
 }

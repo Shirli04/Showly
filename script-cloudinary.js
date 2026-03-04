@@ -61,22 +61,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.isInitialLoadComplete = false;
 
     // SMS URL açma fonksiyonu
+    // ✅ DÜZELTME: Sadece bir yöntem kullanılıyor.
+    // Eskiden window.location.href + iki ayrı window.open() çağrısı vardı.
+    // Sorun: window.location.href sayfayı yönlendirince arkasındaki window.open()
+    // çağrıları hiçbir zaman çalışmıyordu. Üstelik birden fazla SMS penceresi
+    // açmaya çalışmak popup engelleyicileri tetikler.
     function openSmsUrl(url, phoneNumber, orderText) {
         try {
             console.log('📱 SMS açılıyor:', url);
             console.log('📱 Telefon:', phoneNumber);
 
-            // Yöntem 1: window.location.href (anında)
+            // Tek yöntem: SMS uygulamasına yönlendir
             window.location.href = url;
-
-            // Yöntem 2: window.open (anında)
-            window.open(url, '_self');
-
-            // Yöntem 3: window.open (_blank, yedek)
-            window.open(url, '_blank');
-
-            // Bildirim: Telefon numarasını göster
-            showNotification(`✅ Sargyt kabul edildi! Telefon: ${phoneNumber}`, true);
 
         } catch (error) {
             console.error('❌ SMS açılamadı:', error);
@@ -720,72 +716,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ✅ PERFORMANS: Hangi mağazanın kartları oluşturuldu
     let lastRenderedStoreId = null;
 
-    // ✅ YENİ: Mağaza bazlı tembel yükleme (Triple-Tier Yarışmalı)
+    // ✅ YENİ: Mağaza bazlı tembel yükleme (Stale-While-Revalidate Pattern)
+    // IDB veya RAM'den anında yükle, arka planda Firebase'den güncel veriyi çek
+    const _storeProductFetchPromises = {}; // Aynı mağaza için paralel istek engelle
+
     async function getStoreProducts(storeId) {
-        // 1. Önce RAM'e (çalışma zamanı hafızası) bak
-        let products = allProducts.filter(p => p.storeId === storeId);
-        if (products.length > 0) return products;
+        // 1. Önce RAM'e bak (anlık sayfa içi cache)
+        let cachedProducts = allProducts.filter(p => p.storeId === storeId);
 
-        // 2. IndexedDB kontrolü (Güvenli, hataya karşı duyarlı)
-        try {
-            products = await showlyIDB.getProductsStore(storeId);
-            if (products && products.length > 0) {
-                console.log(`📦 Ürünler IndexedDB'den aktarıldı (${storeId})`);
-                allProducts = [...allProducts, ...products];
-                return products;
-            }
-        } catch (e) {
-            console.warn('IDB hatası es geçildi.', e);
-        }
-
-        console.log(`☁️ Ürün API'sine bağlanılıyor: Firebase vs Worker Yarışı (${storeId})...`);
-
-        // 3. Firebase ile Worker'ı yarıştır
-        const fetchFbProducts = async () => {
-            if (!window.db) throw new Error('Firebase yok');
-            const snap = await window.db.collection('products').where('storeId', '==', storeId).get();
-            return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        };
-
-        const fetchWorkerProducts = async () => {
-            const WORKER_URL = 'https://api-worker.showlytmstore.workers.dev/';
-            const controller = new AbortController();
-            const sid = setTimeout(() => controller.abort(), 10000);
+        // 2. IndexedDB'yi de hızlıca kontrol et (RAM boşsa)
+        if (cachedProducts.length === 0) {
             try {
-                const res = await fetch(`${WORKER_URL}?storeId=${storeId}`, { method: 'GET', mode: 'cors', signal: controller.signal });
-                if (!res.ok) throw new Error('Worker HTTP fail');
-                const data = await res.json();
-                if (!data.products) throw new Error('No products array in worker');
-                return data.products;
-            } finally {
-                clearTimeout(sid);
+                const idbProducts = await showlyIDB.getProductsStore(storeId);
+                if (idbProducts && idbProducts.length > 0) {
+                    console.log(`📦 IDB'den ${idbProducts.length} ürün önce gösterildi (${storeId})`);
+                    // RAM'e ekle ki ikinci gidişte hızlı olsun
+                    allProducts = [...allProducts.filter(p => p.storeId !== storeId), ...idbProducts];
+                    cachedProducts = idbProducts;
+                }
+            } catch (e) {
+                console.warn('IDB hatası es geçildi.', e);
             }
-        };
-
-        try {
-            const resultProducts = await Promise.any([
-                fetchFbProducts().catch(e => { throw e; }),
-                fetchWorkerProducts().catch(e => { throw e; })
-            ]);
-
-            if (resultProducts && resultProducts.length > 0) {
-                allProducts = [...allProducts, ...resultProducts];
-
-                // Arkaplanda önbelleğe al, kayıt hata verirse umursama devam et
-                showlyIDB.saveProducts(resultProducts).catch(e => console.warn('IDB yazma hatası gizlendi:', e));
-
-                console.log(`✅ ${resultProducts.length} ürün internetten indirildi.`);
-                return resultProducts;
-            }
-        } catch (err) {
-            console.error('❌ KRİTİK: Mağaza ürünleri hiçbir kaynaktan çekilemedi!', err);
         }
 
-        return [];
+        // 3. ✅ HER ZAMAN arka planda Firebase'den güncel veriyi çek (yeni ürün eklenmiş olabilir)
+        // Aynı mağaza için zaten fetch yapılıyorsa tekrar başlatma
+        if (!_storeProductFetchPromises[storeId]) {
+            _storeProductFetchPromises[storeId] = (async () => {
+                console.log(`☁️ Firebase'den güncel ürünler çekiliyor (${storeId})...`);
+                try {
+                    const snap = await window.db.collection('products').where('storeId', '==', storeId).get();
+                    const freshProducts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    if (freshProducts.length > 0) {
+                        // ✅ RAM'i güncelle (eski veriyi tamamen değiştir)
+                        allProducts = [...allProducts.filter(p => p.storeId !== storeId), ...freshProducts];
+                        // ✅ IDB'yi güncelle
+                        showlyIDB.saveProducts(freshProducts).catch(() => { });
+                        console.log(`✅ Firebase'den ${freshProducts.length} güncel ürün alındı (${storeId})`);
+
+                        // Eğer daha önce IDB'den farklı sayıda ürün gösterilmişse, sayfayı sessizce güncelle
+                        if (freshProducts.length !== cachedProducts.length) {
+                            console.log(`🔄 Yeni ürün fark edildi (IDB: ${cachedProducts.length}, Firebase: ${freshProducts.length}). UI güncelleniyor...`);
+                            renderStorePage(storeId, window._currentActiveFilter || null);
+                        }
+                    }
+                } catch (err) {
+                    // Firebase başarısız oldu; eski cache yeterli
+                    console.warn('Arka plan Firebase güncellemesi başarısız:', err);
+                } finally {
+                    // 30 saniye sonra aynı mağaza için tekrar fetch yapılabilsin
+                    setTimeout(() => { delete _storeProductFetchPromises[storeId]; }, 30000);
+                }
+            })();
+        }
+
+        // 4. Cache BOŞSA (ilk ziyaret) Firebase'den bekleyerek yükle
+        if (cachedProducts.length === 0) {
+            await _storeProductFetchPromises[storeId];
+            return allProducts.filter(p => p.storeId === storeId);
+        }
+
+        // 5. Cache doluysa hemen dön, arka planda güncelleme devam eder
+        return cachedProducts;
     }
 
     const renderStorePage = async (storeId, activeFilter = null) => {
         currentActiveFilter = activeFilter; // ✅ Global filtreyi güncelle
+        window._currentActiveFilter = activeFilter; // ✅ Arka plan callback'i için de güncelle
         const store = allStores.find(s => s.id === storeId);
         if (!store) return;
 
@@ -1054,8 +1052,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeFilter?.type === 'SORT_PRICE_ASC' || activeFilter?.type === 'SORT_PRICE_DESC') {
             const visibleCards = Array.from(allCards).filter(c => c.style.display !== 'none');
             visibleCards.sort((a, b) => {
-                const priceA = parseFloat(a.getAttribute('data-price')) || 0;
-                const priceB = parseFloat(b.getAttribute('data-price')) || 0;
+                // ✅ DÜZELTME BUG 2: 'data-price' yerine 'data-product-price' okunuyor.
+                // Kartlar oluşturulurken setAttribute('data-product-price', val) yazılıyor.
+                // Eskiden 'data-price' okunduğu için tüm fiyatlar 0 geliyordu → sıralama hiç çalışmıyordu.
+                const priceA = parseFloat(a.getAttribute('data-product-price')) || 0;
+                const priceB = parseFloat(b.getAttribute('data-product-price')) || 0;
                 return activeFilter.type === 'SORT_PRICE_ASC' ? priceA - priceB : priceB - priceA;
             });
             // DOM sırasını değiştir (resimler korunur çünkü kartlar taşınıyor, silinmiyor!)
@@ -1541,10 +1542,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         history.pushState({ modal: 'cart-modal' }, '', window.location.href);
     });
 
-    // TikTok/Instagram in-app browser için cart touch scroll tespiti
+    // 12. HATA ÇÖZÜMÜ: TikTok/Instagram in-app browser veya touch cihazlar için cart touch scroll tespiti
+    // Hem touch hem click aynı anda tetiklenmesini engellemek için bir bayrak (flag) kullanıyoruz.
     let cartTouchStartX = 0;
     let cartTouchStartY = 0;
     let cartIsScrolling = false;
+    let justTouched = false; // Ghost click önleme bayrağı
 
     document.addEventListener('touchstart', (e) => {
         const target = e.target.closest('.quantity-btn') || e.target.closest('.cart-item-remove');
@@ -1570,14 +1573,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, { passive: true });
 
-    document.addEventListener('touchend', (e) => {
-        if (cartIsScrolling) {
-            return; // Scroll yapılıyorsa, click event'i tetikleme
-        }
-
+    // Ortak Sepet İşlevi (Hem touch hem click için)
+    const handleCartAction = (e) => {
         const quantityBtn = e.target.closest('.quantity-btn');
         if (quantityBtn) {
-            e.preventDefault(); // ✅ Hayalet tıklamayı (ghost click) engelle
+            e.preventDefault();
             const storeId = quantityBtn.getAttribute('data-store-id');
             const productId = quantityBtn.getAttribute('data-id');
             const action = quantityBtn.getAttribute('data-action');
@@ -1590,12 +1590,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     cartButton.click();
                 }
             }
-            return;
+            return true;
         }
 
         const removeBtn = e.target.closest('.cart-item-remove');
         if (removeBtn) {
-            e.preventDefault(); // ✅ Hayalet tıklamayı engelle
+            e.preventDefault();
             const storeId = removeBtn.getAttribute('data-store-id');
             const productId = removeBtn.getAttribute('data-id');
             if (cart[storeId]) {
@@ -1606,43 +1606,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 saveCart(); // ✅ Güncelle ve kaydet
                 cartButton.click();
             }
-            return;
+            return true;
+        }
+        return false;
+    };
+
+    document.addEventListener('touchend', (e) => {
+        if (cartIsScrolling) {
+            return; // Scroll yapılıyorsa tetikleme
+        }
+
+        // Sepet işlemleri hedeflenmişse
+        if (e.target.closest('.quantity-btn') || e.target.closest('.cart-item-remove')) {
+            justTouched = true; // Click'i bypass etmek için bayrağı kaldır
+            setTimeout(() => { justTouched = false; }, 300); // 300ms sonra normale dön
+            handleCartAction(e);
         }
     });
 
-    // Normal click event (desktop için)
+    // Normal click event (desktop için, eğer touchend tetiklenmediyse çalışır)
     document.addEventListener('click', (e) => {
-        const quantityBtn = e.target.closest('.quantity-btn');
-        if (quantityBtn) {
-            const storeId = quantityBtn.getAttribute('data-store-id');
-            const productId = quantityBtn.getAttribute('data-id');
-            const action = quantityBtn.getAttribute('data-action');
-            if (cart[storeId]) {
-                const item = cart[storeId].items.find(i => i.id === productId);
-                if (item) {
-                    if (action === 'increase') item.quantity++;
-                    else if (action === 'decrease' && item.quantity > 1) item.quantity--;
-                    saveCart(); // ✅ Güncelle ve kaydet
-                    cartButton.click();
-                }
-            }
-            return;
-        }
-
-        const removeBtn = e.target.closest('.cart-item-remove');
-        if (removeBtn) {
-            const storeId = removeBtn.getAttribute('data-store-id');
-            const productId = removeBtn.getAttribute('data-id');
-            if (cart[storeId]) {
-                cart[storeId].items = cart[storeId].items.filter(i => i.id !== productId);
-                if (cart[storeId].items.length === 0) {
-                    delete cart[storeId];
-                }
-                saveCart(); // ✅ Güncelle ve kaydet
-                cartButton.click();
-            }
-            return;
-        }
+        if (justTouched) return; // Ghost click ise yoksay
+        handleCartAction(e);
     });
 
     // --- SİPARİŞ TAMAMLAMA FONKSİYONU ---
@@ -1651,6 +1636,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!currentStoreCart || currentStoreCart.items.length === 0) {
             showNotification(translate('cart_is_empty'), false);
+            return;
+        }
+
+        // ✅ DÜZELTME BUG 3: Çift form açılmasını önle.
+        // Aynı mağaza için zaten bir form varsa yeni form açılmıyor, odaklanıyor.
+        const existingForm = document.querySelector(`.order-form-overlay[data-store-id="${currentStoreCart.storeId}"]`);
+        if (existingForm) {
+            existingForm.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+
+        // Genel bir kontrol daha: Ekranda herhangi bir form varsa yenisini açma
+        if (document.querySelector('.order-form-overlay')) {
+            showNotification('Baýrak eýýäm açyk!', false);
             return;
         }
 
@@ -1687,7 +1686,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <textarea class="customer-address" rows="3" placeholder="Adresiňizi ýazyň" required></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Bellik (Opsiýonel)</label>
+                            <label>Bellik</label>
                             <textarea class="customer-note" rows="2" placeholder="Bellik"></textarea>
                         </div>
                         <div class="form-actions">
@@ -2153,6 +2152,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Her bir menü maddesini ayrı bir paket kartı gibi işle
         let allDisplayPackages = [];
         currentStorePackages.forEach((pkg) => {
+            // ✅ YENİ: Hyzmatlar verisi için HTML oluştur
+            let servicesHtml = '';
+            if (pkg.serviceFeatures && pkg.serviceFeatures.length > 0) {
+                servicesHtml = `
+                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #eee;">
+                        <div style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Banket Hyzmatlary:</div>
+                        ${pkg.serviceFeatures.map(f => `
+                            <div style="font-size: 13px; font-weight: 500; color: #444; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                <i class="fas fa-star" style="color: #e67e22; font-size: 11px;"></i> ${f.name || f}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
             if (pkg.menuItems && pkg.menuItems.length > 0) {
                 pkg.menuItems.forEach((item, itemIndex) => {
                     allDisplayPackages.push({
@@ -2162,9 +2176,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         menuHtml: `
                             <li style="margin-bottom: 6px; font-size: 14px; color: #333; display: flex; align-items: flex-start; gap: 8px;">
                                 <i class="fas fa-check" style="color: var(--primary-color); font-size: 12px; margin-top: 4px;"></i>
-                                <span style="font-weight: 500;">${item.name}</span>
+                                <span style="font-weight: 500; white-space: pre-line;">${item.name}</span>
                             </li>
-                        `
+                        `,
+                        servicesHtml: servicesHtml
                     });
                 });
             } else {
@@ -2172,7 +2187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     displayId: pkg.id,
                     displayName: pkg.packageName || 'Menýu Toplumy',
                     displayPrice: pkg.totalPrice || pkg.price,
-                    menuHtml: '<li style="color: #888;">Menýu goşulmady.</li>'
+                    menuHtml: '<li style="color: #888;">Menýu goşulmady.</li>',
+                    servicesHtml: servicesHtml
                 });
             }
         });
@@ -2186,6 +2202,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                            <i class="fas fa-utensils"></i> ${dpkg.displayName}
                         </div>
                         
+                        ${dpkg.servicesHtml}
+
+                        <div style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Menýu:</div>
                         <ul class="package-features" style="list-style: none; padding: 0; margin: 0; text-align: left;">
                             ${dpkg.menuHtml}
                         </ul>

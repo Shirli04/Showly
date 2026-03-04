@@ -163,50 +163,52 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Biraz garaşyň...';
             submitBtn.style.opacity = '0.7';
+            errorMessage.style.display = 'none'; // Önceki hata mesajını gizle
 
             try {
-                // ✅ YENİ: Zaman aşımı (Timeout) mekanizması
+                // ✅ Firebase hazır mı kontrol et (özellikle yavaş ağlarda önemli)
+                if (!window.db) {
+                    throw new Error('DB_NOT_READY');
+                }
+
+                // ✅ 20 saniye zaman aşımı (iPhone ve yavaş ağlar için)
                 const loginTimeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+                    setTimeout(() => reject(new Error('TIMEOUT')), 20000)
                 );
 
-                // Sadece username ile arama yap (Password'e göre arama yapmak güvenli değil ve hashing ile çalışmaz)
+                // Kullanıcıyı username ile ara
                 const fetchUser = window.db.collection('users')
                     .where('username', '==', username)
                     .get();
 
-                // ✅ Yarış: Hangisi önce biterse (Sorgu mu, Timeout mu?)
+                // Yarış: Hangisi önce biterse
                 const usersSnapshot = await Promise.race([fetchUser, loginTimeout]);
 
                 let isValid = false;
                 let userData = null;
-                let userId = null;
 
                 if (!usersSnapshot.empty) {
                     const userDoc = usersSnapshot.docs[0];
                     userData = userDoc.data();
-                    userId = userDoc.id;
 
-                    // Hashing kontrolü ve Plain-text fallback
+                    // ✅ Şifre doğrula (bcrypt hash veya düz metin)
                     try {
                         const bcryptObj = window.bcrypt || (window.dcodeIO && window.dcodeIO.bcrypt);
-                        if (bcryptObj) {
-                            // Önce bcrypt ile dene
+
+                        // Şifrenin bcrypt hash olup olmadığını kontrol et ($2 ile başlıyorsa hash)
+                        if (bcryptObj && userData.password && userData.password.startsWith('$2')) {
                             try {
                                 isValid = bcryptObj.compareSync(password, userData.password);
-                            } catch (e) {
-                                isValid = false;
-                            }
-
-                            // Eğer bcrypt başarısızsa veya hata verdiyse, düz metin olarak dene (geçiş süreci için)
-                            if (!isValid) {
+                            } catch (bcryptErr) {
+                                console.warn('bcrypt hatası, düz metin karşılaştırılıyor:', bcryptErr);
                                 isValid = (password === userData.password);
                             }
                         } else {
-                            console.error('Bcrypt library not loaded!');
-                            isValid = (password === userData.password); // Fallback
+                            // Düz metin karşılaştırması
+                            isValid = (password === userData.password);
                         }
-                    } catch (err) {
+                    } catch (passErr) {
+                        console.warn('Şifre doğrulama hatası:', passErr);
                         isValid = (password === userData.password);
                     }
                 }
@@ -227,41 +229,51 @@
                     return;
                 }
 
+                // ✅ Başarılı giriş
                 submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Dogry!';
                 submitBtn.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';
 
-                // userData zaten yukarıda tanımlandı ve dolduruldu 
-                // userId de zaten yukarıda tanımlandı ve dolduruldu
-
-                // ✅ sessionStorage kullan (tarayıcı kapanınca silinir)
+                // sessionStorage kullan (tarayıcı kapanınca silinir - güvenli)
                 sessionStorage.setItem('adminUser', JSON.stringify({
                     id: usersSnapshot.docs[0].id,
                     username: userData.username,
                     role: userData.role,
-                    permissions: userData.permissions
+                    permissions: userData.permissions || []
                 }));
 
                 setTimeout(() => {
                     window.location.replace('/admin.html');
-                }, 1000);
+                }, 800);
 
             } catch (error) {
-                console.error('Giriş näsazlygy:', error);
+                console.error('Giriş näsazlygy:', error.message, error.code);
 
-                // ✅ Bağımlılık/Bağlantı hatası kontrolü
-                const isConnError = error.message.includes('reach Cloud Firestore') ||
+                let errorText = 'Giriş wagtynda bir hata ýüze çykdy. Täzeden synanyşyň.';
+                let btnIcon = 'fa-exclamation-triangle';
+
+                if (error.message === 'TIMEOUT') {
+                    errorText = 'Baglanyşyk wagt geçdi (20s). WiFi ýa-da internet baglanyşygyňyzy barlaň we täzeden synanyşyň.';
+                    btnIcon = 'fa-clock';
+                } else if (error.message === 'DB_NOT_READY') {
+                    errorText = 'Maglumat bazasy ýüklenmedi. Sahypany täzeläň.';
+                    btnIcon = 'fa-database';
+                } else if (
+                    error.message.includes('reach Cloud Firestore') ||
                     error.message.includes('unavailable') ||
-                    error.message.includes('network');
-
-                if (isConnError) {
-                    submitBtn.innerHTML = '<i class="fas fa-wifi"></i> Baglanyşyk Ýok!';
-                    errorMessage.innerHTML = 'Firebase baglanyşygy başarmady. <br><b>VPN ulanmagyňyzy maslahat berýäris!</b>';
-                } else {
-                    submitBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Näsazlyk!';
-                    errorMessage.textContent = 'Giriş wagtynda bir hata ýüze çykdy. Täzeden synanyşyň.';
+                    error.message.includes('network') ||
+                    error.message.includes('offline') ||
+                    error.code === 'unavailable'
+                ) {
+                    errorText = 'Internet baglanyşygy ýok ýa-da Firebase elýeterli däl. WiFi barlaň.';
+                    btnIcon = 'fa-wifi';
+                } else if (error.message.includes('permission') || error.code === 'permission-denied') {
+                    errorText = 'Firebase rugsat hatasy. Administratora habar beriň.';
+                    btnIcon = 'fa-lock';
                 }
 
+                submitBtn.innerHTML = `<i class="fas ${btnIcon}"></i> Näsazlyk!`;
                 submitBtn.style.background = 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)';
+                errorMessage.innerHTML = errorText;
                 errorMessage.style.display = 'block';
 
                 setTimeout(() => {
@@ -269,7 +281,7 @@
                     submitBtn.innerHTML = originalText;
                     submitBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     submitBtn.style.opacity = '1';
-                }, 3000);
+                }, 4000);
             }
         });
     </script>

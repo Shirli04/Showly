@@ -9,7 +9,10 @@ const firebaseConfig = {
 
 // Firebase'i Başlat
 if (typeof firebase !== 'undefined') {
-    firebase.initializeApp(firebaseConfig);
+    // Çift başlatmayı önle
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
 
     // Firestore Veritabanına Erişim
     const db = firebase.firestore();
@@ -17,35 +20,43 @@ if (typeof firebase !== 'undefined') {
     // Veritabanını (db) diğer scriptlerin kullanabileceği yap
     window.db = db;
 
-    // ✅ PERFORMANS: Ayarları sadece bir kez uygula (Overriding host uyarısını önler)
+    // ✅ PERFORMANS: Ayarları sadece bir kez uygula
     if (!window._firestoreConfigured) {
         try {
-            // Firestore settings() sadece bir kez çağrılabilir. 
-            // Eğer daha önce çağrılmışsa (farklı bir script tarafından), hata fırlatır.
             db.settings({
                 cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
                 ignoreUndefinedProperties: true,
+                // ✅ iPhone/iOS Safari için WebSocket yerine LongPolling kullan
                 experimentalForceLongPolling: true,
-                useFetchStreams: false,
-                merge: true // ✅ SDK warningini gizler
+                useFetchStreams: false
+                // NOT: 'merge: true' compat SDK'da desteklenmiyor, kaldırıldı
             });
             window._firestoreConfigured = true;
             console.log('🚀 Firestore: Yapılandırma tamamlandı');
         } catch (e) {
-            // Hata genellikle "settings() has already been called" şeklindedir, bu durumda sessizce devam et
             window._firestoreConfigured = true;
             console.log('ℹ️ Firestore: Ayarlar zaten uygulanmış.');
         }
 
-        // ✅ Çevrimdışı Kalıcılığı Etkinleştir (Settings'den bağımsız olabilir)
+        // ✅ Çevrimdışı Kalıcılığı Etkinleştir
+        // iPhone iOS Safari'de IndexedDB kısıtlamaları olabilir, bu yüzden hataları tamamen sessizce geçir
         try {
-            db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-                if (err.code === 'failed-precondition') {
-                    console.warn('Persistence failed: Multiple tabs');
-                }
-            });
+            db.enablePersistence({ synchronizeTabs: false }) // iOS'ta synchronizeTabs sorun çıkarabilir
+                .then(() => {
+                    console.log('✅ Firestore offline persistence aktif');
+                })
+                .catch((err) => {
+                    if (err.code === 'failed-precondition') {
+                        console.warn('⚠️ Persistence: Birden fazla sekme açık, devre dışı');
+                    } else if (err.code === 'unimplemented') {
+                        console.warn('⚠️ Persistence: Bu tarayıcı desteklemiyor (iOS Private Mode olabilir)');
+                    } else {
+                        console.warn('⚠️ Persistence hatası (kritik değil):', err.code);
+                    }
+                    // ❌ Önemli: reject edilse bile Firestore normal çalışmaya devam eder
+                });
         } catch (pErr) {
-            // Persistence hatası kritik değildir
+            console.warn('⚠️ Persistence başlatma hatası (kritik değil):', pErr);
         }
     }
 } else {

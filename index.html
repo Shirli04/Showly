@@ -16,12 +16,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <!-- Yedek: jsDelivr de calismassa cdnjs dene -->
     <script>
-        (function() {
+        (function () {
             var testEl = document.createElement('span');
             testEl.className = 'fa fa-check';
             testEl.style.cssText = 'position:absolute;left:-9999px';
             document.head.appendChild(testEl);
-            setTimeout(function() {
+            setTimeout(function () {
                 var computed = window.getComputedStyle(testEl, ':before').getPropertyValue('content');
                 if (!computed || computed === 'none' || computed === '') {
                     var fallback = document.createElement('link');
@@ -771,9 +771,9 @@
                             <span data-i18n="bron_schema_desc">Restoran shemasy</span>
                         </div>
                         <div class="bron-schema-container"
-                            style="background: #f9f9f9; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 20px;">
+                            style="background: #f9f9f9; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 20px; max-height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                             <img id="bron-schema-img" src="" alt="Restoran Schema"
-                                style="max-width: 100%; border-radius: 8px; display: none; margin: 0 auto;">
+                                style="max-height: 180px; width: auto; max-width: 100%; border-radius: 8px; display: none; margin: 0 auto; object-fit: contain;">
                             <div id="bron-no-schema" style="padding: 30px; color: #999;">
                                 <i class="fas fa-image" style="font-size: 32px; opacity: 0.3;"></i>
                                 <p style="margin-top: 10px;">Şema ýok</p>
@@ -815,8 +815,24 @@
                                 <div class="form-group">
                                     <label style="font-size: 12px; color: #666; margin-bottom: 5px; display: block;"
                                         data-i18n="bron_time">Sagat</label>
-                                    <input type="time" id="bron-time" required
-                                        style="width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 10px;">
+                                    <select id="bron-time" required
+                                        style="width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 10px; background: white; appearance: none;">
+                                        <option value="" data-i18n="bron_select_time">Sagat saýlaň...</option>
+                                        <option value="10:00">10:00</option>
+                                        <option value="11:00">11:00</option>
+                                        <option value="12:00">12:00</option>
+                                        <option value="13:00">13:00</option>
+                                        <option value="14:00">14:00</option>
+                                        <option value="15:00">15:00</option>
+                                        <option value="16:00">16:00</option>
+                                        <option value="17:00">17:00</option>
+                                        <option value="18:00">18:00</option>
+                                        <option value="19:00">19:00</option>
+                                        <option value="20:00">20:00</option>
+                                        <option value="21:00">21:00</option>
+                                        <option value="22:00">22:00</option>
+                                        <option value="23:00">23:00</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
