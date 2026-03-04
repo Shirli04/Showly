@@ -28,8 +28,8 @@ if (typeof firebase !== 'undefined') {
                 ignoreUndefinedProperties: true,
                 // ✅ iPhone/iOS Safari için WebSocket yerine LongPolling kullan
                 experimentalForceLongPolling: true,
-                useFetchStreams: false
-                // NOT: 'merge: true' compat SDK'da desteklenmiyor, kaldırıldı
+                useFetchStreams: false,
+                merge: true // ✅ "Overriding host" uyarısını kapatır
             });
             window._firestoreConfigured = true;
             console.log('🚀 Firestore: Yapılandırma tamamlandı');

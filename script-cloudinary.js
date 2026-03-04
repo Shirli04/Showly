@@ -2236,7 +2236,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </label>
             `;
-            packagesList.parentNode.insertBefore(servicesBlock, packagesList.nextSibling);
+            // ✅ Güvenli ekleme: parentNode varsa insertBefore, yoksa appendChild
+            if (packagesList.parentNode && packagesList.nextSibling) {
+                packagesList.parentNode.insertBefore(servicesBlock, packagesList.nextSibling);
+            } else if (packagesList.parentNode) {
+                packagesList.parentNode.appendChild(servicesBlock);
+            }
         }
 
         // Paket seçimi değiştiğinde alt seçenekleri güncelle
