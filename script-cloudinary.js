@@ -2155,17 +2155,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ✅ YENİ: Hyzmatlar verisi için HTML oluştur
             let servicesHtml = '';
             if (pkg.serviceFeatures && pkg.serviceFeatures.length > 0) {
-                servicesHtml = `
-                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #eee;">
-                        <div style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Banket Hyzmatlary:</div>
-                        ${pkg.serviceFeatures.map(f => `
-                            <div style="font-size: 13px; font-weight: 500; color: #444; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                <i class="fas fa-star" style="color: #e67e22; font-size: 11px;"></i> ${f.name || f}
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                servicesHtml = pkg.serviceFeatures.map(f => `
+                    <li style="margin-bottom: 6px; font-size: 14px; color: #333; display: flex; align-items: flex-start; gap: 8px;">
+                        <i class="fas fa-check-circle" style="color: #e67e22; font-size: 12px; margin-top: 3px; flex-shrink: 0;"></i>
+                        <span style="font-weight: 500;">${f.name || f}</span>
+                    </li>
+                `).join('');
             }
+
 
             if (pkg.menuItems && pkg.menuItems.length > 0) {
                 pkg.menuItems.forEach((item, itemIndex) => {
@@ -2201,8 +2198,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="package-badge" style="background: #1a1a1a; color: #fff; padding: 5px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; margin-bottom: 15px; display: inline-flex; align-items: center; gap: 8px;">
                            <i class="fas fa-utensils"></i> ${dpkg.displayName}
                         </div>
-                        
-                        ${dpkg.servicesHtml}
 
                         <div style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Menýu:</div>
                         <ul class="package-features" style="list-style: none; padding: 0; margin: 0; text-align: left;">
@@ -2212,6 +2207,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="margin-top: 12px; font-size: 11px; color: #bbb; font-style: italic;">
                             * Menýu mazmuny üýtgedilip bilner.
                         </div>
+
+                        ${dpkg.servicesHtml ? `
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #eee;">
+                            <div style="font-size: 11px; font-weight: 800; color: #888; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Hyzmatlar:</div>
+                            <ul style="list-style: none; padding: 0; margin: 0; text-align: left;">
+                                ${dpkg.servicesHtml}
+                            </ul>
+                        </div>
+                        ` : ''}
 
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center;">
                             <div>
@@ -2226,6 +2230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </label>
             `;
         }).join('');
+
 
         // Paket seçimi değiştiğinde alt seçenekleri güncelle
         document.querySelectorAll('input[name="banquet-package"]').forEach(input => {
