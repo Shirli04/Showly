@@ -948,17 +948,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // ✅ GÜNCELLENDİ: Çok dilli ürün kartı
                 const _lang = getSelectedLang();
                 productCard.innerHTML = `
+                    ${product.isOnSale ? `<div class="discount-badge">${translate('discount', _lang)}</div>` : ''}
                     <div class="product-image-container">
                         <div class="img-skeleton"></div>
-                        ${product.isOnSale ? '<span class="discount-badge">' + translate('discount', _lang) + '</span>' : ''}
                         <img class="product-img" ${lazyAttribute}>
-                        <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                        <button class="btn-favorite" data-id="${product.id}" title="${translate('add_to_favorites', _lang) || 'Halanlaryma goş'}">
+                            <i class="far fa-heart"></i>
+                        </button>
                     </div>
                     <div class="product-info">
                         <h3 class="product-title"></h3>
                         <span class="product-category-label"></span>
                         <div class="price-display-wrapper"></div>
-                        <div class="product-actions"><button class="btn-cart" data-id="${product.id}">${translate('add_to_cart', _lang)}</button></div>
+                        <div class="product-actions" style="position:relative;">
+                            <button class="btn-cart" data-id="${product.id}">
+                                <i class="fas fa-shopping-cart"></i> ${translate('add_to_cart', _lang)}
+                            </button>
+                            <!-- YENİ: ADET SEÇİCİ KONTU (Sepete eklendikten sonra çıkacak) -->
+                            <div class="quantity-control-container" data-id="${product.id}">
+                                <button class="qty-btn remove-btn"><i class="fas fa-minus"></i></button>
+                                <span class="qty-value">1</span>
+                                <button class="qty-btn add-btn"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
                     </div>
                 `;
 
@@ -996,9 +1008,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateFavoriteButton(product.id);
             });
 
+            // ✅ YENİ: Sayfa yüklendiğinde (veya geri dönüldüğünde) sepet verilerine göre UI'ı güncelle
+            restoreCartUI(storeId);
+
             lastRenderedStoreId = storeId;
             console.log(`✅ ${storeProducts.length} ürün kartı oluşturuldu (yeni mağaza)`);
         }
+
+        // ✅ YENİ: Mevcut DOM'da yeniden UI restore (Filtreleme sorası resimler kalınca da işe yarar)
+        restoreCartUI(storeId);
 
         // ✅ Filtreleri her zaman göster (Mağaza içi filtreler gizlenmemeli)
         if (categoryFiltersSection) categoryFiltersSection.style.display = 'block';
@@ -1038,46 +1056,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allCards = productsGrid.querySelectorAll('.product-card[data-product-id]');
         let visibleCount = 0;
 
-        allCards.forEach(card => {
-            const productId = String(card.getAttribute('data-product-id'));
-            if (visibleProductIds.has(productId)) {
-                card.style.display = '';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
+        // Ürün listesinde "animasyonlu geçiş" (Sıralanıyor efekti) için hazırlık
+        productsGrid.classList.add('products-filtering');
 
-        // ✅ Sıralama gerekiyorsa kartların DOM sırasını değiştir (resimler yine korunur!)
-        if (activeFilter?.type === 'SORT_PRICE_ASC' || activeFilter?.type === 'SORT_PRICE_DESC') {
-            const visibleCards = Array.from(allCards).filter(c => c.style.display !== 'none');
-            visibleCards.sort((a, b) => {
-                // ✅ DÜZELTME BUG 2: 'data-price' yerine 'data-product-price' okunuyor.
-                // Kartlar oluşturulurken setAttribute('data-product-price', val) yazılıyor.
-                // Eskiden 'data-price' okunduğu için tüm fiyatlar 0 geliyordu → sıralama hiç çalışmıyordu.
-                const priceA = parseFloat(a.getAttribute('data-product-price')) || 0;
-                const priceB = parseFloat(b.getAttribute('data-product-price')) || 0;
-                return activeFilter.type === 'SORT_PRICE_ASC' ? priceA - priceB : priceB - priceA;
+        setTimeout(() => {
+            allCards.forEach(card => {
+                const productId = String(card.getAttribute('data-product-id'));
+                if (visibleProductIds.has(productId)) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
             });
-            // DOM sırasını değiştir (resimler korunur çünkü kartlar taşınıyor, silinmiyor!)
-            visibleCards.forEach(card => productsGrid.appendChild(card));
-            console.log(`✅ Ürünler ${activeFilter.type === 'SORT_PRICE_ASC' ? 'arzandan gymmada' : 'gymmatdan arzana'} sıralandı`);
-        }
 
-        // "Ürün bulunamadı" mesajı
-        const existingNoResults = productsGrid.querySelector('.no-results');
-        if (existingNoResults) existingNoResults.remove();
+            // ✅ Sıralama gerekiyorsa kartların DOM sırasını değiştir (resimler yine korunur!)
+            if (activeFilter?.type === 'SORT_PRICE_ASC' || activeFilter?.type === 'SORT_PRICE_DESC') {
+                const visibleCards = Array.from(allCards).filter(c => c.style.display !== 'none');
+                visibleCards.sort((a, b) => {
+                    const priceA = parseFloat(a.getAttribute('data-product-price')) || 0;
+                    const priceB = parseFloat(b.getAttribute('data-product-price')) || 0;
+                    return activeFilter.type === 'SORT_PRICE_ASC' ? priceA - priceB : priceB - priceA;
+                });
+                // DOM sırasını değiştir (resimler korunur çünkü kartlar taşınıyor, silinmiyor!)
+                visibleCards.forEach(card => productsGrid.appendChild(card));
+                console.log(`✅ Ürünler ${activeFilter.type === 'SORT_PRICE_ASC' ? 'arzandan gymmada' : 'gymmatdan arzana'} sıralandı`);
+            }
 
-        if (visibleCount === 0 && window.isInitialLoadComplete) { // ✅ Sadece yükleme bittiyse göster
-            const lang = getSelectedLang();
-            const noResults = document.createElement('div');
-            noResults.className = 'no-results';
-            noResults.innerHTML = '<i class="fas fa-box-open"></i><h3></h3>';
-            noResults.querySelector('h3').textContent = translate('filter_no_product', lang);
-            productsGrid.appendChild(noResults);
-        }
+            // "Ürün bulunamadı" mesajı
+            const existingNoResults = productsGrid.querySelector('.no-results');
+            if (existingNoResults) existingNoResults.remove();
 
-        console.log(`✅ Filtre uygulandı: ${visibleCount}/${storeProducts.length} ürün gösteriliyor`);
+            if (visibleCount === 0 && window.isInitialLoadComplete) {
+                const lang = getSelectedLang();
+                const noResults = document.createElement('div');
+                noResults.className = 'no-results';
+                noResults.innerHTML = '<i class="fas fa-box-open"></i><h3></h3>';
+                noResults.querySelector('h3').textContent = translate('filter_no_product', lang);
+                productsGrid.appendChild(noResults);
+            }
+
+            console.log(`✅ Filtre uygulandı: ${visibleCount}/${storeProducts.length} ürün gösteriliyor`);
+
+            // Animasyonu bitir
+            productsGrid.classList.remove('products-filtering');
+
+        }, 300); // .products-filtering CSS geçiş süresi (0.3s) ile aynı olmalı
     };
 
     // ✅ YENİ: Site Ayarlarını Kontrol Et (Kategori Gizleme)
@@ -1170,23 +1194,58 @@ document.addEventListener('DOMContentLoaded', async () => {
             // İlk 6 arama sonucunu anında indir, sonrakileri beklet (Hız optimizasyonu)
             const lazyAttribute = index >= 6 ? 'loading="lazy"' : '';
 
+            // İndirim hesaplama
+            const currentPrice = parseFloat(product.price.replace(' TMT', ''));
+            const originalPrice = product.originalPrice ? parseFloat(product.originalPrice) : null;
+            const discountPercent = originalPrice ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : 0;
+
+            // Fiyat HTML'i oluştur
+            let priceHtml = '';
+            if (originalPrice && discountPercent > 0) {
+                priceHtml = `
+                    <div class="price-container">
+                        <div class="price-info">
+                            <span class="current-price">${product.price}</span>
+                            <span class="original-price">${originalPrice.toFixed(2)} TMT</span>
+                        </div>
+                        <span class="discount-percentage-badge">-${discountPercent}%</span>
+                    </div>
+                `;
+            } else {
+                priceHtml = `<p class="product-price">${product.price}</p>`;
+            }
+
             productCard.innerHTML = `
+                ${product.isOnSale ? `<div class="discount-badge">${translate('discount', sLang)}</div>` : ''}
                 <div class="product-image-container">
                     <div class="img-skeleton"></div>
                     <img class="product-img" ${lazyAttribute}>
-                    <button class="btn-favorite" data-id="${product.id}"><i class="far fa-heart"></i></button>
+                    <button class="btn-favorite" data-id="${product.id}" title="${translate('add_to_favorites', sLang) || 'Halanlaryma goş'}">
+                        <i class="far fa-heart"></i>
+                    </button>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title"></h3>
                     <span class="product-category-label"></span>
-                    <p class="product-price"></p>
-                    <div class="product-actions"><button class="btn-cart" data-id="${product.id}">${translate('add_to_cart', sLang)}</button></div>
+                    <div class="price-display-wrapper">
+                        ${priceHtml}
+                    </div>
+                    <div class="product-actions" style="position:relative;">
+                        <button class="btn-cart" data-id="${product.id}">
+                            <i class="fas fa-shopping-cart"></i> ${translate('add_to_cart', sLang)}
+                        </button>
+                        <!-- YENİ: ADET SEÇİCİ KONTU (Sepete eklendikten sonra çıkacak) -->
+                        <div class="quantity-control-container" data-id="${product.id}">
+                            <button class="qty-btn remove-btn"><i class="fas fa-minus"></i></button>
+                            <span class="qty-value">1</span>
+                            <button class="qty-btn add-btn"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
                 </div>
             `;
             productCard.querySelector('.product-img').alt = getProductField(product, 'name', sLang);
             productCard.querySelector('.product-title').textContent = getProductField(product, 'name', sLang);
             productCard.querySelector('.product-category-label').textContent = getProductField(product, 'category', sLang) || '';
-            productCard.querySelector('.product-price').textContent = product.price;
 
             // ✅ Güvenilir Image Load (Arama sonuçları için de)
             const imgEl = productCard.querySelector('.product-img');
@@ -1368,8 +1427,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const btn = e.target.closest('.btn-favorite');
         if (btn) {
-            e.preventDefault(); // Prevent click event
-            e.stopPropagation(); // Stop bubbling
+            e.preventDefault();
+            e.stopPropagation();
             if (!touchClickExecuted) {
                 touchClickExecuted = true;
                 const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
@@ -1378,12 +1437,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // --- YENİ ADET KONTROL EVENTLERİ (MOBİL) ---
+        handleProductActions(e);
+
         const card = e.target.closest('.product-card');
-        if (card) {
-            e.preventDefault(); // Prevent click event
+        if (card && !e.target.closest('.product-actions')) { // Actions dışına tıklanırsa detaya git
+            e.preventDefault();
             if (!touchClickExecuted) {
                 touchClickExecuted = true;
-                const productId = card.querySelector('.btn-cart').getAttribute('data-id');
+                const productId = card.getAttribute('data-product-id');
                 openProductModal(productId);
             }
         }
@@ -1393,24 +1455,181 @@ document.addEventListener('DOMContentLoaded', async () => {
     productsGrid.addEventListener('click', (e) => {
         const btn = e.target.closest('.btn-favorite');
         if (btn) {
+            e.stopPropagation();
             const product = allProducts.find(p => p.id === btn.getAttribute('data-id'));
             if (product) toggleFavorite(product);
             return;
         }
 
-        const cartBtn = e.target.closest('.btn-cart');
-        if (cartBtn) {
-            const product = allProducts.find(p => p.id === cartBtn.getAttribute('data-id'));
-            if (product) addToCart(product);
-            return;
-        }
+        // --- YENİ ADET KONTROL EVENTLERİ (DESKTOP) ---
+        handleProductActions(e);
 
         const card = e.target.closest('.product-card');
-        if (card) {
-            const productId = card.querySelector('.btn-cart').getAttribute('data-id');
+        if (card && !e.target.closest('.product-actions')) {
+            const productId = card.getAttribute('data-product-id');
             openProductModal(productId);
         }
     });
+
+    // --- ORTAK: ADET KONTROL MERKEZİ ---
+    function handleProductActions(e) {
+        // 1. Sepete Ekle Butonuna Tıklama (İlk Ekleme)
+        const cartBtn = e.target.closest('.btn-cart');
+        if (cartBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const productId = cartBtn.getAttribute('data-id');
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            // Ürünü Sepete Ekle
+            addToCart(product);
+
+            // Thumbnail Uçuş Animasyonu Başlat
+            const productCard = cartBtn.closest('.product-card');
+            const productImg = productCard.querySelector('.product-img');
+            flyToCartAnimation(productImg);
+
+            // Arayüz Değişimi: Butonu gizle, Adet Seçiciyi göster
+            cartBtn.classList.add('hidden');
+            const qtyContainer = productCard.querySelector('.quantity-control-container');
+            if (qtyContainer) {
+                qtyContainer.classList.add('active');
+                qtyContainer.querySelector('.qty-value').textContent = "1";
+            }
+            return;
+        }
+
+        // 2. Artı (+) Butonu
+        const addBtn = e.target.closest('.add-btn');
+        if (addBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const container = addBtn.closest('.quantity-control-container');
+            const productId = container.getAttribute('data-id');
+            const product = allProducts.find(p => p.id === productId);
+            if (product) {
+                addToCart(product); // addToCart mevcut ürünü bulup quantity++ yapar
+                const storeCart = cart[product.storeId] || { items: [] };
+                const item = storeCart.items.find(i => i.id === productId);
+                if (item) container.querySelector('.qty-value').textContent = item.quantity;
+            }
+            return;
+        }
+
+        // 3. Eksi (-) Butonu
+        const removeBtn = e.target.closest('.remove-btn');
+        if (removeBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const container = removeBtn.closest('.quantity-control-container');
+            const productId = container.getAttribute('data-id');
+
+            // Cart'tan bu ürünü bul, adet düşür veya çıkar
+            const productCard = container.closest('.product-card');
+            removeFromCartPartially(productId, container, productCard);
+            return;
+        }
+    }
+
+    // Sepetten Adet Düşürme veya Tamamen Çıkarma Mantığı
+    function removeFromCartPartially(productId, qtyContainer, productCard) {
+        // Hangi mağazada olduğunu bulmamız lazım
+        let targetStoreId = null;
+        let itemIndex = -1;
+
+        // Sepette ürünü ara
+        for (const sId in cart) {
+            const idx = cart[sId].items.findIndex(i => i.id === productId);
+            if (idx !== -1) {
+                targetStoreId = sId;
+                itemIndex = idx;
+                break;
+            }
+        }
+
+        if (targetStoreId && itemIndex !== -1) {
+            const item = cart[targetStoreId].items[itemIndex];
+            item.quantity -= 1;
+
+            if (item.quantity <= 0) {
+                // Sepetten tamamen silindi
+                cart[targetStoreId].items.splice(itemIndex, 1);
+
+                // Arayüzü eski haline getir
+                qtyContainer.classList.remove('active');
+                const btnCart = productCard.querySelector('.btn-cart');
+                if (btnCart) btnCart.classList.remove('hidden');
+            } else {
+                // Adet güncellendi
+                qtyContainer.querySelector('.qty-value').textContent = item.quantity;
+            }
+        } else {
+            // Hiç yoksa veya bir bug varsa sıfırla
+            qtyContainer.classList.remove('active');
+            const btnCart = productCard.querySelector('.btn-cart');
+            if (btnCart) btnCart.classList.remove('hidden');
+        }
+
+        saveCart(); // UI ve Storage Güncellemesi
+    }
+
+    // --- EFSANE: UÇAN ÜRÜN ANİMASYONU ---
+    function flyToCartAnimation(imgElement) {
+        if (!imgElement) return;
+
+        // Sepet İkonu Hedefi
+        const cartIcon = document.getElementById('cart-button');
+        if (!cartIcon) return;
+
+        // Klon oluştur
+        const flyingImg = imgElement.cloneNode(true);
+        flyingImg.className = 'flying-thumbnail';
+
+        // Başlangıç Koordinatları
+        const startRect = imgElement.getBoundingClientRect();
+        const endRect = cartIcon.getBoundingClientRect();
+
+        flyingImg.style.left = `${startRect.left}px`;
+        flyingImg.style.top = `${startRect.top}px`;
+        flyingImg.style.width = `${startRect.width}px`;
+        flyingImg.style.height = `${startRect.height}px`;
+
+        document.body.appendChild(flyingImg);
+
+        // Vanilla JS Performanslı Bezier Animasyonu (Web Animations API)
+        const animation = flyingImg.animate([
+            {
+                transform: `translate(0, 0) scale(1)`,
+                opacity: 1
+            },
+            {
+                // Ortada hafif yukarı yay çizme efekti (Bezier etkisi)
+                transform: `translate(${(endRect.left - startRect.left) * 0.5}px, ${(endRect.top - startRect.top) - 80}px) scale(0.6)`,
+                opacity: 0.8
+            },
+            {
+                transform: `translate(${endRect.left - startRect.left + 15}px, ${endRect.top - startRect.top + 15}px) scale(0.1)`,
+                opacity: 0
+            }
+        ], {
+            duration: 600,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            fill: 'forwards'
+        });
+
+        // Animasyon bitişinde temizlik ve Sepet Titretme (Pulse)
+        animation.onfinish = () => {
+            flyingImg.remove();
+            cartIcon.animate([
+                { transform: 'scale(1)' },
+                { transform: 'scale(1.3)' },
+                { transform: 'scale(0.9)' },
+                { transform: 'scale(1)' }
+            ], { duration: 400, easing: 'ease-out' });
+        };
+    }
 
     // Modal kontrolleri
     const modalAddCartBtn = document.getElementById('modal-add-cart');
@@ -1951,6 +2170,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3. Modal yoksa normal sayfa değişimi yap
         router();
     });
+
+    // ✅ YENİ: Başlatıldığında Sepeti UI'ya Uygula
+    function restoreCartUI(storeId) {
+        if (!storeId || !cart[storeId]) return;
+        const currentStoreCart = cart[storeId].items;
+
+        currentStoreCart.forEach(item => {
+            const productCard = document.querySelector(`.product-card[data-product-id="${item.id}"]`);
+            if (productCard) {
+                const btnCart = productCard.querySelector('.btn-cart');
+                const qtyContainer = productCard.querySelector('.quantity-control-container');
+                if (btnCart && qtyContainer) {
+                    btnCart.classList.add('hidden');
+                    qtyContainer.classList.add('active');
+                    qtyContainer.querySelector('.qty-value').textContent = item.quantity;
+                }
+            }
+        });
+    }
 
     // --- YARDIMCI FONKSİYONLAR ---
     function getOptimizedImageUrl(url, width = 400) {

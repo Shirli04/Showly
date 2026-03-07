@@ -211,6 +211,9 @@
                         console.warn('Şifre doğrulama hatası:', passErr);
                         isValid = (password === userData.password);
                     }
+                } else {
+                    // Kullanıcı bulunamadı durumu doğrudan loglanıp isValid = false olarak bırakılır
+                    console.warn(`[Giriş] Kullanıcı bulunamadı: ${username}`);
                 }
 
                 if (!isValid) {

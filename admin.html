@@ -210,29 +210,29 @@
                     <!-- ✅ YENİ: Grafikler ve Filtreler -->
                     <div class="dashboard-charts-section" style="margin-top: 30px;">
                         <div class="chart-filters"
-                            style="display: flex; gap: 15px; align-items: end; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; flex-wrap: wrap;">
-                            <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
-                                <label for="chart-start-date">Başlanýan senesi</label>
+                            style="display: flex; gap: 10px; align-items: end; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; flex-wrap: wrap;">
+                            <div class="form-group" style="margin-bottom: 0; min-width: 130px; flex: 1;">
+                                <label for="chart-start-date" style="font-size: 13px;">Başlanýan senesi</label>
                                 <input type="date" id="chart-start-date" class="form-control"
-                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
                             </div>
-                            <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
-                                <label for="chart-end-date">Gutaryan senesi</label>
+                            <div class="form-group" style="margin-bottom: 0; min-width: 130px; flex: 1;">
+                                <label for="chart-end-date" style="font-size: 13px;">Gutaryan senesi</label>
                                 <input type="date" id="chart-end-date" class="form-control"
-                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
                             </div>
                             <button type="button" id="filter-charts-btn" class="btn-primary"
-                                style="height: 42px; display: flex; align-items: center; gap: 8px;">
+                                style="height: 38px; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 130px;">
                                 <i class="fas fa-filter"></i> Görkez
                             </button>
                             <button type="button" id="reset-charts-btn" class="btn-secondary"
-                                style="height: 42px; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-sync-alt"></i> Arassala (Soňky 1 aý)
+                                style="height: 38px; display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; min-width: 130px;">
+                                <i class="fas fa-sync-alt"></i> Arassala
                             </button>
                         </div>
 
                         <div class="charts-grid"
-                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
                             <!-- Sipariş Grafiği -->
                             <div class="chart-card"
                                 style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
