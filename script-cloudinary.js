@@ -885,6 +885,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // ✅ TÜM ürün kartlarını bir kez oluştur (Eğer kartlar yoksa veya mağaza değiştiyse)
         if (isNewStore || (hasProducts && cardsNeeded)) {
+            // ✅ YENİ: Tek Bir IntersectionObserver (Bellek Şişmesini - Memory Leak - Önler!)
+            let globalImgObserver = null;
+            if ('IntersectionObserver' in window) {
+                globalImgObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const lazyImage = entry.target;
+                            if (lazyImage.dataset.src) {
+                                lazyImage.src = lazyImage.dataset.src;
+                                lazyImage.removeAttribute('data-src'); // RAM Temizliği
+                            }
+                            observer.unobserve(lazyImage);
+                        }
+                    });
+                }, { rootMargin: "0px 0px 200px 0px" });
+            }
+
             const sortedProducts = [...storeProducts].sort((a, b) => {
                 const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
                 const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
@@ -1013,22 +1030,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 };
 
-                // Observer ile tembel yükleme ataması
-                if ('IntersectionObserver' in window) {
-                    const imgObserver = new IntersectionObserver((entries, observer) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) {
-                                const lazyImage = entry.target;
-                                lazyImage.src = lazyImage.dataset.src;
-                                observer.unobserve(lazyImage);
-                            }
-                        });
-                    }, { rootMargin: "0px 0px 200px 0px" }); // Resim görünmeden 200px önce yüklemeye başla
-
-                    imgObserver.observe(imgEl);
+                // Observer ile tembel yükleme ataması (Global Object Kullanımı)
+                if (globalImgObserver) {
+                    globalImgObserver.observe(imgEl);
                 } else {
                     // Eski tarayıcılar için hemen yükle
-                    imgEl.src = imgEl.dataset.src;
+                    if (imgEl.dataset.src) imgEl.src = imgEl.dataset.src;
                 }
 
                 productsGrid.appendChild(productCard);

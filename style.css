@@ -3844,10 +3844,12 @@ select {
     top: 75px;
     z-index: 90;
     background-color: rgba(255, 255, 255, 0.9) !important;
-    padding: 12px 20px !important;
+    padding: 10px 12px !important;
+    /* Üst-alt ve sağ-sol boşlukları optimize edildi */
     transition: all 0.3s ease;
-    margin: 10px 15px !important;
-    border-radius: 25px !important;
+    margin: 8px 10px !important;
+    /* Dış boşluklar daraltılarak genişlik artırıldı */
+    border-radius: 20px !important;
     border: 1px solid rgba(255, 255, 255, 0.4) !important;
     /* Gölgelenmeleri ve Kararmaları Kapat */
     -webkit-mask-image: none !important;
@@ -3883,7 +3885,8 @@ select {
 
 .category-buttons-container {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    /* Butonlar arası boşluk orijinaline göre hafif kısıldı ki çok buton sığsın */
     overflow-x: auto;
     flex-wrap: nowrap;
     /* Wrap iptal */
@@ -3904,12 +3907,14 @@ select {
 
 .category-chip {
     flex-shrink: 0;
-    padding: 8px 18px;
+    padding: 7px 14px;
+    /* Yukarı-aşağı ve sağ-sol pad daraltılarak daha kompakt olması sağlandı */
     border-radius: 999px;
     border: 1.5px solid var(--border-color, #e0e0e0);
     background-color: var(--background-color, #fff);
     color: var(--text-color, #1a1a1a);
-    font-size: 13px;
+    font-size: 14px;
+    /* Font boyutu biraz büyütüldü ki küçük durmasın */
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;

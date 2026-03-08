@@ -57,8 +57,16 @@ self.addEventListener('fetch', event => {
             if (cachedResponse) {
                 return cachedResponse;
             }
+
+            // Eğer yüklenemeyen şey bir "sayfa" (navigation) isteği ise, SPA mantığı gereği
+            // offline da olsa index.html'yi döndürerek sitenin açılmasını (beyaz ekran/hata yerine) garantile.
+            if (event.request.mode === 'navigate') {
+                const indexCache = await caches.match('/index.html');
+                if (indexCache) return indexCache;
+            }
+
             // Offline'dayken ve cache'te yoksa, resmi bozmamak adına asıl hatayı üretmek daha güvenli
-            // 503 sentetik hata üretmek resimlerin "kırık ikon" yerine bloklanmasına ve retry'ın ölmesine yol açıyordu.
+            // Safari'nin çökmemesi için throw type error yerine fallback dönülecek.
             throw new TypeError('Network request failed');
         })
     );
