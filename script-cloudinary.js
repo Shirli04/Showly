@@ -943,17 +943,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
 
-                // Safari iOS üzerinde dinamik DOM enjeksiyonlarında loading="lazy" buglı çalıştığı için iptal edildi.
-                // Bunun yerine decoding="async" kullanılarak sayfa kilitlenmesi önleniyor.
-                const imageAttributes = 'decoding="async"';
+                // ✅ ÖZEL LAZY LOADING (iPhone Safari Bug Fix)
+                // Safari iOS çoklu resim atamalarında (DOM enjekte) istekleri iptal edebildiği için
+                // img etiketine src atanmıyor, dataset (data-src) içine gizleniyor.
+                // IntersectionObserver ile resmi ekrana geldiğinde yükleyeceğiz.
+                const fallbackImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4='; // Şeffaf 1x1 piksel
+                const targetImageUrl = getOptimizedImageUrl(product.imageUrl);
 
-                // ✅ GÜNCELLENDİ: Çok dilli ürün kartı
                 const _lang = getSelectedLang();
                 productCard.innerHTML = `
                     ${product.isOnSale ? `<div class="discount-badge">${translate('discount', _lang)}</div>` : ''}
                     <div class="product-image-container">
                         <div class="img-skeleton"></div>
-                        <img class="product-img" ${imageAttributes}>
+                        <img class="product-img" src="${fallbackImage}" data-src="${targetImageUrl}" decoding="async" alt="Product">
                         <button class="btn-favorite" data-id="${product.id}" title="${translate('add_to_favorites', _lang) || 'Halanlaryma goş'}">
                             <i class="far fa-heart"></i>
                         </button>
@@ -990,21 +992,44 @@ document.addEventListener('DOMContentLoaded', async () => {
                     wrapper.appendChild(priceSpan);
                 }
 
-                // ✅ Güvenilir Image Load (Önbellek sorunlarını çözer)
+                // ✅ GÜVENİLİR RESİM İZLEYİCİSİ (INTERSECTION OBSERVER)
                 const imgEl = productCard.querySelector('.product-img');
                 const skeletonEl = productCard.querySelector('.img-skeleton');
+
                 imgEl.onload = () => {
-                    imgEl.classList.add('loaded');
-                    if (skeletonEl) skeletonEl.style.display = 'none';
+                    // Sadece gerçek resim yüklendiğinde skeleton'u sil
+                    if (imgEl.src !== fallbackImage) {
+                        imgEl.classList.add('loaded');
+                        if (skeletonEl) skeletonEl.style.display = 'none';
+                    }
                 };
+
                 imgEl.onerror = () => {
-                    imgEl.onerror = null;
-                    imgEl.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+';
-                    imgEl.classList.add('loaded', 'error');
-                    if (skeletonEl) skeletonEl.style.display = 'none';
+                    if (imgEl.src !== fallbackImage) {
+                        imgEl.onerror = null;
+                        imgEl.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+'; // "Surat Yok" resmi
+                        imgEl.classList.add('loaded', 'error');
+                        if (skeletonEl) skeletonEl.style.display = 'none';
+                    }
                 };
-                // src'yi en sona atamak, onload'ın her zaman tetiklenmesini garanti eder
-                imgEl.src = getOptimizedImageUrl(product.imageUrl);
+
+                // Observer ile tembel yükleme ataması
+                if ('IntersectionObserver' in window) {
+                    const imgObserver = new IntersectionObserver((entries, observer) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const lazyImage = entry.target;
+                                lazyImage.src = lazyImage.dataset.src;
+                                observer.unobserve(lazyImage);
+                            }
+                        });
+                    }, { rootMargin: "0px 0px 200px 0px" }); // Resim görünmeden 200px önce yüklemeye başla
+
+                    imgObserver.observe(imgEl);
+                } else {
+                    // Eski tarayıcılar için hemen yükle
+                    imgEl.src = imgEl.dataset.src;
+                }
 
                 productsGrid.appendChild(productCard);
                 updateFavoriteButton(product.id);
