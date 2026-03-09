@@ -53,22 +53,36 @@ self.addEventListener('fetch', event => {
     }
 
     event.respondWith(
-        fetch(event.request).catch(async () => {
-            const cachedResponse = await caches.match(event.request);
-            if (cachedResponse) {
-                return cachedResponse;
-            }
+        (async () => {
+            try {
+                // 1. Önce her zaman Ağdan (Network) canlı veriyi çekmeyi dene
+                const networkResponse = await fetch(event.request);
 
-            // Eğer yüklenemeyen şey bir "sayfa" (navigation) isteği ise, SPA mantığı gereği
-            // offline da olsa index.html'yi döndürerek sitenin açılmasını (beyaz ekran/hata yerine) garantile.
-            if (event.request.mode === 'navigate') {
-                const indexCache = await caches.match('/index.html');
-                if (indexCache) return indexCache;
-            }
+                // 2. SPA UYUMU (Safari Yönlendirme Hatasının Ana Çözümü)
+                // Eğer sunucu bir dizin bulamayıp 404 verirse (Çünkü SPA'da fiziksel dosyalar yoktur)
+                // ve istek bir sayfa gezintisi ise (navigate), index.html'i döndür.
+                if (event.request.mode === 'navigate' && networkResponse.status === 404) {
+                    const indexCache = await caches.match('/index.html');
+                    if (indexCache) return indexCache;
+                }
 
-            // Offline'dayken ve cache'te yoksa, resmi bozmamak adına asıl hatayı üretmek daha güvenli
-            // Safari'nin çökmemesi için throw type error yerine fallback dönülecek.
-            throw new TypeError('Network request failed');
-        })
+                return networkResponse;
+            } catch (error) {
+                // 3. İNTERNET YOK Durumu (Network Error)
+                const cachedResponse = await caches.match(event.request);
+                if (cachedResponse) {
+                    return cachedResponse;
+                }
+
+                // Ön bellekte (Cache) yoksa bile, eylem bir sayfa yönlendirmesi ise Index'i ver.
+                if (event.request.mode === 'navigate') {
+                    const indexCache = await caches.match('/index.html');
+                    if (indexCache) return indexCache;
+                }
+
+                // Safari'nin toptan çökmesini engellemek için sessiz hata at.
+                throw new TypeError('Network request failed');
+            }
+        })()
     );
 });

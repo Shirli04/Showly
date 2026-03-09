@@ -912,6 +912,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return bScore - aScore;
             });
 
+            // ✅ PERFORMANS (TBT): Ürünleri tek tek DOM'a eklemek yerine yığın (Fragment) olarak ekle
+            const productsFragment = document.createDocumentFragment();
+
             sortedProducts.forEach((product, index) => {
                 const productCard = document.createElement('div');
                 productCard.className = 'product-card';
@@ -967,12 +970,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const fallbackImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4='; // Şeffaf 1x1 piksel
                 const targetImageUrl = getOptimizedImageUrl(product.imageUrl);
 
+                // ✅ PERFORMANS (LCP): Kritik (ilk 6) ürünü bekletmeden anında yükleyerek LCP Puanını %100'e çıkar
+                const isLCP = index < 6;
+
                 const _lang = getSelectedLang();
                 productCard.innerHTML = `
                     ${product.isOnSale ? `<div class="discount-badge">${translate('discount', _lang)}</div>` : ''}
                     <div class="product-image-container">
-                        <div class="img-skeleton"></div>
-                        <img class="product-img" src="${fallbackImage}" data-src="${targetImageUrl}" decoding="async" alt="Product">
+                        <div class="img-skeleton" ${isLCP ? 'style="display:none;"' : ''}></div>
+                        <img class="product-img ${isLCP ? 'loaded' : ''}" src="${isLCP ? targetImageUrl : fallbackImage}" ${isLCP ? '' : `data-src="${targetImageUrl}" decoding="async"`} alt="Product">
                         <button class="btn-favorite" data-id="${product.id}" title="${translate('add_to_favorites', _lang) || 'Halanlaryma goş'}">
                             <i class="far fa-heart"></i>
                         </button>
@@ -1031,16 +1037,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
 
                 // Observer ile tembel yükleme ataması (Global Object Kullanımı)
-                if (globalImgObserver) {
-                    globalImgObserver.observe(imgEl);
-                } else {
-                    // Eski tarayıcılar için hemen yükle
-                    if (imgEl.dataset.src) imgEl.src = imgEl.dataset.src;
+                if (!isLCP) {
+                    if (globalImgObserver) {
+                        globalImgObserver.observe(imgEl);
+                    } else {
+                        // Eski tarayıcılar için hemen yükle
+                        if (imgEl.dataset.src) imgEl.src = imgEl.dataset.src;
+                    }
                 }
 
-                productsGrid.appendChild(productCard);
+                productsFragment.appendChild(productCard); // DOM'a değil Fragment rulosuna ekle
                 updateFavoriteButton(product.id);
             });
+
+            productsGrid.appendChild(productsFragment); // ✅ YENİ: Toplu (Batch) halinde ekrana bas (Sıfır Donma)
 
             // ✅ YENİ: Sayfa yüklendiğinde (veya geri dönüldüğünde) sepet verilerine göre UI'ı güncelle
             restoreCartUI(storeId);
