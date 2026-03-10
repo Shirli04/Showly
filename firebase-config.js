@@ -26,9 +26,9 @@ if (typeof firebase !== 'undefined') {
             db.settings({
                 cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
                 ignoreUndefinedProperties: true,
-                // ✅ iPhone/iOS Safari için WebSocket yerine LongPolling kullan
                 experimentalForceLongPolling: true,
-                useFetchStreams: false
+                useFetchStreams: false,
+                merge: true
             });
             window._firestoreConfigured = true;
             console.log('🚀 Firestore: Yapılandırma tamamlandı');
