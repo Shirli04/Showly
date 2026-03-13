@@ -613,19 +613,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         allBtn.className = 'category-chip' + (!activeFilter || activeFilter?.type !== 'CATEGORY' ? ' active' : '');
         allBtn.textContent = translate('filter_all', lang);
         allBtn.setAttribute('data-category-target', '__ALL__');
-        allBtn.addEventListener('click', () => renderStorePage(storeId, null));
+        allBtn.addEventListener('click', () => {
+            // Sayfanın en üstüne (ürünlerin başına) kaydır
+            const grid = document.getElementById('products-grid');
+            if (grid) {
+                const offset = document.getElementById('category-filters-section')?.offsetHeight || 60;
+                const topPos = grid.getBoundingClientRect().top + window.scrollY - offset - 10;
+                window.scrollTo({ top: topPos, behavior: 'smooth' });
+                highlightCategoryButton('__ALL__');
+            }
+        });
         container.appendChild(allBtn);
 
         // Kategori butonları
-        categoriesMap.forEach((displayCat, baseCat) => {
+        // ✅ YENİ: Kategorileri ekranda gösterilecek ismine göre (displayCat) alfabetik sırala
+        const sortedCategories = Array.from(categoriesMap.entries()).sort((a, b) => {
+            const displayA = a[1].toLowerCase();
+            const displayB = b[1].toLowerCase();
+            return displayA.localeCompare(displayB);
+        });
+
+        sortedCategories.forEach(([baseCat, displayCat]) => {
             const btn = document.createElement('button');
             // Active klası orijinal isme göre kontrol edilecek
             btn.className = 'category-chip' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === baseCat ? ' active' : '');
             // Ekranda çevrilmiş isim yazacak
             btn.textContent = displayCat;
             btn.setAttribute('data-category-target', baseCat);
-            // Tıklandığında sisteme orijinal ismi (TM) gönderecek
-            btn.addEventListener('click', () => renderStorePage(storeId, { type: 'CATEGORY', value: baseCat }));
+            
+            // ✅ YENİ: Tıklandığında filtreleme YAPMA, kategori başlığına kaydır (Smooth Scroll)
+            btn.addEventListener('click', () => {
+                const header = document.querySelector(`.category-section-header[data-category-section="${baseCat}"]`);
+                if (header) {
+                    const offset = document.getElementById('category-filters-section')?.offsetHeight || 60;
+                    const topPos = header.getBoundingClientRect().top + window.scrollY - offset - 10;
+                    window.scrollTo({ top: topPos, behavior: 'smooth' });
+                    highlightCategoryButton(baseCat);
+                }
+            });
             container.appendChild(btn);
         });
     };
