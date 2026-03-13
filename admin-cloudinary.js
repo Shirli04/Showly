@@ -3476,6 +3476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             populateStoreFilter();
             renderReservationStores();
             renderBronStores();
+            if (window.populateBulkDeleteStores) window.populateBulkDeleteStores();
 
             if (loadingOverlay) loadingOverlay.style.display = 'none';
             startAutoRefresh();
@@ -3532,6 +3533,130 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
+            }
+        });
+    }
+
+    // ✅ YENİ: Mağaza Ürünlerini Toplu Silme Mantığı
+    const bulkDeleteSelect = document.getElementById('bulk-delete-store-select');
+    const bulkDeleteBtn = document.getElementById('bulk-delete-products-btn');
+    const bulkDeleteCountSpan = document.getElementById('bulk-delete-product-count');
+
+    // Mağaza listesini doldur (veri yüklendikten sonra çağrılacak)
+    window.populateBulkDeleteStores = function () {
+        if (!bulkDeleteSelect) return;
+        const stores = globalStores || [];
+        bulkDeleteSelect.innerHTML = '<option value="">Magazyn saýlaň...</option>';
+        stores.forEach(store => {
+            const option = document.createElement('option');
+            option.value = store.id;
+            option.textContent = store.name;
+            bulkDeleteSelect.appendChild(option);
+        });
+    };
+
+    // Mağaza seçildiğinde ürün sayısını göster
+    if (bulkDeleteSelect) {
+        bulkDeleteSelect.addEventListener('change', () => {
+            const storeId = bulkDeleteSelect.value;
+            if (!storeId) {
+                bulkDeleteCountSpan.textContent = '';
+                bulkDeleteBtn.disabled = true;
+                bulkDeleteBtn.style.opacity = '0.5';
+                bulkDeleteBtn.style.cursor = 'not-allowed';
+                return;
+            }
+
+            const storeProducts = globalProducts.filter(p => p.storeId === storeId);
+            const count = storeProducts.length;
+
+            if (count === 0) {
+                bulkDeleteCountSpan.textContent = '⚠️ Bu magazynda haryt ýok';
+                bulkDeleteBtn.disabled = true;
+                bulkDeleteBtn.style.opacity = '0.5';
+                bulkDeleteBtn.style.cursor = 'not-allowed';
+            } else {
+                bulkDeleteCountSpan.textContent = `📦 ${count} haryt tapyldy`;
+                bulkDeleteBtn.disabled = false;
+                bulkDeleteBtn.style.opacity = '1';
+                bulkDeleteBtn.style.cursor = 'pointer';
+            }
+        });
+    }
+
+    // Silme butonu
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', async () => {
+            const storeId = bulkDeleteSelect.value;
+            if (!storeId) return;
+
+            const storeName = bulkDeleteSelect.options[bulkDeleteSelect.selectedIndex].text;
+            const storeProducts = globalProducts.filter(p => p.storeId === storeId);
+            const count = storeProducts.length;
+
+            if (count === 0) {
+                showNotification('Bu magazynda haryt ýok!', false);
+                return;
+            }
+
+            // 1. İlk onay
+            const firstConfirm = confirm(`"${storeName}" magazynyndaky ${count} harydyň HEMMESINI pozmak isleýärsiňizmi?\n\nBu amal yzyna gaýtarylyp bilinmez!`);
+            if (!firstConfirm) return;
+
+            // 2. İkinci onay — mağaza adını yazdır
+            const typedName = prompt(`Tassyklamak üçin magazyn adyny ýazyň:\n\n"${storeName}"`);
+            if (!typedName || typedName.trim().toLowerCase() !== storeName.trim().toLowerCase()) {
+                showNotification('Magazyn ady dogry ýazylmady. Amal ýatyryldy.', false);
+                return;
+            }
+
+            // Silme işlemi başlasın
+            bulkDeleteBtn.disabled = true;
+            const originalHTML = bulkDeleteBtn.innerHTML;
+            bulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pozulýar...';
+
+            try {
+                // Firestore batch silme (500'lük gruplar halinde)
+                const BATCH_SIZE = 500;
+                let deleted = 0;
+
+                for (let i = 0; i < storeProducts.length; i += BATCH_SIZE) {
+                    const batch = window.db.batch();
+                    const chunk = storeProducts.slice(i, i + BATCH_SIZE);
+
+                    chunk.forEach(product => {
+                        const docRef = window.db.collection('products').doc(product.id);
+                        batch.delete(docRef);
+                    });
+
+                    await batch.commit();
+                    deleted += chunk.length;
+                    bulkDeleteBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${deleted}/${count} pozuldy...`;
+                }
+
+                // Global listeden de kaldır
+                globalProducts = globalProducts.filter(p => p.storeId !== storeId);
+
+                // UI'ı güncelle
+                bulkDeleteCountSpan.textContent = '✅ Ähli harytlar pozuldy!';
+                bulkDeleteBtn.disabled = true;
+                bulkDeleteBtn.style.opacity = '0.5';
+                bulkDeleteBtn.innerHTML = originalHTML;
+
+                // Tabloları güncelle
+                if (typeof renderProducts === 'function') renderProducts(globalProducts);
+                const totalProductsEl = document.getElementById('total-products');
+                if (totalProductsEl) totalProductsEl.textContent = globalProducts.length;
+
+                showNotification(`✅ "${storeName}" magazynyndaky ${count} haryt üstünlikli pozuldy!`);
+                console.log(`🗑️ ${count} ürün silindi (${storeName})`);
+
+            } catch (error) {
+                console.error('❌ Toplu silme hatası:', error);
+                showNotification('Harytlary pozmakda ýalňyşlyk çykdy: ' + error.message, false);
+                bulkDeleteBtn.disabled = false;
+                bulkDeleteBtn.style.opacity = '1';
+                bulkDeleteBtn.innerHTML = originalHTML;
             }
         });
     }

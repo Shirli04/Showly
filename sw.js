@@ -1,11 +1,12 @@
-const CACHE_NAME = 'showly-offline-v1';
+const CACHE_NAME = 'showly-offline-v2';
+const IMG_CACHE_NAME = 'showly-images-v1';
+
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/style.css',
     '/script-cloudinary.js',
     '/firebase-config.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css'
 ];
 
@@ -27,7 +28,7 @@ self.addEventListener('activate', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
+                    if (cacheName !== CACHE_NAME && cacheName !== IMG_CACHE_NAME) {
                         console.log('[ServiceWorker] Removing old cache', cacheName);
                         return caches.delete(cacheName);
                     }
@@ -37,21 +38,51 @@ self.addEventListener('activate', event => {
     );
 });
 
-// Fetch Event: Serve from cache if offline
+// Fetch Event: Smart caching strategies
 self.addEventListener('fetch', event => {
-    // Sadece GET isteklerini yakala ve asenkron hizmetleri yoksay (Firebase, Cloudflare, Resimler vb.)
+    // Sadece GET isteklerini yakala
     if (
         event.request.method !== 'GET' ||
         !event.request.url.startsWith('http') ||
         event.request.url.includes('firestore.googleapis.com') ||
         event.request.url.includes('google.com') ||
-        event.request.url.includes('cdn-cgi') ||
-        event.request.url.includes('cloudflareinsights.com') ||
-        event.request.url.includes('img.showlytm.store')
+        event.request.url.includes('cloudflareinsights.com')
     ) {
         return;
     }
 
+    // ✅ ÜRÜN RESİMLERİ: Cache-First Stratejisi (Önce cache'ten ver, arka planda güncelle)
+    if (event.request.url.includes('img.showlytm.store') || 
+        (event.request.url.includes('cdn-cgi/image') && event.request.url.includes('img.showlytm.store'))) {
+        event.respondWith(
+            caches.open(IMG_CACHE_NAME).then(async cache => {
+                const cachedResponse = await cache.match(event.request);
+                
+                // Arka planda güncelle (Stale-While-Revalidate)
+                const fetchPromise = fetch(event.request).then(networkResponse => {
+                    if (networkResponse && networkResponse.ok) {
+                        cache.put(event.request, networkResponse.clone());
+                    }
+                    return networkResponse;
+                }).catch(() => null);
+
+                // Cache varsa hemen döndür (anında yükleme!)
+                if (cachedResponse) {
+                    return cachedResponse;
+                }
+
+                // Cache yoksa ağdan bekle
+                const networkResponse = await fetchPromise;
+                if (networkResponse) return networkResponse;
+
+                // Hiçbiri yoksa boş yanıt
+                return new Response('', { status: 503 });
+            })
+        );
+        return;
+    }
+
+    // Diğer istekler: Network-first stratejisi
     event.respondWith(
         (async () => {
             try {
@@ -59,8 +90,6 @@ self.addEventListener('fetch', event => {
                 const networkResponse = await fetch(event.request);
 
                 // 2. SPA UYUMU (Safari Yönlendirme Hatasının Ana Çözümü)
-                // Eğer sunucu bir dizin bulamayıp 404 verirse (Çünkü SPA'da fiziksel dosyalar yoktur)
-                // ve istek bir sayfa gezintisi ise (navigate), index.html'i döndür.
                 if (event.request.mode === 'navigate' && networkResponse.status === 404) {
                     const indexCache = await caches.match('/index.html');
                     if (indexCache) return indexCache;

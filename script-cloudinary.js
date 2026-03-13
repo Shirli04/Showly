@@ -612,6 +612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allBtn = document.createElement('button');
         allBtn.className = 'category-chip' + (!activeFilter || activeFilter?.type !== 'CATEGORY' ? ' active' : '');
         allBtn.textContent = translate('filter_all', lang);
+        allBtn.setAttribute('data-category-target', '__ALL__');
         allBtn.addEventListener('click', () => renderStorePage(storeId, null));
         container.appendChild(allBtn);
 
@@ -622,6 +623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.className = 'category-chip' + (activeFilter?.type === 'CATEGORY' && activeFilter.value === baseCat ? ' active' : '');
             // Ekranda çevrilmiş isim yazacak
             btn.textContent = displayCat;
+            btn.setAttribute('data-category-target', baseCat);
             // Tıklandığında sisteme orijinal ismi (TM) gönderecek
             btn.addEventListener('click', () => renderStorePage(storeId, { type: 'CATEGORY', value: baseCat }));
             container.appendChild(btn);
@@ -885,24 +887,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // ✅ TÜM ürün kartlarını bir kez oluştur (Eğer kartlar yoksa veya mağaza değiştiyse)
         if (isNewStore || (hasProducts && cardsNeeded)) {
-            // ✅ YENİ: Tek Bir IntersectionObserver (Bellek Şişmesini - Memory Leak - Önler!)
-            let globalImgObserver = null;
+            // ✅ PERFORMANS: Agresif Resim Yükleme Observer (800px önceden yüklemeye başla)
+            let productImageObserver = null;
             if ('IntersectionObserver' in window) {
-                globalImgObserver = new IntersectionObserver((entries, observer) => {
+                productImageObserver = new IntersectionObserver((entries, observer) => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
                             const lazyImage = entry.target;
                             if (lazyImage.dataset.src) {
                                 lazyImage.src = lazyImage.dataset.src;
-                                lazyImage.removeAttribute('data-src'); // RAM Temizliği
+                                lazyImage.removeAttribute('data-src');
                             }
                             observer.unobserve(lazyImage);
                         }
                     });
-                }, { rootMargin: "0px 0px 200px 0px" });
+                }, { rootMargin: '0px 0px 800px 0px' }); // ✅ 800px önceden yükle!
             }
 
             const sortedProducts = [...storeProducts].sort((a, b) => {
+                // ✅ ÖNCE KATEGORiYE GÖRE GRUPLA, SONRA RESİM/FİYAT ÖNCELIĞİ
+                const catA = (a.category || '').toLowerCase();
+                const catB = (b.category || '').toLowerCase();
+                if (catA !== catB) return catA.localeCompare(catB);
+
                 const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
                 const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
                 const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
@@ -915,7 +922,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ✅ PERFORMANS (TBT): Ürünleri tek tek DOM'a eklemek yerine yığın (Fragment) olarak ekle
             const productsFragment = document.createDocumentFragment();
 
+            // ✅ YENİ: Kategori Gruplamalı Ürün Listeleme - Kategori başlıkları ekle
+            let lastCategory = null;
+            const _langForHeaders = getSelectedLang();
+
             sortedProducts.forEach((product, index) => {
+                // ✅ Kategori değiştiğinde başlık ekle
+                const currentCat = product.category || '';
+                if (currentCat !== lastCategory && currentCat !== '') {
+                    const categoryHeader = document.createElement('div');
+                    categoryHeader.className = 'category-section-header';
+                    categoryHeader.setAttribute('data-category-section', currentCat);
+                    const displayName = getProductField(product, 'category', _langForHeaders) || currentCat;
+                    categoryHeader.innerHTML = `<h3>${displayName}</h3>`;
+                    productsFragment.appendChild(categoryHeader);
+                    lastCategory = currentCat;
+                }
+
                 const productCard = document.createElement('div');
                 productCard.className = 'product-card';
                 // ✅ Data attribute'lar filtre için
@@ -967,18 +990,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Safari iOS çoklu resim atamalarında (DOM enjekte) istekleri iptal edebildiği için
                 // img etiketine src atanmıyor, dataset (data-src) içine gizleniyor.
                 // IntersectionObserver ile resmi ekrana geldiğinde yükleyeceğiz.
-                const fallbackImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4='; // Şeffaf 1x1 piksel
+                const fallbackImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4=';
                 const targetImageUrl = getOptimizedImageUrl(product.imageUrl);
 
-                // ✅ PERFORMANS (LCP): Kritik (ilk 6) ürünü bekletmeden anında yükleyerek LCP Puanını %100'e çıkar
-                const isLCP = index < 6;
+                // ✅ OPTİMAL STRATEJİ:
+                // İlk 12 resim: Anında yükle (ekranı dolduracak kadar)
+                // Geri kalanlar: Observer ile 800px önceden yükle (data-src)
+                const isEager = index < 12;
+                const isLCP = index < 6; // İlk 6 en yüksek öncelik
 
                 const _lang = getSelectedLang();
                 productCard.innerHTML = `
                     ${product.isOnSale ? `<div class="discount-badge">${translate('discount', _lang)}</div>` : ''}
                     <div class="product-image-container">
                         <div class="img-skeleton"></div>
-                        <img class="product-img" src="${targetImageUrl}" loading="${isLCP ? 'eager' : 'lazy'}" decoding="async" alt="Product">
+                        <img class="product-img" ${isEager ? `src="${targetImageUrl}"` : `src="${fallbackImage}" data-src="${targetImageUrl}"`} ${isLCP ? 'fetchpriority="high"' : ''} decoding="async" width="400" height="400" alt="Product">
                         <button class="btn-favorite" data-id="${product.id}" title="${translate('add_to_favorites', _lang) || 'Halanlaryma goş'}">
                             <i class="far fa-heart"></i>
                         </button>
@@ -1029,7 +1055,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Eğer resim bulunamazsa veya 404 dönerse
                 imgEl.onerror = () => {
                     imgEl.onerror = null;
-                    imgEl.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+'; // "Surat Yok" resmi
+                    imgEl.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+';
                     imgEl.classList.add('loaded', 'error');
                     if (skeletonEl) skeletonEl.style.display = 'none';
                 };
@@ -1049,8 +1075,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ✅ YENİ: Sayfa yüklendiğinde (veya geri dönüldüğünde) sepet verilerine göre UI'ı güncelle
             restoreCartUI(storeId);
 
+            // ✅ YENİ: Scroll-Spy (Kaydırdıkça Kategori Çubuğu Otomatik Hareket)
+            setupCategoryScrollSpy();
+
             lastRenderedStoreId = storeId;
             console.log(`✅ ${storeProducts.length} ürün kartı oluşturuldu (yeni mağaza)`);
+
+            // ✅ Observer ile geri kalan resimleri yükle (800px önceden)
+            if (productImageObserver) {
+                productsGrid.querySelectorAll('img[data-src]').forEach(img => {
+                    productImageObserver.observe(img);
+                });
+            } else {
+                // Observer yoksa (eski tarayıcı) tümünü hemen yükle
+                productsGrid.querySelectorAll('img[data-src]').forEach(img => {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                });
+            }
         }
 
         // ✅ YENİ: Mevcut DOM'da yeniden UI restore (Filtreleme sorası resimler kalınca da işe yarar)
@@ -1142,6 +1184,72 @@ document.addEventListener('DOMContentLoaded', async () => {
             productsGrid.classList.remove('products-filtering');
         }, 10);
     };
+
+
+
+    // ✅ YENİ: Scroll-Spy Sistemi - Kaydırdıkça üst kategori çubuğu otomatik hareket eder
+    let _scrollSpyObserver = null;
+    function setupCategoryScrollSpy() {
+        // Önceki observer'ı temizle
+        if (_scrollSpyObserver) {
+            _scrollSpyObserver.disconnect();
+            _scrollSpyObserver = null;
+        }
+
+        const categoryHeaders = document.querySelectorAll('.category-section-header[data-category-section]');
+        if (categoryHeaders.length === 0) return;
+
+        const container = document.getElementById('category-buttons-container');
+        if (!container) return;
+
+        _scrollSpyObserver = new IntersectionObserver((entries) => {
+            // En üstteki görünür kategori başlığını bul
+            let topMostVisible = null;
+            let topMostY = Infinity;
+
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const rect = entry.boundingClientRect;
+                    if (rect.top < topMostY) {
+                        topMostY = rect.top;
+                        topMostVisible = entry.target;
+                    }
+                }
+            });
+
+            if (topMostVisible) {
+                const activeCat = topMostVisible.getAttribute('data-category-section');
+                highlightCategoryButton(activeCat);
+            }
+        }, {
+            rootMargin: '-80px 0px -60% 0px', // Üst kısmında header boşluğu bırak, alt kısmı yok say
+            threshold: 0
+        });
+
+        categoryHeaders.forEach(header => {
+            _scrollSpyObserver.observe(header);
+        });
+
+        console.log(`✅ Scroll-Spy aktif: ${categoryHeaders.length} kategori izleniyor`);
+    }
+
+    function highlightCategoryButton(categoryName) {
+        const container = document.getElementById('category-buttons-container');
+        if (!container) return;
+
+        const buttons = container.querySelectorAll('.category-chip');
+        buttons.forEach(btn => {
+            const target = btn.getAttribute('data-category-target');
+            if (target === categoryName) {
+                btn.classList.add('active');
+                // Butonu görünür alana kaydır (smooth scroll)
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
 
     // ✅ YENİ: Site Ayarlarını Kontrol Et (Kategori Gizleme)
     async function checkSiteSettings() {
@@ -2244,7 +2352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             url = url.replace('http://', 'https://');
         }
 
-        // Kullanıcı WebP yüklediği için ek CDN Resizing'e gerek yok, orijin linkini döndür.
+        // Resimler zaten WebP formatında, ek dönüşüm gereksiz
         return url;
     }
 
