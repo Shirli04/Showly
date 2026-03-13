@@ -92,8 +92,8 @@ class ExcelManager {
 
                     for (const row of jsonData) {
                         try {
-                            const storeName = (row['Magazyn Ady'] || row['Mağaza Adı'] || '').trim();
-                            const storeId = row['Magazyn ID'] || row['Store ID'];
+                            const storeName = String(row['Magazyn Ady'] || row['Mağaza Adı'] || '').trim();
+                            const storeId = String(row['Magazyn ID'] || row['Store ID'] || '').trim();
 
                             if (!storeName) {
                                 console.warn('Boş mağaza adı atlandı');
@@ -104,8 +104,8 @@ class ExcelManager {
                             const storeData = {
                                 name: storeName,
                                 slug: slug,
-                                description: row['Düşündiriş'] || row['Açıklama'] || '',
-                                customBannerText: row['Banner Teksti'] || row['Banner Metni'] || '',
+                                description: String(row['Düşündiriş'] || row['Açıklama'] || '').trim(),
+                                customBannerText: String(row['Banner Teksti'] || row['Banner Metni'] || '').trim(),
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                             };
 
@@ -175,8 +175,8 @@ class ExcelManager {
                         const row = jsonData[i];
 
                         try {
-                            // ✅ Mağaza adını temizle ve bul
-                            const storeName = (row['Magazyn Ady'] || row['Mağaza Adı'] || row['Magaza Adi'] || '').trim();
+                            // ✅ Mağaza adını temizle ve bul (Sayı olma ihtimaline karşı String ile sarıldı)
+                            const storeName = String(row['Magazyn Ady'] || row['Mağaza Adı'] || row['Magaza Adi'] || '').trim();
 
                             if (!storeName) {
                                 errorCount++;
@@ -186,7 +186,7 @@ class ExcelManager {
 
                             // ✅ Mağazayı bul (büyük/küçük harf duyarsız)
                             const store = stores.find(s =>
-                                s.name.toLowerCase() === storeName.toLowerCase()
+                                String(s.name || '').toLowerCase() === storeName.toLowerCase()
                             );
 
                             if (!store) {
@@ -195,8 +195,8 @@ class ExcelManager {
                                 continue;
                             }
 
-                            // ✅ Ürün adını al (çok dilli destekli)
-                            const title = (row['Haryt Ady (TM)'] || row['Haryt Ady'] || row['name_tm'] || row['Ürün Adı'] || row['Urun Adi'] || '').trim();
+                            // ✅ Ürün adını al (çok dilli destekli, sayı olma ihtimaline karşı String)
+                            const title = String(row['Haryt Ady (TM)'] || row['Haryt Ady'] || row['name_tm'] || row['Ürün Adı'] || row['Urun Adi'] || '').trim();
                             if (!title) {
                                 errorCount++;
                                 errors.push(`Satır ${i + 1}: Ürün adı boş`);
@@ -204,8 +204,7 @@ class ExcelManager {
                             }
 
                             // ✅ Normal fiyatı al ve formatla (opsiyonel)
-                            let normalPriceValue = row['Baha'] || row['Normal Fiyat'] || '';
-                            normalPriceValue = String(normalPriceValue).trim().replace('TMT', '').replace(' ', '');
+                            let normalPriceValue = String(row['Baha'] || row['Normal Fiyat'] || '').trim().replace('TMT', '').replace(' ', '');
 
                             // Fiyat yoksa veya geçersizse 0 TMT olarak ayarla
                             let price = '0 TMT';
@@ -214,8 +213,7 @@ class ExcelManager {
                             }
 
                             // ✅ İndirimli fiyatı al (opsiyonel)
-                            let discountedPriceValue = row['Arzanladyş Bahasy'] || row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '';
-                            discountedPriceValue = String(discountedPriceValue).trim().replace('TMT', '').replace(' ', '');
+                            let discountedPriceValue = String(row['Arzanladyş Bahasy'] || row['İndirimli Fiyat'] || row['Indirimli Fiyat'] || '').trim().replace('TMT', '').replace(' ', '');
 
                             let originalPrice = '';
                             let isOnSale = false;
@@ -227,20 +225,20 @@ class ExcelManager {
                             }
 
                             // ✅ Resim URL'sini al
-                            const imageUrl = (row['Surat URL'] || row['Resim URL'] || row['Image URL'] || '').trim();
+                            const imageUrl = String(row['Surat URL'] || row['Resim URL'] || row['Image URL'] || '').trim();
 
-                            // ✅ GÜNCELLENDİ: Çok dilli ürün verisi oluştur
+                            // ✅ GÜNCELLENDİ: Çok dilli ürün verisi oluştur (Sayı hücreleri için String koruması eklendi)
                             const productData = {
                                 storeId: store.id,
                                 // Geriye uyumluluk: title ve description korunuyor
                                 title: title,
-                                description: (row['Düşündiriş (TM)'] || row['Düşündiriş'] || row['desc_tm'] || row['Açıklama'] || row['Aciklama'] || '').trim(),
+                                description: String(row['Düşündiriş (TM)'] || row['Düşündiriş'] || row['desc_tm'] || row['Açıklama'] || row['Aciklama'] || '').trim(),
                                 // Çok dilli ürün adları (TM = title, sadece RU ve EN)
-                                name_ru: (row['Haryt Ady (RU)'] || row['name_ru'] || '').trim(),
-                                name_en: (row['Haryt Ady (EN)'] || row['name_en'] || '').trim(),
+                                name_ru: String(row['Haryt Ady (RU)'] || row['name_ru'] || '').trim(),
+                                name_en: String(row['Haryt Ady (EN)'] || row['name_en'] || '').trim(),
                                 // Çok dilli açıklamalar (TM = description, sadece RU ve EN)
-                                desc_ru: (row['Düşündiriş (RU)'] || row['desc_ru'] || '').trim(),
-                                desc_en: (row['Düşündiriş (EN)'] || row['desc_en'] || '').trim(),
+                                desc_ru: String(row['Düşündiriş (RU)'] || row['desc_ru'] || '').trim(),
+                                desc_en: String(row['Düşündiriş (EN)'] || row['desc_en'] || '').trim(),
                                 // Mevcut alanlar aynen korunuyor
                                 price: price,
                                 originalPrice: originalPrice,

@@ -929,12 +929,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }, { rootMargin: '0px 0px 800px 0px' }); // ✅ 800px önceden yükle!
             }
 
-            const sortedProducts = [...storeProducts].sort((a, b) => {
-                // ✅ ÖNCE KATEGORiYE GÖRE GRUPLA, SONRA RESİM/FİYAT ÖNCELIĞİ
-                const catA = (a.category || '').toLowerCase();
-                const catB = (b.category || '').toLowerCase();
-                if (catA !== catB) return catA.localeCompare(catB);
+            const currentLang = getSelectedLang();
 
+            const sortedProducts = [...storeProducts].sort((a, b) => {
+                // ✅ ÖNCE KATEGORiYE GÖRE GRUPLA (VE SIRALA) - Aktif Dile Göre Çevrilmiş İsmi Kullanarak!
+                const rawCatA = a.category || '';
+                const rawCatB = b.category || '';
+                const displayCatA = (getProductField(a, 'category', currentLang) || rawCatA).toLowerCase();
+                const displayCatB = (getProductField(b, 'category', currentLang) || rawCatB).toLowerCase();
+
+                if (displayCatA !== displayCatB) return displayCatA.localeCompare(displayCatB);
+
+                // Kategori aynıysa resim/fiyat önceliğine göre sırala
                 const aHasImage = a.imageUrl && a.imageUrl.trim() !== '';
                 const bHasImage = b.imageUrl && b.imageUrl.trim() !== '';
                 const aHasPrice = a.price && parseFloat(a.price.replace(' TMT', '')) > 0;
@@ -948,20 +954,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const productsFragment = document.createDocumentFragment();
 
             // ✅ YENİ: Kategori Gruplamalı Ürün Listeleme - Kategori başlıkları ekle
-            let lastCategory = null;
+            let lastCategoryDisplay = null;
             const _langForHeaders = getSelectedLang();
 
             sortedProducts.forEach((product, index) => {
-                // ✅ Kategori değiştiğinde başlık ekle
-                const currentCat = product.category || '';
-                if (currentCat !== lastCategory && currentCat !== '') {
+                // ✅ Kategori değiştiğinde başlık ekle (Çevrilmiş isme göre grupla)
+                const rawCat = product.category || '';
+                const displayName = getProductField(product, 'category', _langForHeaders) || rawCat;
+                
+                if (displayName !== lastCategoryDisplay && displayName !== '') {
                     const categoryHeader = document.createElement('div');
                     categoryHeader.className = 'category-section-header';
-                    categoryHeader.setAttribute('data-category-section', currentCat);
-                    const displayName = getProductField(product, 'category', _langForHeaders) || currentCat;
+                    // Scroll-Spy için data-category-section özelliğine orijinal ismi atamak daha güvenli (butonlar orijinal isim arıyor)
+                    categoryHeader.setAttribute('data-category-section', rawCat);
                     categoryHeader.innerHTML = `<h3>${displayName}</h3>`;
                     productsFragment.appendChild(categoryHeader);
-                    lastCategory = currentCat;
+                    lastCategoryDisplay = displayName;
                 }
 
                 const productCard = document.createElement('div');
