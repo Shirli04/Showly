@@ -2806,19 +2806,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Modalı kapatma
-    closeBanquetModal?.addEventListener('click', () => {
-        if (banquetModal && banquetModal.style.display === 'block') {
-            // Eğer geçmişe biz eklediysek geri git, yoksa sadece kapat
-            if (window.history.state && window.history.state.modal === 'banquet-modal') {
-                history.back();
-            } else {
-                banquetModal.style.display = 'none';
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = 'auto';
-            }
-        }
-    });
+    // Modalı kapatma (Global `.close-modal` sınıfı history.back işlemini zaten yapar, iptal edildi)
 
     // Rezervasyon butonu
     reservationBtn?.addEventListener('click', () => {
@@ -2956,18 +2944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    closeBronModal?.addEventListener('click', () => {
-        if (bronModal && bronModal.style.display === 'block') {
-            // Eğer geçmişe biz eklediysek geri git, yoksa sadece kapat
-            if (window.history.state && window.history.state.modal === 'bron-modal') {
-                history.back();
-            } else {
-                bronModal.style.display = 'none';
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = 'auto';
-            }
-        }
-    });
+    // Bron Modalı kapatma işlemi global `.close-modal` tarafından history popstate ile otomatik halledilir.
 
     bronForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
