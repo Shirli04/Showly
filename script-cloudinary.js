@@ -1915,11 +1915,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const priceMatch = item.price ? item.price.toString().replace(/[^0-9.]/g, '') : '0';
                 const price = parseFloat(priceMatch);
                 storeTotal += price * item.quantity;
+                
+                // ✅ YENİ: Anlık (canlı) çeviri desteği (Eğer ürün hafızadaysa güncel dilden ismini çek)
+                const liveProduct = allProducts.find(p => String(p.id) === String(item.id));
+                const displayTitle = liveProduct ? getProductField(liveProduct, 'name', getSelectedLang()) : item.title;
+
                 return `
                     <div class="cart-item">
-                        <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22%3E%3Crect fill=%22%23f5f5f5%22 width=%2230%22 height=%2230%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%228%22%3E%3C/text%3E%3C/svg%3E'}" style="width: 30px; height: 30px; max-width: 30px; max-height: 30px;" alt="${item.title}">
+                        <img src="${item.imageUrl || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22%3E%3Crect fill=%22%23f5f5f5%22 width=%2230%22 height=%2230%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%228%22%3E%3C/text%3E%3C/svg%3E'}" style="width: 30px; height: 30px; max-width: 30px; max-height: 30px;" alt="${displayTitle}">
                         <div class="cart-item-details">
-                            <div class="cart-item-title">${item.title}</div>
+                            <div class="cart-item-title">${displayTitle}</div>
                             <div class="cart-item-price">${item.price}</div>
                         </div>
                         <div class="cart-item-quantity">
@@ -3078,6 +3083,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const badge = card.querySelector('.discount-badge');
             if (badge) badge.textContent = translate('discount', newLang);
+        });
+
+        // 2.3 Kategori başlıklarını güncelle (Store sayfası açıksa)
+        const categoryHeaders = document.querySelectorAll('.category-section-header[data-category-section]');
+        categoryHeaders.forEach(header => {
+            const rawCat = header.getAttribute('data-category-section');
+            const h3 = header.querySelector('h3');
+            if (h3 && rawCat) {
+                const repProduct = allProducts.find(p => p.category === rawCat);
+                if (repProduct) {
+                    h3.textContent = getProductField(repProduct, 'category', newLang) || rawCat;
+                } else {
+                    h3.textContent = rawCat; // Fallback
+                }
+            }
+        });
+
+        // 2.4 Eğer sepet modalı AÇIKSA, içindeki canlı ürünlerin isimlerini de dille eşitle
+        const cartItemsNodes = document.querySelectorAll('.cart-item');
+        cartItemsNodes.forEach(cartItem => {
+            const titleEl = cartItem.querySelector('.cart-item-title');
+            const removeBtn = cartItem.querySelector('.cart-item-remove');
+            if (removeBtn && titleEl) {
+                const pId = removeBtn.getAttribute('data-id');
+                const product = allProducts.find(p => String(p.id) === String(pId));
+                if (product) {
+                    titleEl.textContent = getProductField(product, 'name', newLang);
+                }
+            }
         });
 
         // 2.5 Kategori butonlarını güncelle (Tüm Ürünler çevirisi için)

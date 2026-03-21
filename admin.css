@@ -844,12 +844,15 @@ body {
 .table-container {
     background-color: var(--white-color);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-y: hidden;
+    overflow-x: auto; /* ✅ YENİ: Masalarda taşmayı engellemek için yatay kaydırma */
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    -webkit-overflow-scrolling: touch;
 }
 
 .admin-table {
     width: 100%;
+    min-width: 900px; /* ✅ YENİ: Siparişlerin vs. sıkışıp kötü durmasını engeller */
     border-collapse: collapse;
 }
 
@@ -1833,7 +1836,8 @@ ul {
     }
 
     .table-container table {
-        min-width: 100%;
+        min-width: 0 !important; /* ✅ YENİ: Mobilde 900px sınırını kaldırır */
+        width: 100%;
         border: none;
     }
 
