@@ -278,31 +278,21 @@
                                 <i class="fas fa-plus"></i> Täze magazyn
                             </button>
                         </div>
-                    </div>
-                    <div class="export-buttons" style="margin-top: 15px;">
-                        <button class="btn-export" id="export-stores-btn">
-                            <i class="fas fa-download"></i> Excel al
-                        </button>
-                        <button class="btn-export" id="import-stores-btn" style="background-color: #17a2b8;">
-                            <i class="fas fa-upload"></i> Excel'den goş
-                        </button>
-                        <input type="file" id="import-stores-input" accept=".xlsx,.xls" style="display: none;">
-                    </div>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Magazyn ady</th>
-                                    <th>URL</th>
-                                    <th>Haryt sany</th>
-                                    <th>Etmekler</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stores-table-body">
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Magazyn ady</th>
+                                        <th>URL</th>
+                                        <th>Haryt sany</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stores-table-body">
+                                </tbody>
+                            </table>
+                        </div>
                 </section>
 
                 <!-- Products Section -->
@@ -349,7 +339,6 @@
                                     <th>Haryt ady</th>
                                     <th>Magazyn</th>
                                     <th>Baha</th>
-                                    <th>Surat</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -419,14 +408,19 @@
                             </div>
 
                             <!-- ✅ YENİ: Mağaza Ürünlerini Toplu Silme -->
-                            <div class="backup-section" style="border-color: #e74c3c; background: #fff5f5; margin-top: 20px;">
-                                <h3 style="color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Harytlary topdan pozmak</h3>
+                            <div class="backup-section"
+                                style="border-color: #e74c3c; background: #fff5f5; margin-top: 20px;">
+                                <h3 style="color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Harytlary topdan
+                                    pozmak</h3>
                                 <p>Saýlanan magazynyň ähli harytlaryny pozuň. Bu amal yzyna gaýtarylyp bilinmez!</p>
-                                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px;">
-                                    <select id="bulk-delete-store-select" style="padding: 10px 15px; border-radius: 8px; border: 2px solid #e0e0e0; background: white; font-weight: 500; min-width: 220px; outline: none; font-size: 14px;">
+                                <div
+                                    style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px;">
+                                    <select id="bulk-delete-store-select"
+                                        style="padding: 10px 15px; border-radius: 8px; border: 2px solid #e0e0e0; background: white; font-weight: 500; min-width: 220px; outline: none; font-size: 14px;">
                                         <option value="">Magazyn saýlaň...</option>
                                     </select>
-                                    <span id="bulk-delete-product-count" style="font-size: 14px; color: #666; font-weight: 500;"></span>
+                                    <span id="bulk-delete-product-count"
+                                        style="font-size: 14px; color: #666; font-weight: 500;"></span>
                                 </div>
                                 <button class="btn-primary" id="bulk-delete-products-btn" disabled
                                     style="background-color: #e74c3c; margin-top: 12px; opacity: 0.5; cursor: not-allowed;">

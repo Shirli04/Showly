@@ -1,3 +1,12 @@
+// 🛑 PROFESYONEL GÖRÜNÜM: Canlı sunucuda tüm konsol çıktılarını gizle
+if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    console.log = function() {};
+    console.info = function() {};
+    console.warn = function() {};
+    console.error = function() {};
+    console.debug = function() {};
+}
+
 // Firebase "Compat" SDK'sı ile yapılandırma
 const firebaseConfig = {
     apiKey: "AIzaSyAGnYprUlgaZjiIyODbdqZVJzqvZ8iGO2g",

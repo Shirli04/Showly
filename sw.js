@@ -109,8 +109,8 @@ self.addEventListener('fetch', event => {
                     if (indexCache) return indexCache;
                 }
 
-                // Safari'nin toptan çökmesini engellemek için sessiz hata at.
-                throw new TypeError('Network request failed');
+                // Safari'nin toptan çökmesini engellemek için 503 (Servis Yok) yanıtı dön
+                return new Response('Bağlantı yok ve içerik önbellekte değil.', { status: 503, statusText: 'Service Unavailable' });
             }
         })()
     );

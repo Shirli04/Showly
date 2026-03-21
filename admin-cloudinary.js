@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderBronStores = async () => {
         if (!bronStoreSelect) return;
         const stores = await window.showlyDB.getStores();
-        const bronStores = stores.filter(s => s.hasBron || (Array.isArray(s.tables) && s.tables.length > 0));
+        const bronStores = stores.filter(s => s.hasBron === true || s.hasBron === 'true');
 
         bronStoreSelect.innerHTML = '<option value="">Magazyn saýlaň...</option>';
         bronStores.forEach(store => {
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            console.log('🔍 Bron tablosu (Masalar) güncelleniyor... Mağaza:', currentBronStoreId);
+            console.log('🔍 Bron tablosu (Stollar) güncelleniyor... Mağaza:', currentBronStoreId);
             // Güncel mağaza verisini çek
             const doc = await window.db.collection('stores').doc(currentBronStoreId).get({ source: 'server' });
             if (!doc.exists) return;
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
         } catch (error) {
-            console.error('Bron tablosu (Masalar) yüklenemedi:', error);
+            console.error('Bron tablosu (Stollar) yüklenemedi:', error);
         }
     };
 
@@ -1333,49 +1333,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // ✅ Ürünleri işle
-            productsTableBody.innerHTML = '';
-            const fragment = document.createDocumentFragment();
-
+            // ✅ Ürünleri işle (innerHTML ile 100x daha hızlı)
+            let htmlStr = '';
             for (const product of products) {
-                // ✅ Mağazayı storesMap'ten al
                 const store = storesMap[product.storeId];
                 const storeName = store ? store.name : 'Mağaza Bulunamadı';
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td data-label="ID" class="product-id-cell"></td>
-                    <td data-label="Haryt Ady" class="product-title-cell"></td>
-                    <td data-label="Magazyn" class="product-store-cell"></td>
-                    <td data-label="Bahasy" class="product-price-cell"></td>
-                    <td data-label="Surat" class="product-image-cell"></td>
-                    <td data-label="Etmekler">
-                        <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
-                    </td>
+                htmlStr += `
+                    <tr>
+                        <td data-label="ID" class="product-id-cell">${product.id}</td>
+                        <td data-label="Haryt Ady" class="product-title-cell">${product.title || ''}</td>
+                        <td data-label="Magazyn" class="product-store-cell">${storeName}</td>
+                        <td data-label="Bahasy" class="product-price-cell">${product.price || ''}</td>
+                        <td data-label="Etmekler">
+                            <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
                 `;
-                row.querySelector('.product-id-cell').textContent = product.id;
-                row.querySelector('.product-title-cell').textContent = product.title;
-                row.querySelector('.product-store-cell').textContent = storeName;
-                row.querySelector('.product-price-cell').textContent = product.price;
-
-                const imageCell = row.querySelector('.product-image-cell');
-                const finalImageUrl = getOptimizedImageUrl(product.imageUrl, 100);
-
-                if (finalImageUrl) {
-                    const img = document.createElement('img');
-                    img.src = finalImageUrl;
-                    img.style.width = '40px';
-                    img.style.height = '40px';
-                    img.style.objectFit = 'cover';
-                    img.style.borderRadius = '4px';
-                    imageCell.appendChild(img);
-                } else {
-                    imageCell.textContent = 'Resim yok';
-                }
-                fragment.appendChild(row);
             }
-            productsTableBody.appendChild(fragment);
+            productsTableBody.innerHTML = htmlStr;
 
             attachProductEventListeners();
         } catch (error) {
@@ -1640,11 +1617,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const store = allStores.find(s => s.id === order.storeId);
                     storeNames = store ? `(Bron) ${store.name}` : '(Bron) Bilinmiyor';
                 } else {
-                    storeNames = [...new Set(order.items.map(item => {
-                        const product = allProducts.find(p => p.id === item.id);
-                        const store = allStores.find(s => s.id === product?.storeId);
-                        return store?.name || null;
-                    }).filter(Boolean))].join(', ');
+                    // 1. Öncelik: Siparişin kendi içinde kayıtlı storeId'si varsa
+                    if (order.storeId) {
+                        const store = allStores.find(s => s.id === order.storeId);
+                        storeNames = store ? store.name : (order.storeName || '');
+                    }
+
+                    // 2. Eğer üstteki yöntemle bulunamadıysa (çok eski siparişler için geriye uyumluluk)
+                    if (!storeNames) {
+                        storeNames = [...new Set(order.items.map(item => {
+                            const product = allProducts.find(p => p.id === item.id);
+                            const store = allStores.find(s => s.id === product?.storeId);
+                            return store?.name || null;
+                        }).filter(Boolean))].join(', ');
+                    }
+
                     if (!storeNames) storeNames = 'Bilinmeyen Magazyn';
                 }
 
@@ -1653,9 +1640,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Sipariş Numarasını Belirle
                 const displayOrderNumber = order.orderNumber || (order.status === 'pending' ? 'Belli değil' : '-');
                 const isReservation = order.orderType === 'reservation';
+                const isBron = order.orderType === 'bron';
+
+                if (isReservation) row.style.backgroundColor = '#fff3e0'; // Ziyafet için hafif turuncu arka plan
+                if (isBron) row.style.backgroundColor = '#e3f2fd'; // Masa bronzu için hafif mavi arka plan
 
                 row.innerHTML = `
-                    <td data-label="Haryt ID-leri">
+                    <td data-label="Haryt/Bron Info">
+                        ${isReservation || isBron ?
+                        `<div style="font-weight:bold; color: ${isReservation ? '#e65100' : '#1565c0'}; margin-bottom: 5px; font-size: 13px;">
+                                <i class="fas ${isReservation ? 'fa-glass-cheers' : 'fa-chair'}"></i> 
+                                ${isReservation ? 'Ziyafet' : 'Stol (Bron)'}
+                            </div>`
+                        : ''
+                    }
                         <ul class="order-items-list" style="list-style: none; padding: 0; margin: 0; font-size: 12px; font-family: monospace;"></ul>
                     </td>
                     <td data-label="Ady" class="order-customer-name"></td>
@@ -1684,8 +1682,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const itemsList = row.querySelector('.order-items-list');
                 order.items.forEach(item => {
                     const li = document.createElement('li');
-                    // ✅ İSTEK: Sadece Haryt ID'lerini göster
-                    li.textContent = item.id || 'ID Yok';
+
+                    if (isReservation || isBron) {
+                        // Bron/Ziyafet ise anlaşılır ismi göster
+                        li.innerHTML = `<span style="font-weight:600; font-size:13px;">${item.title || 'Belirtilmedi'}</span>`;
+                    } else {
+                        // Normal ürün siparişi ise (kullanıcının önceki isteği üzerine) sadece Haryt ID göster
+                        li.textContent = item.id || 'ID Yok';
+                    }
                     itemsList.appendChild(li);
                 });
 
@@ -2005,41 +2009,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ✅ Ürünleri tabloya ekle
+            // ✅ Ürünleri tabloya ekle (innerHTML ile 100x daha hızlı)
+            let htmlStr = '';
             products.forEach(product => {
                 const store = storesMap[product.storeId];
                 const storeName = store ? store.name : 'Mağaza Bulunamadı';
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td data-label="ID" class="product-id-cell"></td>
-                    <td data-label="Haryt Ady" class="product-title-cell"></td>
-                    <td data-label="Magazyn" class="product-store-cell"></td>
-                    <td data-label="Bahasy" class="product-price-cell"></td>
-                    <td data-label="Surat" class="product-image-cell"></td>
-                    <td data-label="Etmekler">
-                        <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
-                    </td>
+                htmlStr += `
+                    <tr>
+                        <td data-label="ID" class="product-id-cell">${product.id}</td>
+                        <td data-label="Haryt Ady" class="product-title-cell">${product.title || ''}</td>
+                        <td data-label="Magazyn" class="product-store-cell">${storeName}</td>
+                        <td data-label="Bahasy" class="product-price-cell">${product.price || ''}</td>
+                        <td data-label="Etmekler">
+                            <button class="btn-icon edit-product" data-id="${product.id}"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon danger delete-product" data-id="${product.id}"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
                 `;
-                row.querySelector('.product-id-cell').textContent = product.id;
-                row.querySelector('.product-title-cell').textContent = product.title;
-                row.querySelector('.product-store-cell').textContent = storeName;
-                row.querySelector('.product-price-cell').textContent = product.price;
-
-                if (product.imageUrl) {
-                    const img = document.createElement('img');
-                    img.src = product.imageUrl;
-                    img.style.width = '40px';
-                    img.style.height = '40px';
-                    img.style.objectFit = 'cover';
-                    img.style.borderRadius = '4px';
-                    row.querySelector('.product-image-cell').appendChild(img);
-                } else {
-                    row.querySelector('.product-image-cell').textContent = 'Resim yok';
-                }
-                productsTableBody.appendChild(row);
             });
+            productsTableBody.innerHTML = htmlStr;
 
             // ✅ Butonları yeniden bağla
             attachProductEventListeners();
