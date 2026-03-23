@@ -11,8 +11,8 @@
         // Oturum kontrolü - admin sayfası açılır açılmaz doğrula
         (function () {
             const redirectToLogin = () => {
-                // Absolute `/login.html` yerine relatif kullan: alt dizin deploy'larında da çalışsın
-                window.location.replace('login.html');
+                // Cloudflare Pages'te .html canonical redirect döngülerini önlemek için uzantısız yol
+                window.location.replace('/login');
             };
 
             try {

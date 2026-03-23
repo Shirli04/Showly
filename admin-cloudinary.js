@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Eğer kullanıcı yoksa veya oturum süresi dolduysa login'e yönlendir
     if (!currentUser) {
         localStorage.removeItem('adminUser');
-        window.location.replace('login.html');
+        window.location.replace('/login');
         return; // Kodun devam etmesini engelle
     }
 
