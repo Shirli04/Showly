@@ -628,23 +628,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (section) section.style.display = 'block';
 
-        // "Hepsi" butonu
-        const allBtn = document.createElement('button');
-        allBtn.className = 'category-chip' + (!activeFilter || activeFilter?.type !== 'CATEGORY' ? ' active' : '');
-        allBtn.textContent = translate('filter_all', lang);
-        allBtn.setAttribute('data-category-target', '__ALL__');
-        allBtn.addEventListener('click', () => {
-            // Sayfanın en üstüne (ürünlerin başına) kaydır
-            const grid = document.getElementById('products-grid');
-            if (grid) {
-                const offset = document.getElementById('category-filters-section')?.offsetHeight || 60;
-                const topPos = grid.getBoundingClientRect().top + window.scrollY - offset - 10;
-                window.scrollTo({ top: topPos, behavior: 'smooth' });
-                highlightCategoryButton('__ALL__');
-            }
-        });
-        container.appendChild(allBtn);
-
         // Sanal kategori listesi (özel kategori en üstte)
         const categoryObjects = [];
         if (hasFeaturedCategory) {
@@ -1067,27 +1050,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isGlobalPriceSortAsc = activeFilter?.type === 'SORT_PRICE_ASC';
             const isGlobalPriceSortDesc = activeFilter?.type === 'SORT_PRICE_DESC';
 
-            const featuredOrderMap = new Map();
-            featuredProducts.forEach((product, index) => {
-                featuredOrderMap.set(String(product.id), index);
-            });
-            const featuredProductIdSet = new Set(featuredProducts.map(p => String(p.id)));
-
             const sortedProducts = [...storeProducts].sort((a, b) => {
-                const aId = String(a.id || '');
-                const bId = String(b.id || '');
-                const aFeatured = featuredProductIdSet.has(aId);
-                const bFeatured = featuredProductIdSet.has(bId);
-
-                // Öne çıkan ürünler her zaman en üstte kalır
-                if (aFeatured && !bFeatured) return -1;
-                if (!aFeatured && bFeatured) return 1;
-                if (aFeatured && bFeatured) {
-                    const aOrder = featuredOrderMap.get(aId) ?? Number.MAX_SAFE_INTEGER;
-                    const bOrder = featuredOrderMap.get(bId) ?? Number.MAX_SAFE_INTEGER;
-                    return aOrder - bOrder;
-                }
-
                 const priceA = parseFloat((a.price || '0').replace(' TMT', '')) || 0;
                 const priceB = parseFloat((b.price || '0').replace(' TMT', '')) || 0;
 
@@ -1111,37 +1074,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ✅ PERFORMANS (TBT): Ürünleri tek tek DOM'a eklemek yerine yığın (Fragment) olarak ekle
             const productsFragment = document.createDocumentFragment();
 
-            // ✅ YENİ: Kategori Gruplamalı Ürün Listeleme - Kategori başlıkları ekle
-            let lastCategoryDisplay = null;
-            let featuredHeaderRendered = false;
-            const _langForHeaders = getSelectedLang();
-
-            sortedProducts.forEach((product, index) => {
-                const isFeaturedProduct = featuredProductIdSet.has(String(product.id));
-
-                if (isFeaturedProduct && !featuredHeaderRendered) {
-                    const featuredHeader = document.createElement('div');
-                    featuredHeader.className = 'category-section-header';
-                    featuredHeader.setAttribute('data-category-section', FEATURED_CATEGORY_KEY);
-                    featuredHeader.innerHTML = `<h3>${FEATURED_CATEGORY_TITLE}</h3>`;
-                    productsFragment.appendChild(featuredHeader);
-                    featuredHeaderRendered = true;
-                }
-
-                // ✅ Kategori değiştiğinde başlık ekle (Sadece global fiyat sıralaması değilse)
-                const rawCat = product.category || '';
-                const displayName = getProductField(product, 'category', _langForHeaders) || rawCat;
-                
-                if (!isFeaturedProduct && !isGlobalPriceSortAsc && !isGlobalPriceSortDesc && displayName !== lastCategoryDisplay && displayName !== '') {
-                    const categoryHeader = document.createElement('div');
-                    categoryHeader.className = 'category-section-header';
-                    // Scroll-Spy için data-category-section özelliğine orijinal ismi atamak daha güvenli (butonlar orijinal isim arıyor)
-                    categoryHeader.setAttribute('data-category-section', rawCat);
-                    categoryHeader.innerHTML = `<h3>${displayName}</h3>`;
-                    productsFragment.appendChild(categoryHeader);
-                    lastCategoryDisplay = displayName;
-                }
-
+            const createProductCard = (product, index, renderContext = 'regular') => {
                 const productCard = document.createElement('div');
                 productCard.className = 'product-card';
                 // ✅ Data attribute'lar filtre için
@@ -1149,6 +1082,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 productCard.setAttribute('data-store-id', product.storeId || '');
                 productCard.setAttribute('data-category', product.category || '');
                 productCard.setAttribute('data-on-sale', product.isOnSale ? 'true' : 'false');
+                productCard.setAttribute('data-render-context', renderContext);
                 const priceVal = parseFloat((product.price || '0').replace(' TMT', '')) || 0;
                 productCard.setAttribute('data-product-price', priceVal);
 
@@ -1190,17 +1124,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 // ✅ ÖZEL LAZY LOADING (iPhone Safari Bug Fix)
-                // Safari iOS çoklu resim atamalarında (DOM enjekte) istekleri iptal edebildiği için
-                // img etiketine src atanmıyor, dataset (data-src) içine gizleniyor.
-                // IntersectionObserver ile resmi ekrana geldiğinde yükleyeceğiz.
                 const fallbackImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idHJhbnNwYXJlbnQiLz48L3N2Zz4=';
                 const targetImageUrl = getOptimizedImageUrl(product.imageUrl);
 
-                // ✅ OPTİMAL STRATEJİ:
-                // İlk 12 resim: Anında yükle (ekranı dolduracak kadar)
-                // Geri kalanlar: Observer ile 800px önceden yükle (data-src)
                 const isEager = index < 12;
-                const isLCP = index < 6; // İlk 6 en yüksek öncelik
+                const isLCP = index < 6;
 
                 const _lang = getSelectedLang();
                 productCard.innerHTML = `
@@ -1244,18 +1172,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     wrapper.appendChild(priceSpan);
                 }
 
-                // ✅ NATIVE LAZY LOADING (Tarayıcı Donanım Hızlandırması)
-                // JS Observer yerine modern tarayıcıların sunduğu loading="lazy" kullanılır.
                 const imgEl = productCard.querySelector('.product-img');
                 const skeletonEl = productCard.querySelector('.img-skeleton');
 
-                // Resim tamamen indiğinde iskeleti sil ve göster
                 imgEl.onload = () => {
                     imgEl.classList.add('loaded');
                     if (skeletonEl) skeletonEl.style.display = 'none';
                 };
 
-                // Eğer resim bulunamazsa veya 404 dönerse
                 imgEl.onerror = () => {
                     imgEl.onerror = null;
                     imgEl.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmMGYwZjAiLz48cGF0aCBkPSJNMTYwIDE2MGg4MHY4MGgtODB6IiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iMjAwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5OTkiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5TdXJhdCB5b2s8L3RleHQ+PC9zdmc+';
@@ -1263,12 +1187,48 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (skeletonEl) skeletonEl.style.display = 'none';
                 };
 
-                // LCP (İlk açılış resimleri) önbellekten geldiyse onload tetiklenmeyebilir, elde kontrol et:
                 if (imgEl.complete && imgEl.naturalWidth > 0) {
                     imgEl.classList.add('loaded');
                     if (skeletonEl) skeletonEl.style.display = 'none';
                 }
 
+                return productCard;
+            };
+
+            // ✅ YENİ: Kategori Gruplamalı Ürün Listeleme - Kategori başlıkları ekle
+            let lastCategoryDisplay = null;
+            const _langForHeaders = getSelectedLang();
+
+            if (featuredProducts.length > 0) {
+                const featuredHeader = document.createElement('div');
+                featuredHeader.className = 'category-section-header';
+                featuredHeader.setAttribute('data-category-section', FEATURED_CATEGORY_KEY);
+                featuredHeader.innerHTML = `<h3>${FEATURED_CATEGORY_TITLE}</h3>`;
+                productsFragment.appendChild(featuredHeader);
+
+                featuredProducts.forEach((product, index) => {
+                    const featuredCard = createProductCard(product, index, 'featured');
+                    productsFragment.appendChild(featuredCard);
+                    updateFavoriteButton(product.id);
+                });
+            }
+
+            sortedProducts.forEach((product, index) => {
+
+                // ✅ Kategori değiştiğinde başlık ekle (Sadece global fiyat sıralaması değilse)
+                const rawCat = product.category || '';
+                const displayName = getProductField(product, 'category', _langForHeaders) || rawCat;
+                
+                if (!isGlobalPriceSortAsc && !isGlobalPriceSortDesc && displayName !== lastCategoryDisplay && displayName !== '') {
+                    const categoryHeader = document.createElement('div');
+                    categoryHeader.className = 'category-section-header';
+                    // Scroll-Spy için data-category-section özelliğine orijinal ismi atamak daha güvenli (butonlar orijinal isim arıyor)
+                    categoryHeader.setAttribute('data-category-section', rawCat);
+                    categoryHeader.innerHTML = `<h3>${displayName}</h3>`;
+                    productsFragment.appendChild(categoryHeader);
+                    lastCategoryDisplay = displayName;
+                }
+                const productCard = createProductCard(product, featuredProducts.length + index, 'regular');
                 productsFragment.appendChild(productCard); // DOM'a değil Fragment rulosuna ekle
                 updateFavoriteButton(product.id);
             });
@@ -1350,7 +1310,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Safari çoklu DOM değişikliklerinde (display: none/block) asenkron beklerse GPU sızıntısı yapar.
         allCards.forEach(card => {
             const productId = String(card.getAttribute('data-product-id'));
-            if (visibleProductIds.has(productId)) {
+            const renderContext = card.getAttribute('data-render-context') || 'regular';
+            const isFeaturedOnlyFilter = activeFilter?.type === 'CATEGORY' && activeFilter.value === FEATURED_CATEGORY_KEY;
+            const shouldHideForContext = isFeaturedOnlyFilter
+                ? renderContext !== 'featured'
+                : (!!activeFilter && renderContext === 'featured');
+
+            if (!shouldHideForContext && visibleProductIds.has(productId)) {
                 card.style.display = '';
                 visibleCount++;
             } else {
