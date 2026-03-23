@@ -10,17 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingOverlay = document.getElementById('loading-overlay');
     if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
-    // ✅ localStorage'dan kullanıcıyı al (iOS Safari uyumluluğu için)
+    // ✅ sessionStorage'dan kullanıcıyı al (sekme kapanınca oturum biter)
     let currentUser = null;
     try {
-        currentUser = JSON.parse(localStorage.getItem('adminUser'));
+        currentUser = JSON.parse(sessionStorage.getItem('adminUser'));
     } catch (error) {
         console.warn('Admin oturumu okunamadı:', error);
     }
 
     // Eğer kullanıcı yoksa login'e yönlendir
     if (!currentUser) {
-        localStorage.removeItem('adminUser');
+        sessionStorage.removeItem('adminUser');
         window.location.replace('/login');
         return; // Kodun devam etmesini engelle
     }
@@ -2549,8 +2549,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                // ✅ localStorage'dan temizle
-                localStorage.removeItem('adminUser');
+                // ✅ sessionStorage'dan temizle
+                sessionStorage.removeItem('adminUser');
                 // ✅ replace kullan (geri tuşuyla dönmeyi engeller)
                 window.location.replace('login.html');
             });

@@ -16,7 +16,7 @@
             };
 
             try {
-                const rawAdminUser = localStorage.getItem('adminUser');
+                const rawAdminUser = sessionStorage.getItem('adminUser');
                 if (!rawAdminUser) {
                     redirectToLogin();
                     return;
@@ -26,12 +26,12 @@
                 const hasValidSession = parsedAdminUser && typeof parsedAdminUser === 'object' && parsedAdminUser.username;
 
                 if (!hasValidSession) {
-                    localStorage.removeItem('adminUser');
+                    sessionStorage.removeItem('adminUser');
                     redirectToLogin();
                 }
             } catch (error) {
                 console.warn('Geçersiz admin oturumu, login sayfasına yönlendiriliyor:', error);
-                localStorage.removeItem('adminUser');
+                sessionStorage.removeItem('adminUser');
                 redirectToLogin();
             }
         })();

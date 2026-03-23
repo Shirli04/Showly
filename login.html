@@ -236,8 +236,8 @@
                 submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Dogry!';
                 submitBtn.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';
 
-                // ✅ localStorage kullan (iOS Safari uyumluluğu ve süreklilik için)
-                localStorage.setItem('adminUser', JSON.stringify({
+                // ✅ sessionStorage kullan (sekme kapanınca oturum biter)
+                sessionStorage.setItem('adminUser', JSON.stringify({
                     id: usersSnapshot.docs[0].id,
                     username: userData.username,
                     role: userData.role,
