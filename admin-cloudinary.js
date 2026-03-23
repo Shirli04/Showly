@@ -13,23 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // ✅ localStorage'dan kullanıcıyı al (iOS Safari uyumluluğu için)
     let currentUser = null;
     try {
-        const parsed = JSON.parse(localStorage.getItem('adminUser'));
-        const now = Date.now();
-        const expiresAt = Number(parsed?.sessionExpiresAt || 0);
-        const hasValidSession = parsed
-            && typeof parsed === 'object'
-            && !!parsed.username
-            && Number.isFinite(expiresAt)
-            && expiresAt > now;
-
-        if (hasValidSession) {
-            currentUser = parsed;
-        }
+        currentUser = JSON.parse(localStorage.getItem('adminUser'));
     } catch (error) {
         console.warn('Admin oturumu okunamadı:', error);
     }
 
-    // Eğer kullanıcı yoksa veya oturum süresi dolduysa login'e yönlendir
+    // Eğer kullanıcı yoksa login'e yönlendir
     if (!currentUser) {
         localStorage.removeItem('adminUser');
         window.location.replace('/login');

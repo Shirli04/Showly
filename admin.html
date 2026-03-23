@@ -23,13 +23,7 @@
                 }
 
                 const parsedAdminUser = JSON.parse(rawAdminUser);
-                const now = Date.now();
-                const expiresAt = Number(parsedAdminUser?.sessionExpiresAt || 0);
-                const hasValidSession = parsedAdminUser
-                    && typeof parsedAdminUser === 'object'
-                    && !!parsedAdminUser.username
-                    && Number.isFinite(expiresAt)
-                    && expiresAt > now;
+                const hasValidSession = parsedAdminUser && typeof parsedAdminUser === 'object' && parsedAdminUser.username;
 
                 if (!hasValidSession) {
                     localStorage.removeItem('adminUser');
