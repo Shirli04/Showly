@@ -237,20 +237,15 @@
                 submitBtn.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';
 
                 // ✅ localStorage kullan (iOS Safari uyumluluğu ve süreklilik için)
-                // ✅ Oturum süresi: 12 saat
-                const now = Date.now();
-                const sessionDurationMs = 12 * 60 * 60 * 1000;
                 localStorage.setItem('adminUser', JSON.stringify({
                     id: usersSnapshot.docs[0].id,
                     username: userData.username,
                     role: userData.role,
-                    permissions: userData.permissions || [],
-                    sessionCreatedAt: now,
-                    sessionExpiresAt: now + sessionDurationMs
+                    permissions: userData.permissions || []
                 }));
 
                 setTimeout(() => {
-                    window.location.href = '/admin/';
+                    window.location.href = '/admin';
                 }, 800);
 
             } catch (error) {
