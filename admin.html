@@ -12,7 +12,7 @@
         (function () {
             const redirectToLogin = () => {
                 // Cloudflare Pages'te .html canonical redirect döngülerini önlemek için uzantısız yol
-                window.location.replace('/login');
+                window.location.replace('/login/');
             };
 
             try {
@@ -23,7 +23,13 @@
                 }
 
                 const parsedAdminUser = JSON.parse(rawAdminUser);
-                const hasValidSession = parsedAdminUser && typeof parsedAdminUser === 'object' && parsedAdminUser.username;
+                const now = Date.now();
+                const expiresAt = Number(parsedAdminUser?.sessionExpiresAt || 0);
+                const hasValidSession = parsedAdminUser
+                    && typeof parsedAdminUser === 'object'
+                    && !!parsedAdminUser.username
+                    && Number.isFinite(expiresAt)
+                    && expiresAt > now;
 
                 if (!hasValidSession) {
                     localStorage.removeItem('adminUser');
@@ -167,7 +173,7 @@
                 </ul>
             </nav>
             <div class="sidebar-footer">
-                <a href="login.html" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çyk</a>
+                <a href="/login/" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Çyk</a>
             </div>
         </aside>
 
